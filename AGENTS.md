@@ -1,6 +1,6 @@
 # AGENTS.md — Tumble Rush
 
-Tumble Rush is a complete single-player 3D battle-royale party game for the browser. Read [`docs/SPEC.md`](docs/SPEC.md) before changing gameplay or UX, and [`docs/TICKETS.md`](docs/TICKETS.md) for the current milestone. The decisions behind the design are in [`docs/GRILL.md`](docs/GRILL.md).
+Tumble Rush is a complete single-player 3D battle-royale party game for the browser. Use [`GLOSSARY.md`](GLOSSARY.md) for domain language. Read [`docs/SPEC.md`](docs/SPEC.md) before changing gameplay or UX, and [`docs/TICKETS.md`](docs/TICKETS.md) for the current milestone. The decisions behind the design are in [`docs/GRILL.md`](docs/GRILL.md) and [`docs/adr/`](docs/adr/).
 
 ## First run
 
