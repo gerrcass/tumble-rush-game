@@ -26,7 +26,7 @@ Tumble Rush is an original, single-player 3D party battle royale. You are one of
 | 2 | **Hexapop** | 8 | Last 4 standing | Three honeycomb tiers over pink slime. Every tile warns, then drops. Sugar Rush eats the arena from the outside in. |
 | 3 | **Crown Climb** | 4 | First to the crown | A vertical spiral of rotating beams, rising donuts and pendulums while candy slime climbs below. |
 
-A full show takes about 6–9 minutes. Qualifying earns **kudos**; winning earns a **crown**. Kudos unlock colors, patterns, hats, and emotes in the live 3D Customize screen. Everything is stored locally in your browser.
+A full show runs a few minutes, with a two-minute clock on the Course and final. Qualifying earns **kudos**; winning earns a **crown**. Kudos unlock colors, patterns, hats, and emotes in the live 3D Customize screen. Everything is stored locally in your browser.
 
 ## Features
 
