@@ -116,7 +116,10 @@ docs/                    spec, tickets, decisions, reviews, evidence
 | `npm run test` | Vitest unit tests |
 | `npm run test:e2e` | Playwright show, mobile, review, and evidence suite |
 | `npm run verify:show` | Real 16-bean Course + Hexapop spawn release gate |
+| `npm run measure:show` | Real-Match pacing baseline (see `docs/METRICS.md`) |
+| `npm run evidence` | Canonical screenshot set |
 | `npm run check:release` | Typecheck, unit tests, build, and focused review specs |
+| `npm run ci:local` | Clean install with a workspace-local npm cache + check |
 | `npm run check` | Typecheck + unit tests + production build |
 
 The dev/test-only `window.__tumble` hook exposes show state, contestant statuses, standings, seeded `simulate(seconds)`, round jumps, camera framing, audio state, and render info. It is used by the Playwright suite and is not part of normal play.

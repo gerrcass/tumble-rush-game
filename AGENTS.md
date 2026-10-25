@@ -6,12 +6,16 @@ Tumble Rush is a complete single-player 3D battle-royale party game for the brow
 
 ```bash
 npm ci
-npm run dev        # http://localhost:5173
-npm run check      # typecheck + unit tests + production build
-npm run test:e2e   # Playwright smoke + screenshots
+npm run dev          # http://localhost:5173
+npm run check        # typecheck + unit tests + production build
+npm run verify:show  # real 16-bean Course + real Hexapop spawn
+npm run measure:show # pacing baseline; see docs/METRICS.md
+npm run test:e2e     # Playwright smoke + screenshots
+npm run evidence     # canonical screenshot set
+npm run ci:local     # clean install with workspace-local npm cache + check
 ```
 
-Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `gerrcass/tumble-rush-game`.
+Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `gerrcass/tumble-rush-game`. The release checklist is [`docs/RELEASE.md`](docs/RELEASE.md); pacing baselines and targets are [`docs/METRICS.md`](docs/METRICS.md).
 
 ## Architecture
 

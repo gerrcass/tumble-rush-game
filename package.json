@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Tumble Rush \u2014 a single-player 3D bean battle-royale party game for the browser.",
+  "description": "Tumble Rush — a single-player 3D bean battle-royale party game for the browser.",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
@@ -15,7 +15,10 @@
     "check": "tsc --noEmit && vitest run && vite build",
     "lint": "tsc --noEmit",
     "verify:show": "playwright test e2e/review2.spec.ts",
-    "check:release": "npm run check && playwright test e2e/review1.spec.ts e2e/review2.spec.ts"
+    "check:release": "npm run check && playwright test e2e/review1.spec.ts e2e/review2.spec.ts",
+    "measure:show": "node scripts/measure-show.mjs",
+    "evidence": "playwright test e2e/screenshots.spec.ts",
+    "ci:local": "bash scripts/ci-local.sh"
   },
   "dependencies": {
     "@fontsource-variable/fredoka": "^5.3.0",
