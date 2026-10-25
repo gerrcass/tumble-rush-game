@@ -39,6 +39,9 @@ export class CameraRig {
   pitch = (26 * Math.PI) / 180;
   distance = 5.2;
 
+  /** Lowest camera height for the current Round (set by Game from the Level). */
+  floorY = 0.55;
+
   private readonly smoothPivot = new Vector3(0, 1.1, 0);
   private readonly smoothPosition = new Vector3();
   private readonly smoothLook = new Vector3();
@@ -47,6 +50,9 @@ export class CameraRig {
   private readonly desired = new Vector3();
   private readonly offset = new Vector3();
   private readonly shakeOffset = new Vector3();
+  private readonly shoulder = new Vector3();
+  private debugLook: Vector3 | null = null;
+  private debugLookActive = false;
 
   private shake = 0;
   private elapsed = 0;
@@ -90,6 +96,33 @@ export class CameraRig {
 
   addShake(amount: number): void {
     this.shake = Math.min(0.5, this.shake + amount);
+  }
+
+  /** Kept above the Round's danger surface; Crown Climb moves this with slime. */
+  setFloor(y: number): void {
+    this.floorY = y;
+  }
+
+  /** Debug/evidence framing hook. Distances past the wheel clamp are allowed. */
+  setCamera(yaw: number, pitch: number, distance: number): void {
+    this.yaw = yaw;
+    this.pitch = clamp(pitch, MIN_PITCH, MAX_PITCH);
+    this.distance = Math.max(1.4, Math.min(distance, 70));
+    this.timeSinceOrbit = 0;
+  }
+
+  /** Debug/evidence framing hook: override the look target until cleared. */
+  lookAt(x: number, y: number, z: number): void {
+    if (!this.debugLook) {
+      this.debugLook = new Vector3(x, y, z);
+    } else {
+      this.debugLook.set(x, y, z);
+    }
+    this.debugLookActive = true;
+  }
+
+  clearLookAt(): void {
+    this.debugLookActive = false;
   }
 
   update(
@@ -138,7 +171,7 @@ export class CameraRig {
       this.applyCollision(this.smoothPivot, this.desired, this.desired);
       this.smoothPosition.lerp(this.desired, 1 - Math.exp(-8 * dt));
       this.camera.position.copy(this.smoothPosition);
-      this.camera.lookAt(this.smoothLook);
+      this.camera.lookAt(this.lookPoint());
       this.camera.fov = damp(this.camera.fov, BASE_FOV, 5, dt);
       this.camera.updateProjectionMatrix();
       return;
@@ -184,7 +217,7 @@ export class CameraRig {
     );
 
     this.camera.position.copy(this.smoothPosition).add(this.shakeOffset);
-    this.camera.lookAt(this.smoothLook);
+    this.camera.lookAt(this.lookPoint());
 
     const targetFov = BASE_FOV + speedRatio * SPEED_FOV + (context.celebrating ? 3 : 0);
     this.camera.fov = damp(this.camera.fov, targetFov, 6, dt);
@@ -205,9 +238,41 @@ export class CameraRig {
     out.copy(pivot).add(this.offset);
   }
 
+  private lookPoint(): Vector3 {
+    return this.debugLookActive && this.debugLook ? this.debugLook : this.smoothLook;
+  }
+
   private applyCollision(from: Vector3, desired: Vector3, out: Vector3): void {
-    const fraction = this.world.sweepCamera(from, desired, 0.26);
+    const radius = 0.3;
+    const fraction = this.world.sweepCamera(from, desired, radius);
     out.lerpVectors(from, desired, fraction);
-    if (out.y < 0.55) out.y = 0.55;
+
+    // Sphere-cast samples can still finish a hair inside a thin barrier; walk
+    // back toward the pivot until the final camera point is provably clear.
+    for (let i = 0; i < 10 && this.world.pointBlocked(out, radius); i += 1) {
+      out.lerpVectors(from, out, 0.7);
+    }
+
+    if (this.world.pointBlocked(out, radius)) {
+      // Fully enclosed (under a low deck): rise to a safe shoulder shot.
+      out.copy(from).add(this.shoulder.set(0, 1.15, 0.4));
+    }
+
+    // Sane minimum distance: never sit inside the Tumbler's silhouette.
+    const horizontal = Math.hypot(out.x - from.x, out.z - from.z);
+    if (horizontal < 1.2) {
+      this.desired.copy(desired).sub(from);
+      this.desired.y = Math.max(this.desired.y, 0.4);
+      this.desired.normalize().multiplyScalar(1.25);
+      this.desired.add(from);
+      if (!this.world.pointBlocked(this.desired, radius)) out.copy(this.desired);
+    }
+
+    if (out.y < this.floorY) out.y = this.floorY;
+    // The floor clamp itself can push the camera into a slab's underside; if
+    // so, lift it just clear rather than accepting the clip.
+    for (let i = 0; i < 4 && this.world.pointBlocked(out, radius); i += 1) {
+      out.y += 0.35;
+    }
   }
 }

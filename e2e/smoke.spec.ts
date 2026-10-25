@@ -81,6 +81,98 @@ test.describe('Training Deck desktop', () => {
   });
 });
 
+
+
+test.describe('Phase 2 Rounds', () => {
+  let consoleErrors: string[] = [];
+
+  test.beforeEach(async ({ page }) => {
+    consoleErrors = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') consoleErrors.push(message.text());
+    });
+    page.on('pageerror', (error) => consoleErrors.push(error.message));
+  });
+
+  test.afterEach(() => {
+    expect(consoleErrors, consoleErrors.join('\n')).toEqual([]);
+  });
+
+  test('starts every Round from the temporary mode selector', async ({ page }) => {
+    const modes = [
+      ['course', 'SUNRISE SCRAMBLE'],
+      ['hexapop', 'HEXAPOP'],
+      ['crown-climb', 'CROWN CLIMB'],
+    ] as const;
+
+    for (const [mode, title] of modes) {
+      await page.goto('/?seed=20260418');
+      const selector = page.locator(`#mode-${mode}`);
+      await expect(selector).toBeVisible();
+      await selector.click();
+      await expect(selector).toHaveAttribute('aria-pressed', 'true');
+      await page.getByRole('button', { name: /^play$/i }).click();
+
+      await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
+      await expect.poll(() => page.evaluate(() => window.__tumble?.currentMode)).toBe(mode);
+      await expect.poll(() => page.evaluate(() => window.__tumble?.levelStatus.title)).toBe(title);
+      const canvas = page.locator('canvas.game-canvas');
+      await expect(canvas).toBeVisible();
+      const box = await canvas.boundingBox();
+      expect(box?.width ?? 0).toBeGreaterThan(300);
+      expect(box?.height ?? 0).toBeGreaterThan(200);
+      await page.waitForTimeout(300);
+    }
+  });
+
+  test('hexapop tile touch starts a collapse and slime eliminates', async ({ page }) => {
+    await page.goto('/?seed=20260418');
+    await page.locator('#mode-hexapop').click();
+    await page.getByRole('button', { name: /^play$/i }).click();
+    await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
+
+    await page.evaluate(() => window.__tumble?.teleport(3.5, 0.06, 1.2));
+    await expect
+      .poll(() => page.evaluate(() => window.__tumble?.tileCount ?? 999), { timeout: 5000 })
+      .toBeLessThan(117);
+
+    await page.evaluate(() => window.__tumble?.teleport(0, -9.4, 0));
+    await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('finished');
+    await expect(page.locator('#finish-overlay')).toBeVisible();
+    await expect(page.locator('#finish-overlay')).toContainText('ELIMINATED');
+    await page.getByRole('button', { name: /restart round/i }).click();
+    await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
+    await expect.poll(() => page.evaluate(() => window.__tumble?.currentMode)).toBe('hexapop');
+  });
+
+  test('course finish gate qualifies and shows the end overlay', async ({ page }) => {
+    await page.goto('/?seed=20260418');
+    await page.locator('#mode-course').click();
+    await page.getByRole('button', { name: /^play$/i }).click();
+    await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
+
+    await page.evaluate(() => window.__tumble?.teleport(0, 4.55, -155));
+    await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('finished');
+    await expect(page.locator('#finish-overlay')).toContainText('QUALIFIED!');
+    await expect(page.locator('#finish-overlay')).toContainText('SUNRISE SCRAMBLE');
+  });
+
+  test('crown touch wins Crown Climb', async ({ page }) => {
+    await page.goto('/?seed=20260418');
+    await page.locator('#mode-crown-climb').click();
+    await page.getByRole('button', { name: /^play$/i }).click();
+    await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
+
+    await page.evaluate(() => {
+      const crown = window.__tumble?.crownPosition;
+      if (crown) window.__tumble?.teleport(crown.x + 2, crown.y - 1.4, crown.z);
+    });
+    await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('finished');
+    await expect(page.locator('#finish-overlay')).toContainText('CROWNED!');
+    expect(await page.evaluate(() => window.__tumble?.winner)).toBe('YOU');
+  });
+});
+
 test.describe('Training Deck mobile', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

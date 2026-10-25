@@ -56,9 +56,14 @@ export class PhysicsWorld {
   private readonly localNormal = new Vector3();
   private readonly inverseQuaternion = new Quaternion();
   private readonly sweepPoint = new Vector3();
+  private readonly hitCenterStored = new Vector3();
+  private readonly surfaceVelocity = new Vector3();
+  private readonly scratchRadius = new Vector3();
+  private readonly scratchCross = new Vector3();
 
   private hitCollider: Collider | null = null;
   private hitDepth = 0;
+  private lastHazardPulseId = '';
   private readonly hitNormal = new Vector3();
 
   constructor(options: PhysicsWorldOptions = {}) {
@@ -69,6 +74,11 @@ export class PhysicsWorld {
   addCollider(collider: Collider): Collider {
     this.colliders.push(collider);
     return collider;
+  }
+
+  /** Drop every collider when switching Rounds. Bodies are managed separately. */
+  clearColliders(): void {
+    this.colliders.length = 0;
   }
 
   addBody(body: BeanBody): BeanBody {
@@ -137,10 +147,31 @@ export class PhysicsWorld {
     return safe;
   }
 
+  /** True when a camera-sized sphere at `point` intersects world geometry. */
+  pointBlocked(point: Vector3, radius = 0.24): boolean {
+    return this.overlapsAny(point, radius);
+  }
+
+  /**
+   * Velocity of the material point on a collider at `point`, including the
+   * tangential motion of a rotating beam. Used for hazard impulses; contact
+   * resolution alone only knows positional overlap.
+   */
+  surfaceVelocityAt(collider: Collider, point: Vector3, out: Vector3): Vector3 {
+    out.copy(collider.velocity);
+    if (collider.angularVelocity.lengthSq() > 1e-8) {
+      this.scratchRadius.subVectors(point, collider.position);
+      this.scratchCross.crossVectors(collider.angularVelocity, this.scratchRadius);
+      out.add(this.scratchCross);
+    }
+    return out;
+  }
+
   private stepBody(body: BeanBody, dt: number): void {
     body.wasGrounded = body.grounded;
     body.landedThisStep = false;
     body.lastImpactSpeed = 0;
+    this.lastHazardPulseId = '';
 
     const support = body.support;
     if (
@@ -175,7 +206,13 @@ export class PhysicsWorld {
 
       body.position.addScaledVector(this.hitNormal, this.hitDepth + SKIN * 0.5);
 
-      const intoSurface = body.velocity.dot(this.hitNormal);
+      // Resolve against the moving surface, not the world origin: a rotating
+      // beam or swinging hammer must transfer its own velocity into the bean.
+      this.surfaceVelocityAt(collider, this.hitCenterStored, this.surfaceVelocity);
+      const intoSurface =
+        (body.velocity.x - this.surfaceVelocity.x) * this.hitNormal.x +
+        (body.velocity.y - this.surfaceVelocity.y) * this.hitNormal.y +
+        (body.velocity.z - this.surfaceVelocity.z) * this.hitNormal.z;
       const isGround = this.hitNormal.y > GROUND_NORMAL_Y;
       let bounced = false;
 
@@ -193,6 +230,8 @@ export class PhysicsWorld {
         }
       }
 
+      this.applyHazardPulse(body, collider);
+
       if (!bounced && isGround) {
         body.grounded = true;
         body.support = collider;
@@ -201,6 +240,35 @@ export class PhysicsWorld {
         }
       }
     }
+  }
+
+  /**
+   * Tangential impulse from a hazard. Positional overlap alone resolves the
+   * penetration but leaves the bean standing still; this is what actually
+   * sweeps a Tumbler off a rotating beam or pushes it across a bridge.
+   * Applied once per collider per step (the contact loop can revisit it).
+   */
+  private applyHazardPulse(body: BeanBody, collider: Collider): void {
+    const spinning = collider.angularVelocity.lengthSq() > 1e-6;
+    if (collider.kind !== 'hazard' && !spinning) return;
+    if (this.lastHazardPulseId === collider.id) return;
+    this.lastHazardPulseId = collider.id;
+
+    const normal = this.hitNormal;
+    const surface = this.surfaceVelocity;
+    const alongNormal = surface.dot(normal);
+    this.scratchRadius.copy(surface).addScaledVector(normal, -alongNormal);
+    const speed = this.scratchRadius.length();
+    if (speed < 0.15) return;
+
+    const transfer = collider.kind === 'hazard' ? 0.95 : 0.75;
+    body.velocity.addScaledVector(this.scratchRadius, transfer);
+    if (normal.y < 0.7) {
+      body.velocity.y += Math.min(2.4, speed * 0.18);
+      body.grounded = false;
+      body.support = null;
+    }
+    body.landedThisStep = false;
   }
 
   /**
@@ -224,6 +292,7 @@ export class PhysicsWorld {
           this.hitDepthStored = this.hitDepth;
           this.hitCollider = collider;
           this.hitNormalStored.copy(this.hitNormal);
+          this.hitCenterStored.copy(this.scratchA);
         }
       }
 
@@ -233,6 +302,7 @@ export class PhysicsWorld {
           this.hitDepthStored = this.hitDepth;
           this.hitCollider = collider;
           this.hitNormalStored.copy(this.hitNormal);
+          this.hitCenterStored.copy(this.scratchA);
         }
       }
     }

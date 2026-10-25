@@ -1,5 +1,6 @@
 import { Game, type GameState } from '../game/Game';
 import { formatSeed } from '../game/Rng';
+import type { LevelMode, LevelResult } from '../game/levels/Level';
 import { Hud } from './Hud';
 import { FinishOverlay, PauseOverlay, formatTime } from './screens/Overlays';
 import { StartScreen } from './screens/StartScreen';
@@ -22,8 +23,8 @@ const TOUCH_CONTROLS = `
 `;
 
 /**
- * Top-level UI router for the phase-one slice. Owns the DOM shell and mirrors
- * Game state into the start screen, HUD and overlays. DOM/CSS only; no framework.
+ * Top-level UI router. Owns the DOM shell and mirrors Game state into the start
+ * screen, HUD and end overlays. DOM/CSS only; no framework.
  */
 export class App {
   private readonly root: HTMLElement;
@@ -34,7 +35,7 @@ export class App {
   private readonly finishOverlay: FinishOverlay;
   private readonly abort = new AbortController();
   private hintTimer = 0;
-  private finishSeconds = 0;
+  private finishResult: LevelResult | null = null;
 
   constructor(root: HTMLElement, seed: number) {
     this.root = root;
@@ -59,7 +60,7 @@ export class App {
     this.startScreen = new StartScreen({
       seedLabel: formatSeed(seed),
       touch,
-      onPlay: () => this.startGame(),
+      onPlay: (mode) => this.startGame(mode),
     });
     this.pauseOverlay = new PauseOverlay({
       onResume: () => this.game.resume(),
@@ -82,9 +83,9 @@ export class App {
       seed,
       callbacks: {
         onStateChange: (state) => this.handleState(state),
-        onTick: (elapsed) => this.hud.setTime(elapsed),
-        onFinish: (seconds) => {
-          this.finishSeconds = seconds;
+        onTick: (_elapsed, status) => this.hud.setLevelStatus(status),
+        onFinish: (result) => {
+          this.finishResult = result;
         },
         onCheckpoint: (index) => {
           this.hud.showToast(`Checkpoint ${index} reached!`, 'good');
@@ -128,10 +129,11 @@ export class App {
     }
   }
 
-  private startGame(): void {
+  private startGame(mode: LevelMode): void {
     if (this.game.state !== 'menu') return;
     this.blurActive();
-    this.game.play();
+    this.finishResult = null;
+    this.game.play(mode);
   }
 
   private handleState(state: GameState): void {
@@ -155,7 +157,7 @@ export class App {
     } else if (state === 'finished') {
       this.pauseOverlay.hide();
       this.hud.hide();
-      this.finishOverlay.show(this.finishSeconds);
+      if (this.finishResult) this.finishOverlay.show(this.finishResult);
     }
   }
 
@@ -185,7 +187,7 @@ export class App {
           !(event.target instanceof HTMLButtonElement)
         ) {
           event.preventDefault();
-          this.startGame();
+          this.startScreen.playSelected();
           return;
         }
 

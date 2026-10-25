@@ -14,7 +14,14 @@ import { CameraRig } from './player/CameraRig';
 import { Input } from './input/Input';
 import { PhysicsWorld, FIXED_STEP } from './physics/PhysicsWorld';
 import { BeanBody } from './physics/BeanBody';
-import { TrainingDeck, type Quality } from './levels/TrainingDeck';
+import {
+  type Level,
+  type LevelMode,
+  type LevelResult,
+  type LevelStatus,
+  type Quality,
+} from './levels/Level';
+import { createLevel } from './levels/factory';
 import { PLAYER_LOOK } from './cosmetics';
 import { Rng } from './Rng';
 import type { TumbleDebugApi } from '../types/debug';
@@ -24,11 +31,11 @@ export type GameState = 'menu' | 'playing' | 'paused' | 'finished';
 
 export interface GameCallbacks {
   onStateChange?: (state: GameState) => void;
-  onFinish?: (seconds: number) => void;
+  onFinish?: (result: LevelResult) => void;
   onCheckpoint?: (index: number) => void;
   onFall?: () => void;
   onRespawn?: () => void;
-  onTick?: (elapsed: number) => void;
+  onTick?: (elapsed: number, status: LevelStatus) => void;
   onContextLost?: () => void;
 }
 
@@ -36,30 +43,23 @@ export interface GameOptions {
   mount: HTMLElement;
   touchRoot: HTMLElement;
   seed: number;
+  mode?: LevelMode;
   callbacks?: GameCallbacks;
 }
 
-export interface GameDebugSource {
-  readonly state: GameState;
-  readonly seed: number;
-  readonly player: BeanBody;
-  readonly quality: Quality;
-  readonly elapsed: number;
-  readonly fps: number;
-  setQuality: (quality: Quality) => void;
-}
-
 /**
- * Owns the renderer, camera, clock, quality, level, physics and the player bean.
- * Match/show orchestration will layer on top in later tickets; for the vertical
- * slice this is a single Training Deck session.
+ * Owns the renderer, camera, clock, quality, Level, physics and the player bean.
+ *
+ * The Match/show orchestration (phase three) will layer on top; for phase two
+ * Game can switch between the four Rounds on demand, with one temporary mode
+ * selector on the start screen. Levels never mutate bodies themselves except
+ * for marking an elimination/finish; PhysicsWorld remains the only integrator.
  */
 export class Game {
   readonly renderer: WebGLRenderer;
   readonly scene = new Scene();
   readonly camera: PerspectiveCamera;
   readonly world = new PhysicsWorld({ killY: -14 });
-  readonly level: TrainingDeck;
   readonly body: BeanBody;
   readonly bean: Bean;
   readonly controller: BeanController;
@@ -67,6 +67,8 @@ export class Game {
   readonly input: Input;
   readonly seed: number;
   readonly debug: TumbleDebugApi;
+  level: Level;
+  mode: LevelMode;
 
   private readonly mount: HTMLElement;
   private readonly callbacks: GameCallbacks;
@@ -93,15 +95,16 @@ export class Game {
   private accumulator = 0;
   private cosmeticTime = 0;
   private elapsed = 0;
-  private finishTime = 0;
   private checkpointIndex = 0;
   private respawnTimer = 0;
   private fpsEstimate = 60;
+  private lastResult: LevelResult | null = null;
 
   constructor(options: GameOptions) {
     this.mount = options.mount;
     this.callbacks = options.callbacks ?? {};
     this.seed = options.seed;
+    this.mode = options.mode ?? 'training';
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const high = !window.matchMedia('(pointer: coarse)').matches;
@@ -115,7 +118,7 @@ export class Game {
     });
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.toneMappingExposure = 0.96;
     this.renderer.shadowMap.enabled = high;
     this.renderer.shadowMap.type = PCFShadowMap;
     const canvas = this.renderer.domElement;
@@ -123,12 +126,12 @@ export class Game {
     canvas.setAttribute('aria-hidden', 'true');
     this.mount.appendChild(canvas);
 
-    this.camera = new PerspectiveCamera(68, 1, 0.1, 260);
-    this.scene.background = new Color(0xffd8c2);
-    this.scene.fog = new Fog(0xffd9c7, 62, 155);
+    this.camera = new PerspectiveCamera(68, 1, 0.1, 320);
+    this.scene.background = new Color(0xffb9a6);
+    this.scene.fog = new Fog(0xffc4b5, 105, 245);
 
     const rng = new Rng(this.seed ^ 0x5eed1234);
-    this.level = new TrainingDeck(this.seed);
+    this.level = createLevel(this.mode, this.seed);
     this.scene.add(this.level.group);
     for (const collider of this.level.colliders) this.world.addCollider(collider);
 
@@ -158,6 +161,7 @@ export class Game {
     };
 
     this.rig = new CameraRig(this.camera, this.world);
+    this.rig.setFloor(this.level.cameraFloor);
     this.input = new Input(canvas, options.touchRoot);
     this.level.setQuality(this.quality);
     this.bean.setOutlineEnabled(this.quality === 'high');
@@ -175,6 +179,9 @@ export class Game {
       },
       get seed() {
         return game.seed;
+      },
+      get currentMode() {
+        return game.mode;
       },
       get playerPos() {
         return {
@@ -209,8 +216,44 @@ export class Game {
       get fps() {
         return game.fpsEstimate;
       },
+      get tileCount() {
+        return game.level.tileCount ?? 0;
+      },
+      get slimeHeight() {
+        return game.level.slimeHeight ?? 0;
+      },
+      get crownPosition() {
+        const crown = game.level.crownPosition;
+        return crown
+          ? { x: crown.x, y: crown.y, z: crown.z }
+          : { x: 0, y: 0, z: 0 };
+      },
+      get levelStatus() {
+        return game.level.status();
+      },
+      get eliminated() {
+        return game.body.eliminated;
+      },
+      get winner() {
+        return game.level.winner ?? null;
+      },
+      get waypoints() {
+        return game.level.waypoints.map((waypoint) => ({
+          x: waypoint.position.x,
+          y: waypoint.position.y,
+          z: waypoint.position.z,
+          action: waypoint.action,
+          radius: waypoint.radius,
+        }));
+      },
       setQuality: (quality: Quality) => this.setQuality(quality),
       teleport: (x: number, y: number, z: number) => this.teleport(x, y, z),
+      startMode: (mode: LevelMode) => this.play(mode),
+      finishNow: () => this.finishNow(),
+      setCamera: (yaw: number, pitch: number, distance: number) =>
+        this.rig.setCamera(yaw, pitch, distance),
+      lookAt: (x: number, y: number, z: number) => this.rig.lookAt(x, y, z),
+      clearLookAt: () => this.rig.clearLookAt(),
     };
   }
 
@@ -226,6 +269,10 @@ export class Game {
     return this.elapsed;
   }
 
+  get result(): LevelResult | null {
+    return this.lastResult;
+  }
+
   start(): void {
     if (this.running) return;
     this.running = true;
@@ -233,8 +280,9 @@ export class Game {
     this.raf = requestAnimationFrame(this.frame);
   }
 
-  /** Begin (or restart) the Training Deck run. */
-  play(): void {
+  /** Begin (or restart) a Round. Defaults to the current mode. */
+  play(mode: LevelMode = this.mode): void {
+    if (mode !== this.mode || !this.level) this.installLevel(mode);
     this.resetRun();
     this.currentState = 'playing';
     this.bean.setMenuMode(false);
@@ -266,13 +314,14 @@ export class Game {
   }
 
   restart(): void {
-    this.play();
+    this.play(this.mode);
   }
 
   quitToMenu(): void {
     this.resetRun();
     this.currentState = 'menu';
     this.bean.setMenuMode(true);
+    this.rig.clearLookAt();
     this.rig.snapMenu(this.body);
     this.input.reset();
     this.accumulator = 0;
@@ -289,6 +338,11 @@ export class Game {
     this.rig.snapBehind(this.body);
     this.input.reset();
     this.accumulator = 0;
+  }
+
+  finishNow(): void {
+    if (this.currentState !== 'playing') return;
+    this.finishLevel(this.level.finishNow());
   }
 
   setQuality(quality: Quality): void {
@@ -312,6 +366,19 @@ export class Game {
     this.scene.clear();
     this.renderer.dispose();
     this.renderer.domElement.remove();
+  }
+
+  private installLevel(mode: LevelMode): void {
+    this.level.group.removeFromParent();
+    this.level.dispose();
+    this.world.clearColliders();
+    this.mode = mode;
+    this.level = createLevel(mode, this.seed);
+    this.scene.add(this.level.group);
+    for (const collider of this.level.colliders) this.world.addCollider(collider);
+    this.level.setQuality(this.quality);
+    this.rig.setFloor(this.level.cameraFloor);
+    this.world.killY = this.level.killY;
   }
 
   private bindLifecycle(): void {
@@ -343,6 +410,7 @@ export class Game {
   }
 
   private resetRun(): void {
+    this.world.killY = this.level.killY;
     this.body.reset(
       this.level.startPosition.x,
       this.level.startPosition.y,
@@ -353,10 +421,12 @@ export class Game {
     this.level.setQuality(this.quality);
     this.bean.setVisible(true);
     this.bean.setMenuMode(false);
+    this.rig.setFloor(this.level.cameraFloor);
+    this.rig.clearLookAt();
     this.checkpointIndex = 0;
     this.respawnTimer = 0;
     this.elapsed = 0;
-    this.finishTime = 0;
+    this.lastResult = null;
     this.accumulator = 0;
   }
 
@@ -394,6 +464,7 @@ export class Game {
       this.input.clearPressed();
     }
 
+    this.rig.setFloor(this.level.cameraFloor);
     this.rig.update(
       dt,
       this.body,
@@ -409,14 +480,15 @@ export class Game {
     this.bean.update(dt, this.body, this.controller, this.cosmeticTime);
 
     this.renderer.render(this.scene, this.camera);
-    this.callbacks.onTick?.(this.elapsed);
+    this.callbacks.onTick?.(this.elapsed, this.level.status());
   };
 
   private stepFixed(dt: number, first: boolean): void {
     if (this.currentState !== 'playing') return;
 
     this.elapsed += dt;
-    this.level.step(dt);
+    this.world.killY = this.level.killY;
+    this.level.step(dt, this.world.bodies);
 
     if (this.respawnTimer > 0) {
       this.respawnTimer -= dt;
@@ -443,7 +515,12 @@ export class Game {
 
   private afterPhysics(): void {
     if (this.body.eliminated || this.body.position.y < this.world.killY) {
-      this.beginRespawn();
+      this.body.eliminated = true;
+      if (this.level.respawnAllowed) {
+        this.beginRespawn();
+      } else {
+        this.eliminate();
+      }
       return;
     }
 
@@ -454,7 +531,7 @@ export class Game {
       this.controller.notifyImpact(this.body.lastImpactSpeed);
     }
 
-    if (this.body.grounded) {
+    if (this.body.grounded && this.level.respawnAllowed) {
       const next = this.level.checkpointFor(this.body.position, this.checkpointIndex);
       if (next !== this.checkpointIndex) {
         this.checkpointIndex = next;
@@ -462,8 +539,14 @@ export class Game {
       }
     }
 
+    const status = this.level.status();
+    if (status.result) {
+      this.finishLevel(status.result);
+      return;
+    }
+
     if (this.level.isAtFinish(this.body.position)) {
-      this.finish();
+      this.finishLevel(this.level.finishNow());
     }
   }
 
@@ -489,16 +572,34 @@ export class Game {
     this.callbacks.onRespawn?.();
   }
 
-  private finish(): void {
+  private eliminate(): void {
+    if (this.currentState !== 'playing') return;
+    const detail =
+      this.mode === 'hexapop'
+        ? 'The slime got you. The floor was never on your side.'
+        : this.mode === 'crown-climb'
+          ? 'The slime caught up. Gravity remains undefeated.'
+          : 'You fell off the Course. The canyon says hello.';
+    this.finishLevel({
+      kind: 'eliminated',
+      title: 'ELIMINATED',
+      detail,
+      time: this.elapsed,
+      winner: null,
+    });
+  }
+
+  private finishLevel(result: LevelResult): void {
     if (this.currentState !== 'playing') return;
     this.currentState = 'finished';
-    this.finishTime = this.elapsed;
+    const finalResult = { ...result, roundTitle: result.roundTitle ?? this.level.title };
+    this.lastResult = finalResult;
     this.accumulator = 0;
     this.body.velocity.set(0, 0, 0);
     this.controller.reset();
     this.input.reset();
     this.rig.addShake(0.1);
-    this.callbacks.onFinish?.(this.finishTime);
+    this.callbacks.onFinish?.(finalResult);
     this.callbacks.onStateChange?.(this.currentState);
   }
 }

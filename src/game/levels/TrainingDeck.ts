@@ -15,6 +15,7 @@ import {
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { Rng } from '../Rng';
+import type { BeanBody } from '../physics/BeanBody';
 import {
   createBoxCollider,
   createCylinderCollider,
@@ -37,15 +38,18 @@ import {
 } from './common';
 import { Confetti } from '../fx/Confetti';
 import { makeToonMaterial } from '../util/toon';
+import { clamp } from '../util/math';
+import type {
+  Checkpoint,
+  Level,
+  LevelMode,
+  LevelResult,
+  LevelStatus,
+  Quality,
+  Waypoint,
+} from './Level';
 
-export type Quality = 'high' | 'low';
-
-export interface Checkpoint {
-  position: Vector3;
-  minZ: number;
-  maxZ: number;
-  maxY: number;
-}
+export type { Quality };
 
 interface MovingPlatform {
   collider: Collider;
@@ -82,10 +86,29 @@ interface CheckpointMarker {
  * physics world stores the colliders and the Game resets the bean. Kinematic
  * movement happens in `step()` so physics always sees the platform delta.
  */
-export class TrainingDeck {
+export class TrainingDeck implements Level {
+  readonly mode: LevelMode = 'training';
+  readonly title = 'TRAINING DECK';
+  readonly objective = 'Reach the finish gate';
   readonly group = new Group();
   readonly colliders: Collider[] = [];
   readonly startPosition = new Vector3(0, 0.02, 11);
+  readonly finishPosition = new Vector3(0, 3, -34.5);
+  readonly respawnAllowed = true;
+  readonly killY = -14;
+  readonly cameraFloor = 0.55;
+  readonly waypoints: readonly Waypoint[] = [
+    { position: new Vector3(0, 0.02, 11), action: 'run', radius: 1 },
+    { position: new Vector3(0, 0.02, 6.5), action: 'jump', radius: 1.2 },
+    { position: new Vector3(0, 0.02, 0.5), action: 'run', radius: 1 },
+    { position: new Vector3(0, 0.02, -6.5), action: 'jump', radius: 1.2 },
+    { position: new Vector3(0, 0.02, -10.5), action: 'ride', radius: 1.2 },
+    { position: new Vector3(0, 0.02, -14), action: 'jump', radius: 1.2 },
+    { position: new Vector3(0, 0.02, -19), action: 'ride', radius: 1.5 },
+    { position: new Vector3(0, 0.02, -26), action: 'jump', radius: 1.4 },
+    { position: new Vector3(0, 0.02, -27.5), action: 'jump', radius: 1.3 },
+    { position: new Vector3(0, 3.02, -34.5), action: 'run', radius: 1.5 },
+  ];
   readonly checkpoints: readonly Checkpoint[] = [
     {
       position: new Vector3(0, 0.03, 11),
@@ -125,6 +148,7 @@ export class TrainingDeck {
   private readonly padVisual = new Group();
   private readonly finishSign = new Group();
   private elapsed = 0;
+  private bodyProgress = 0;
 
   constructor(seed: number) {
     this.seed = seed >>> 0;
@@ -297,8 +321,10 @@ export class TrainingDeck {
   }
 
   /** Physics-rate kinematic update. Called before world.step(). */
-  step(dt: number): void {
+  step(dt: number, bodies: readonly BeanBody[]): void {
     this.elapsed += dt;
+    const body = bodies[0];
+    if (body) this.bodyProgress = this.progress(body.position);
     const { moving } = this;
     const x =
       moving.baseX + Math.sin(this.elapsed * moving.speed + moving.phase) * moving.amplitude;
@@ -337,9 +363,9 @@ export class TrainingDeck {
       const checkpoint = this.checkpoints[i];
       if (!checkpoint) continue;
       if (
-        position.z >= checkpoint.minZ &&
-        position.z <= checkpoint.maxZ &&
-        position.y <= checkpoint.maxY
+        position.z >= (checkpoint.minZ ?? -Infinity) &&
+        position.z <= (checkpoint.maxZ ?? Infinity) &&
+        position.y <= (checkpoint.maxY ?? Infinity)
       ) {
         return i;
       }
@@ -354,6 +380,37 @@ export class TrainingDeck {
       position.z > -38.5 &&
       Math.abs(position.x) < 4.35
     );
+  }
+
+  progress(position: Vector3): number {
+    return clamp((this.startPosition.z - position.z) / (this.startPosition.z - this.finishPosition.z), 0, 1);
+  }
+
+  status(): LevelStatus {
+    const percent = Math.round(this.bodyProgress * 100);
+    return {
+      mode: this.mode,
+      title: this.title,
+      objective: this.objective,
+      elapsed: this.elapsed,
+      timeLimit: 0,
+      progress: this.bodyProgress,
+      progressLabel: `${percent}%`,
+      metricLabel: 'PROGRESS',
+      metricValue: `${percent}%`,
+      phase: 'PRACTICE',
+      result: null,
+    };
+  }
+
+  finishNow(): LevelResult {
+    return {
+      kind: 'finish',
+      title: 'DECK CLEARED!',
+      detail: 'That is the Training Deck. The full show is still warming up.',
+      time: this.elapsed,
+      winner: null,
+    };
   }
 
   setQuality(quality: Quality): void {

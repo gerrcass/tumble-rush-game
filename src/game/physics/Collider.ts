@@ -4,6 +4,7 @@ export type ColliderKind = 'solid' | 'conveyor' | 'bounce' | 'hazard' | 'kill';
 export type ColliderShape = 'box' | 'cylinder';
 
 let nextColliderId = 1;
+const scratchPosition = new Vector3();
 
 /**
  * World collider data. Levels build these; PhysicsWorld only reads and
@@ -25,6 +26,8 @@ export interface Collider {
   readonly radius: number;
   readonly height: number;
   readonly velocity: Vector3;
+  /** World-space angular velocity (rad/s). Rotating sweepers and beams use it. */
+  readonly angularVelocity: Vector3;
   bounceStrength: number;
   enabled: boolean;
 }
@@ -35,6 +38,7 @@ export interface BoxColliderOptions {
   position: Vector3;
   quaternion?: Quaternion;
   velocity?: Vector3;
+  angularVelocity?: Vector3;
   bounceStrength?: number;
 }
 
@@ -45,6 +49,7 @@ export interface CylinderColliderOptions {
   position: Vector3;
   quaternion?: Quaternion;
   velocity?: Vector3;
+  angularVelocity?: Vector3;
   bounceStrength?: number;
 }
 
@@ -61,6 +66,7 @@ export function createBoxCollider(options: BoxColliderOptions): Collider {
     radius: 0,
     height: 0,
     velocity: (options.velocity ?? new Vector3()).clone(),
+    angularVelocity: (options.angularVelocity ?? new Vector3()).clone(),
     bounceStrength: options.bounceStrength ?? 0,
     enabled: true,
   };
@@ -79,6 +85,7 @@ export function createCylinderCollider(options: CylinderColliderOptions): Collid
     radius: options.radius,
     height: options.height,
     velocity: (options.velocity ?? new Vector3()).clone(),
+    angularVelocity: (options.angularVelocity ?? new Vector3()).clone(),
     bounceStrength: options.bounceStrength ?? 0,
     enabled: true,
   };
@@ -92,8 +99,24 @@ export function moveCollider(
   z: number,
   dt: number,
 ): void {
+  setColliderTransform(collider, scratchPosition.set(x, y, z), collider.quaternion, dt);
+}
+
+/**
+ * Set a kinematic collider's full transform for this fixed step and derive its
+ * linear surface velocity from the delta. The Level steps hazards before the
+ * physics world runs, so the world sees prev→current for the same step.
+ */
+export function setColliderTransform(
+  collider: Collider,
+  position: Vector3,
+  quaternion: Quaternion,
+  dt: number,
+): void {
   collider.prevPosition.copy(collider.position);
-  collider.position.set(x, y, z);
+  collider.prevQuaternion.copy(collider.quaternion);
+  collider.position.copy(position);
+  collider.quaternion.copy(quaternion);
   if (dt > 0) {
     collider.velocity.set(
       (collider.position.x - collider.prevPosition.x) / dt,
@@ -101,4 +124,18 @@ export function moveCollider(
       (collider.position.z - collider.prevPosition.z) / dt,
     );
   }
+}
+
+/** Reset a kinematic collider without producing a velocity spike. */
+export function snapCollider(
+  collider: Collider,
+  position: Vector3,
+  quaternion: Quaternion = collider.quaternion,
+): void {
+  collider.position.copy(position);
+  collider.prevPosition.copy(position);
+  collider.quaternion.copy(quaternion);
+  collider.prevQuaternion.copy(quaternion);
+  collider.velocity.set(0, 0, 0);
+  collider.angularVelocity.set(0, 0, 0);
 }

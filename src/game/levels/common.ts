@@ -1,6 +1,7 @@
 import {
   BackSide,
   BufferGeometry,
+  CapsuleGeometry,
   Color,
   ConeGeometry,
   CylinderGeometry,
@@ -272,6 +273,56 @@ export function makePole(height: number, color = 0xfff6e5): Mesh {
   pole.position.y = height / 2;
   pole.castShadow = true;
   return pole;
+}
+
+/**
+ * A cheap cheering crowd: one instanced mesh of bean silhouettes on a candy
+ * stand. Repeated props stay at one draw call instead of one mesh per spectator.
+ */
+export function makeCrowd(
+  count: number,
+  width: number,
+  seedRng: Rng,
+  baseColor = 0xffc145,
+): Group {
+  const group = new Group();
+  const stand = new Mesh(
+    new RoundedBoxGeometry(width, 0.9, 2.6, 2, 0.12),
+    makeToonMaterial({ color: baseColor }),
+  );
+  stand.position.y = -0.45;
+  stand.castShadow = false;
+  stand.receiveShadow = true;
+  group.add(stand);
+
+  const geometry = new CapsuleGeometry(0.22, 0.46, 3, 7);
+  const material = makeToonMaterial({ color: 0xffffff });
+  const mesh = new InstancedMesh(geometry, material, count);
+  const dummy = new Object3D();
+  const color = new Color();
+  const palette = [0xff6b6b, 0xffc145, 0x59d9b0, 0x57c7ff, 0xa78bfa, 0xff9ecb, 0xfff6e5];
+  const rows = Math.max(1, Math.ceil(count / 10));
+  for (let i = 0; i < count; i += 1) {
+    const row = i % rows;
+    const column = Math.floor(i / rows);
+    const x = (column / Math.max(1, Math.ceil(count / rows)) - 0.5) * (width - 1.1);
+    const z = (row / Math.max(1, rows - 1) - 0.5) * 1.5;
+    const y = row * 0.12;
+    const scale = seedRng.float(0.85, 1.15);
+    dummy.position.set(x + seedRng.float(-0.16, 0.16), 0.62 + y, z);
+    dummy.rotation.set(0, seedRng.float(-0.3, 0.3), 0);
+    dummy.scale.set(scale, scale, scale);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+    color.setHex(palette[seedRng.int(0, palette.length - 1)]!);
+    mesh.setColorAt(i, color);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  group.add(mesh);
+  return group;
 }
 
 export function makeSign(

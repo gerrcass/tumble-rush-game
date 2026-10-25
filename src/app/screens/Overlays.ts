@@ -1,4 +1,5 @@
 import { el } from '../dom';
+import type { LevelResult } from '../../game/levels/Level';
 
 export interface PauseOverlayOptions {
   onResume: () => void;
@@ -26,9 +27,9 @@ export class PauseOverlay {
     card.appendChild(el('p', 'overlay-copy', 'The show can wait. The beans are not going anywhere.'));
 
     this.resumeButton = this.addButton(card, 'btn btn--primary', 'RESUME', options.onResume);
-    this.addButton(card, 'btn btn--ghost', 'RESTART DECK', options.onRestart);
+    this.addButton(card, 'btn btn--ghost', 'RESTART ROUND', options.onRestart);
     this.addButton(card, 'btn btn--ghost', 'QUIT TO MENU', options.onQuit);
-    card.appendChild(el('p', 'overlay-hint', 'Esc resumes · all progress on this deck resets'));
+    card.appendChild(el('p', 'overlay-hint', 'Esc resumes · restarting resets this Round'));
   }
 
   show(): void {
@@ -63,11 +64,76 @@ export interface FinishOverlayOptions {
   onQuit: () => void;
 }
 
+interface EndCopy {
+  sticker: string;
+  tone: string;
+  title: string;
+  copy: string;
+  stat: string;
+  statLabel: string;
+}
+
+function endCopy(result: LevelResult): EndCopy {
+  switch (result.kind) {
+    case 'finish':
+      return {
+        sticker: 'FINISH GATE',
+        tone: 'mint',
+        title: result.title,
+        copy: result.detail,
+        stat: 'QUALIFIED',
+        statLabel: 'RESULT',
+      };
+    case 'crown':
+      return {
+        sticker: 'CROWN CLIMB',
+        tone: 'mango',
+        title: result.title,
+        copy: result.detail,
+        stat: 'WINNER',
+        statLabel: 'RESULT',
+      };
+    case 'survived':
+      return {
+        sticker: 'HEXAPOP',
+        tone: 'mint',
+        title: result.title,
+        copy: result.detail,
+        stat: 'SURVIVED',
+        statLabel: 'RESULT',
+      };
+    case 'timeout':
+      return {
+        sticker: 'TIME!',
+        tone: 'mango',
+        title: result.title,
+        copy: result.detail,
+        stat: result.winner ?? 'NOBODY',
+        statLabel: 'HIGHEST',
+      };
+    case 'eliminated':
+    default:
+      return {
+        sticker: 'SUNRISE CARNIVAL',
+        tone: 'coral',
+        title: 'ELIMINATED',
+        copy: result.detail,
+        stat: 'OUT',
+        statLabel: 'RESULT',
+      };
+  }
+}
+
 export class FinishOverlay {
   readonly element = el('div', 'overlay');
   private readonly replayButton: HTMLButtonElement;
   private readonly timeLabel: HTMLElement;
-  private readonly rankLabel: HTMLElement;
+  private readonly statLabel: HTMLElement;
+  private readonly statValue: HTMLElement;
+  private readonly sticker: HTMLElement;
+  private readonly title: HTMLElement;
+  private readonly copy: HTMLElement;
+  private readonly roundLabel: HTMLElement;
 
   constructor(options: FinishOverlayOptions) {
     this.element.id = 'finish-overlay';
@@ -88,11 +154,15 @@ export class FinishOverlay {
     }
     card.appendChild(burst);
 
-    card.appendChild(el('span', 'sticker sticker--mint', 'TRAINING COMPLETE'));
-    const title = el('h2', 'overlay-title overlay-title--finish', 'DECK CLEARED!');
-    title.id = 'finish-title';
-    card.appendChild(title);
-    card.appendChild(el('p', 'overlay-copy', 'That is the Training Deck. The full show is still warming up.'));
+    this.sticker = el('span', 'sticker sticker--mint', 'TRAINING COMPLETE');
+    card.appendChild(this.sticker);
+    this.title = el('h2', 'overlay-title overlay-title--finish', 'DECK CLEARED!');
+    this.title.id = 'finish-title';
+    card.appendChild(this.title);
+    this.roundLabel = el('p', 'overlay-round', '');
+    card.appendChild(this.roundLabel);
+    this.copy = el('p', 'overlay-copy', 'That is the Training Deck.');
+    card.appendChild(this.copy);
 
     const stats = el('div', 'finish-stats');
     const timeBlock = el('div', 'finish-stat');
@@ -101,9 +171,10 @@ export class FinishOverlay {
     timeBlock.appendChild(this.timeLabel);
     stats.appendChild(timeBlock);
     const rankBlock = el('div', 'finish-stat');
-    rankBlock.appendChild(el('span', 'finish-stat__label', 'DECK RANK'));
-    this.rankLabel = el('strong', 'finish-stat__value', 'GOLD');
-    rankBlock.appendChild(this.rankLabel);
+    this.statLabel = el('span', 'finish-stat__label', 'RESULT');
+    this.statValue = el('strong', 'finish-stat__value', 'QUALIFIED');
+    rankBlock.appendChild(this.statLabel);
+    rankBlock.appendChild(this.statValue);
     stats.appendChild(rankBlock);
     card.appendChild(stats);
 
@@ -119,9 +190,17 @@ export class FinishOverlay {
     card.appendChild(el('p', 'overlay-hint', 'Enter replays · Esc returns to the menu'));
   }
 
-  show(seconds: number): void {
-    this.timeLabel.textContent = formatTime(seconds);
-    this.rankLabel.textContent = seconds <= 25 ? 'PLATINUM' : seconds <= 45 ? 'GOLD' : 'CANDY';
+  show(result: LevelResult): void {
+    const copy = endCopy(result);
+    this.sticker.textContent = copy.sticker;
+    this.sticker.className = `sticker sticker--${copy.tone}`;
+    this.title.textContent = copy.title;
+    this.roundLabel.textContent = result.roundTitle ?? '';
+    this.copy.textContent = copy.copy;
+    this.statLabel.textContent = copy.statLabel;
+    this.statValue.textContent = copy.stat;
+    this.timeLabel.textContent = formatTime(result.time);
+    this.replayButton.textContent = result.kind === 'eliminated' ? 'RESTART ROUND' : 'RUN IT AGAIN';
     this.element.hidden = false;
     this.replayButton.focus({ preventScroll: true });
   }
