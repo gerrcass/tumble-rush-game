@@ -76,6 +76,8 @@ Results ─ Play Again / Main Menu
 - The human always starts in the show. Bots fill the lobby.
 - If the human is eliminated, the round resolves in **spectate** mode. A "Skip to results" action appears after 3 seconds.
 - If a round ends with fewer qualifiers than expected (mass elimination), all remaining beans advance. If zero remain, the last eliminated beans advance by elimination order. The show always continues.
+- On a Course timeout only finishers advance: seven finishers means seven entrants in the next Round, and a living 0% runner never takes a qualifier slot. If nobody finished, the last eliminated beans advance by elimination order.
+- If a survival Round starts with no more beans than qualifier slots, it plays a short 4 s grace and then advances with a **NOT ENOUGH SURVIVORS** stamp instead of resolving on the first step.
 - Practice uses Round 1 only, with respawns at the last checkpoint, no bots collision damage? (Bots still present, but no elimination; timer off.)
 - Daily Show uses `YYYY-MM-DD` as the seed and shows the seed in the intro/results.
 

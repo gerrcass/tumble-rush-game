@@ -88,6 +88,8 @@ export interface MatchHud {
   progressLabel: string;
   spectating: boolean;
   spectateName: string;
+  /** Seconds since the human was eliminated; the skip action unlocks at 3. */
+  spectateSeconds: number;
   playerStatus: 'RACING' | 'QUALIFIED' | 'ELIMINATED' | 'WAITING';
   seedLabel: string;
 }
@@ -96,6 +98,8 @@ const INTRO_SECONDS = 2.1;
 const COUNTDOWN_SECONDS = 3.15;
 const RESULTS_SECONDS = 5;
 const SPECTATE_SWITCH_SECONDS = 1.5;
+/** Let a tiny Hexapop field play briefly before skipping it. */
+const HEXAPOP_GRACE = 4;
 
 /**
  * Show Director: owns Rounds, qualification, advancement, spectating and the
@@ -125,6 +129,8 @@ export class Match {
   private winnerId: string | null = null;
   private sugarRushStamp = false;
   private spectateTimer = 0;
+  private spectateElapsed = 0;
+  private underfilledStamp = false;
   private totalTime = 0;
   private countdownStep = -1;
 
@@ -297,7 +303,7 @@ export class Match {
         this.sugarRushStamp = true;
         this.callbacks.onStamp({ text: 'SUGAR RUSH!', tone: 'bad' });
       }
-      if (this.roundTime >= this.definition.timeLimit) this.resolveRound();
+      if (this.roundTime >= this.definition.timeLimit) this.resolveRound(true);
       return;
     }
     if (this.phase === 'results') {
@@ -397,6 +403,7 @@ export class Match {
       this.spectateTimer = 0;
       this.callbacks.onSpectate(leader);
     } else if (this.spectating) {
+      this.spectateElapsed += 1 / 60;
       this.spectateTimer += 1 / 60;
       if (this.spectateTimer >= SPECTATE_SWITCH_SECONDS) {
         this.spectateTimer = 0;
@@ -424,7 +431,25 @@ export class Match {
       const alive = this.entrants.filter(
         (contestant) => !contestant.body.eliminated && contestant.eliminatedAt === null,
       );
-      if (alive.length <= definition.qualifiers) this.resolveRound();
+      // A small field must not resolve on the first physics step just because
+      // it starts at or below the qualifier count. Play a short grace, then
+      // either settle after a real elimination or advance the underfilled
+      // field with a readable stamp. A two-bean Round still shows its tiles.
+      const underfilled = this.entrants.length <= definition.qualifiers;
+      if (underfilled && !this.underfilledStamp && this.roundTime >= HEXAPOP_GRACE) {
+        this.underfilledStamp = true;
+        this.callbacks.onStamp({ text: 'NOT ENOUGH SURVIVORS', tone: 'normal' });
+      }
+      const hasElimination = this.entrants.some(
+        (contestant) => contestant.body.eliminated || contestant.status === 'eliminated',
+      );
+      if (
+        this.roundTime >= HEXAPOP_GRACE &&
+        (hasElimination || underfilled) &&
+        alive.length <= definition.qualifiers
+      ) {
+        this.resolveRound();
+      }
     }
   }
 
@@ -473,6 +498,7 @@ export class Match {
       progressLabel,
       spectating,
       spectateName: this.spectating?.name ?? '',
+      spectateSeconds: this.spectateElapsed,
       playerStatus,
       seedLabel: this.seedLabel,
     };
@@ -515,6 +541,8 @@ export class Match {
     this.roundTime = 0;
     this.winnerId = null;
     this.spectateTimer = 0;
+    this.spectateElapsed = 0;
+    this.underfilledStamp = false;
     if (this.countdownStep !== 0) {
       this.countdownStep = 0;
       this.callbacks.onCountdown?.(0);
@@ -527,6 +555,8 @@ export class Match {
     this.entrants = field ? [...field] : this.pickField(definition.starters);
     this.entrants.sort((a, b) => Number(b.isPlayer) - Number(a.isPlayer) || a.id - b.id);
     this.finishers.clear();
+    this.spectateElapsed = 0;
+    this.underfilledStamp = false;
     for (const contestant of this.contestants) {
       if (!this.entrants.includes(contestant)) {
         contestant.status = 'waiting';
@@ -550,7 +580,7 @@ export class Match {
     return [player, ...others.slice(0, Math.max(0, starters - 1))];
   }
 
-  private resolveRound(): void {
+  private resolveRound(timedOut = false): void {
     if (this.phase !== 'playing') return;
     const definition = this.definition;
     const performances = this.entrants.map((contestant) => ({
@@ -565,7 +595,7 @@ export class Match {
       height: contestant.body.position.y,
       distanceToCrown: contestant.distanceToCrown,
     }));
-    const placements = resolveRound(definition, performances);
+    const placements = resolveRound(definition, performances, { timedOut });
     // Crown Climb always has exactly one winner, even on a timeout or a total
     // wipe. The Arena Director lifts the highest finalist into the win row so
     // the ceremony can never name somebody the results still call eliminated.
@@ -594,6 +624,7 @@ export class Match {
     this.phase = 'results';
     this.resultsTimer = RESULTS_SECONDS;
     this.spectating = null;
+    this.spectateElapsed = 0;
     this.callbacks.onSpectate(null);
     this.callbacks.onPhase(this.phase);
   }
@@ -662,6 +693,7 @@ export class Match {
     const leader = this.currentLeader();
     this.spectating = leader;
     this.spectateTimer = 0;
+    this.spectateElapsed = 0;
     this.callbacks.onSpectate(leader);
   }
 

@@ -1,140 +1,187 @@
 import { describe, expect, it } from 'vitest';
-import { Vector3 } from 'three';
+import { Scene } from 'three';
 import { createLevel } from '../game/levels/factory';
 import { FIXED_STEP, PhysicsWorld } from '../game/physics/PhysicsWorld';
 import { BeanBody } from '../game/physics/BeanBody';
-import { BeanController } from '../game/player/BeanController';
-import { createBotBrain, type BotBrain } from '../game/bots/BotBrain';
-import { createBotProfiles, type Contestant } from '../game/match/Contestant';
+import { createBotBrain } from '../game/bots/BotBrain';
+import {
+  Contestant,
+  createBotProfiles,
+  playerLook,
+} from '../game/match/Contestant';
 import { Match } from '../game/match/Match';
 import type { Level } from '../game/levels/Level';
-import type { BeanLook } from '../game/cosmetics';
+import type { ControllerFrame } from '../game/player/BeanController';
+import { startPositionsFor } from '../game/levels/startPositions';
 
-interface Bot {
-  contestant: Contestant;
-  body: BeanBody;
-  controller: BeanController;
-  brain: BotBrain;
-  finishTime: number | null;
+const IDLE_FRAME: ControllerFrame = {
+  moveX: 0,
+  moveZ: 0,
+  cameraYaw: 0,
+  jumpPressed: false,
+  jumpHeld: false,
+  divePressed: false,
+  grabPressed: false,
+  grabHeld: false,
+  emotePressed: false,
+};
+
+interface ShowField {
+  world: PhysicsWorld;
+  contestants: Contestant[];
+  player: Contestant;
 }
 
-function fakeContestant(id: number, body: BeanBody, look: BeanLook): Contestant {
-  const contestant = {
-    id,
-    name: id === 0 ? 'YOU' : `Bot ${id}`,
-    look,
-    isPlayer: id === 0,
-    body,
-    bean: {
-      setVisible: () => undefined,
-      setCelebrating: () => undefined,
-    },
-    controller: {},
-    brain: null,
-    status: 'racing',
-    placement: null,
-    finishTime: null,
-    eliminatedAt: null,
-    progress: 0,
-    height: 0,
-    distanceToCrown: 0,
-    lane: id % 3,
-    skill: 0.7,
-    reaction: 0.2,
-    aggression: 0.3,
-    mistakeChance: 0.05,
-    targetLabel: '',
-    updateProgress: (value: number) => {
-      contestant.progress = value;
-    },
-    applyDifficulty: () => undefined,
-    hide: () => undefined,
-  };
-  return contestant as unknown as Contestant;
-}
-
-/** Run the authored Course with 15 bots and a stationary human, no input. */
-function runNoInputRace(seed: number): {
-  finishers: number;
-  eighthFinish: number;
-  deaths: number;
-} {
-  const level = createLevel('course', seed);
+/** Real Contestants (body, controller, presentation) sharing one physics world. */
+function buildShowField(seed: number): ShowField {
   const world = new PhysicsWorld();
-  world.killY = level.killY;
-  for (const collider of level.colliders) world.addCollider(collider);
-
+  const scene = new Scene();
   const profiles = createBotProfiles(seed);
-  const playerBody = new BeanBody({ position: level.startPosition.clone().setZ(17.8) });
-  world.addBody(playerBody);
-  const bots: Bot[] = [];
-  for (let i = 0; i < 15; i += 1) {
-    const body = new BeanBody();
-    const row = Math.floor(i / 5);
-    const col = i % 5;
-    body.reset((col - 2) * 1.65, 0.04, 15.65 - row * 1.65);
-    world.addBody(body);
-    const contestant = fakeContestant(i + 1, body, profiles[i]!.look);
-    contestant.skill = profiles[i]!.baseSkill;
-    contestant.reaction = profiles[i]!.baseReaction;
-    contestant.aggression = profiles[i]!.baseAggression;
-    contestant.mistakeChance = profiles[i]!.baseMistakeChance;
-    bots.push({
-      contestant,
-      body,
-      controller: new BeanController(body, world),
-      brain: createBotBrain('course', contestant, seed)!,
-      finishTime: null,
-    });
-  }
+  const player = new Contestant({
+    id: 0,
+    name: 'YOU',
+    look: playerLook(),
+    isPlayer: true,
+    world,
+    scene,
+    outline: false,
+    phase: 0,
+  });
+  const bots = profiles.map(
+    (profile, index) =>
+      new Contestant({
+        id: index + 1,
+        name: profile.name,
+        look: profile.look,
+        isPlayer: false,
+        world,
+        scene,
+        outline: false,
+        phase: (index + 1) % 3,
+        skill: profile.baseSkill,
+        reaction: profile.baseReaction,
+        aggression: profile.baseAggression,
+        mistakeChance: profile.baseMistakeChance,
+      }),
+  );
+  return { world, contestants: [player, ...bots], player };
+}
 
+/**
+ * Walk the exact Game step order (level.step → brains/controllers → world.step
+ * → Match.afterPhysics) with the production spawn placement. This is a Match,
+ * not a hand-built race: every entrant is in every brain's context.
+ */
+function runShow(
+  seed: number,
+  mode: 'course' | 'hexapop',
+  seconds: number,
+): {
+  match: Match;
+  level: Level;
+  field: ShowField;
+  elapsed: number;
+} {
+  const field = buildShowField(seed);
+  const { world, contestants, player } = field;
+  let level: Level = createLevel(mode, seed);
+  const match = new Match({
+    seed,
+    seedLabel: '#test',
+    difficulty: 'show',
+    contestants,
+    player,
+    callbacks: {
+      prepareRound: (index, entrants) => {
+        const roundMode = index === 0 ? 'course' : index === 1 ? 'hexapop' : 'crown-climb';
+        level = createLevel(roundMode, seed);
+        world.clearColliders();
+        for (const collider of level.colliders) world.addCollider(collider);
+        world.bodies.length = 0;
+        const ordered = [...entrants].sort((a, b) => Number(b.isPlayer) - Number(a.isPlayer));
+        for (const contestant of ordered) {
+          contestant.body.eliminated = false;
+          world.addBody(contestant.body);
+        }
+        const positions = startPositionsFor(level, roundMode, entrants, seed);
+        for (let i = 0; i < entrants.length; i += 1) {
+          const contestant = entrants[i]!;
+          contestant.resetForRound(positions[i]!, i % 3, 'racing');
+          if (!contestant.isPlayer) {
+            contestant.brain = createBotBrain(roundMode, contestant, seed);
+          }
+        }
+      },
+      onStamp: () => undefined,
+      onPhase: () => undefined,
+      onSpectate: () => undefined,
+      onShowEnd: () => undefined,
+    },
+  });
+
+  match.startShow();
+  if (mode === 'hexapop') match.jumpToRound(1);
+  match.beginRound();
   let elapsed = 0;
-  while (elapsed < 120) {
+  while (match.phase === 'playing' && elapsed < seconds) {
+    match.tick(FIXED_STEP);
+    if (match.phase !== 'playing') break;
     level.step(FIXED_STEP, world.bodies);
-    const leaderProgress = Math.max(
-      ...bots.filter((bot) => !bot.body.eliminated).map((bot) => level.progress(bot.body.position)),
+    const active = match.entrantsList;
+    const leaderProgress = active.reduce(
+      (max, contestant) => (contestant.body.eliminated ? max : Math.max(max, contestant.progress)),
+      0,
     );
-    for (const bot of bots) {
-      if (bot.body.eliminated) continue;
-      bot.contestant.progress = level.progress(bot.body.position);
-      const frame = bot.brain.think({
-        level,
-        body: bot.body,
-        contestants: [bot.contestant],
-        leaderProgress,
-        dt: FIXED_STEP,
-      });
-      bot.controller.update(FIXED_STEP, frame);
-    }
-    world.step(FIXED_STEP);
-    elapsed += FIXED_STEP;
-    for (const bot of bots) {
-      if (!bot.body.eliminated && bot.finishTime === null && level.isAtFinish(bot.body.position)) {
-        bot.finishTime = elapsed;
+    for (const contestant of active) {
+      if (contestant.body.eliminated || contestant.finishTime !== null) continue;
+      if (contestant.isPlayer) {
+        contestant.controller.update(FIXED_STEP, IDLE_FRAME);
+      } else {
+        const brain =
+          contestant.brain ?? createBotBrain(level.mode, contestant, seed);
+        if (!brain) continue;
+        contestant.brain = brain;
+        const frame = brain.think({
+          level,
+          body: contestant.body,
+          contestants: active,
+          leaderProgress,
+          dt: FIXED_STEP,
+        });
+        contestant.controller.update(FIXED_STEP, frame);
       }
     }
+    world.step(FIXED_STEP);
+    match.afterPhysics(level);
+    elapsed += FIXED_STEP;
   }
-
-  const times = bots
-    .map((bot) => bot.finishTime)
-    .filter((time): time is number => time !== null)
-    .sort((a, b) => a - b);
-  level.dispose();
-  return {
-    finishers: times.length,
-    eighthFinish: times[7] ?? Infinity,
-    deaths: bots.filter((bot) => bot.body.eliminated).length,
-  };
+  return { match, level, field, elapsed };
 }
 
-describe('Sunrise Scramble no-input race', () => {
-  it('gets at least eight bots through the gate before the timer', () => {
-    const result = runNoInputRace(20260418);
-    expect(result.finishers).toBeGreaterThanOrEqual(8);
-    expect(result.eighthFinish).toBeLessThan(120);
-    // The stationary human never advances on the bots' finish times.
-    expect(result.deaths + result.finishers).toBeLessThanOrEqual(15);
-  }, 60_000);
+describe('Sunrise Scramble real-pack no-input race', () => {
+  it.each([20260418, 7, 123456, 3])(
+    'seed %i gets at least eight real finishers and never qualifies the idle human',
+    (seed) => {
+      const { match, level, field, elapsed } = runShow(seed, 'course', 125);
+      const finishers = field.contestants.filter(
+        (contestant) => contestant.finishTime !== null,
+      );
+      const placements = match.finalPlacements;
+      const playerEntry = placements.find((entry) => entry.isPlayer);
+      console.log(
+        `REAL_PACK seed=${seed} finishers=${finishers.length} qualifiers=${placements.filter((entry) => entry.qualified).length} elapsed=${elapsed.toFixed(1)}`,
+      );
+      expect(finishers.length).toBeGreaterThanOrEqual(8);
+      expect(finishers[7]?.finishTime ?? Infinity).toBeLessThan(120);
+      expect(match.phase).toBe('results');
+      expect(placements.filter((entry) => entry.qualified)).toHaveLength(8);
+      // The human did not move: a timeout must not hand them a qualifier slot.
+      expect(playerEntry?.qualified).toBe(false);
+      expect(playerEntry?.status).toBe('ELIMINATED');
+      level.dispose();
+    },
+    30_000,
+  );
 });
 
 describe('Course finish gate authority', () => {
@@ -156,7 +203,37 @@ describe('Course finish gate authority', () => {
     const course = createLevel('course', 11);
     const contestants = Array.from({ length: 16 }, (_, index) => {
       const body = new BeanBody({ position: course.startPosition.clone() });
-      return fakeContestant(index, body, { colorId: 'coral', patternId: 'stripes', hatId: 'none', emoteId: 'wave' });
+      const contestant = {
+        id: index,
+        name: index === 0 ? 'YOU' : `Bot ${index}`,
+        isPlayer: index === 0,
+        body,
+        bean: {
+          setVisible: () => undefined,
+          setCelebrating: () => undefined,
+        },
+        controller: {},
+        brain: null,
+        status: 'racing',
+        placement: null,
+        finishTime: null,
+        eliminatedAt: null,
+        progress: 0,
+        height: 0,
+        distanceToCrown: 0,
+        lane: index % 3,
+        skill: 0.7,
+        reaction: 0.2,
+        aggression: 0.3,
+        mistakeChance: 0.05,
+        targetLabel: '',
+        updateProgress: (value: number) => {
+          contestant.progress = value;
+        },
+        applyDifficulty: () => undefined,
+        hide: () => undefined,
+      };
+      return contestant as unknown as Contestant;
     });
     const match = new Match({
       seed: 11,
@@ -188,28 +265,54 @@ describe('Course finish gate authority', () => {
   });
 });
 
-describe('Hexapop start perch', () => {
-  it('drops a stationary centre player before the timer', () => {
-    const level = createLevel('hexapop', 20260418);
-    const world = new PhysicsWorld();
-    world.killY = level.killY;
-    for (const collider of level.colliders) world.addCollider(collider);
-    const body = new BeanBody({ position: new Vector3(0, 0.43, 0) });
-    world.addBody(body);
+describe('Hexapop real spawn', () => {
+  it('gives the human the centre perch and only drops them after the grace', () => {
+    const { match, level, field } = runShow(20260418, 'hexapop', 2.6);
+    const player = field.player;
+    expect(player.body.position.x).toBeCloseTo(0, 2);
+    expect(player.body.position.z).toBeCloseTo(0, 2);
+    expect(player.body.position.y).toBeGreaterThan(0.3);
+    expect(player.body.eliminated).toBe(false);
+    expect(player.status).toBe('racing');
+    expect(match.phase).toBe('playing');
 
-    let elapsed = 0;
-    while (elapsed < 20 && !body.eliminated) {
+    let elapsed = 2.6;
+    const world = field.world;
+    while (match.phase === 'playing' && elapsed < 8 && !player.body.eliminated) {
+      match.tick(FIXED_STEP);
+      if (match.phase !== 'playing') break;
       level.step(FIXED_STEP, world.bodies);
+      const active = match.entrantsList;
+      const leaderProgress = active.reduce(
+        (max, contestant) => (contestant.body.eliminated ? max : Math.max(max, contestant.progress)),
+        0,
+      );
+      for (const contestant of active) {
+        if (contestant.body.eliminated || contestant.finishTime !== null) continue;
+        if (contestant.isPlayer) {
+          contestant.controller.update(FIXED_STEP, IDLE_FRAME);
+        } else {
+          const brain = contestant.brain ?? createBotBrain('hexapop', contestant, 20260418);
+          if (!brain) continue;
+          contestant.brain = brain;
+          contestant.controller.update(
+            FIXED_STEP,
+            brain.think({
+              level,
+              body: contestant.body,
+              contestants: active,
+              leaderProgress,
+              dt: FIXED_STEP,
+            }),
+          );
+        }
+      }
       world.step(FIXED_STEP);
+      match.afterPhysics(level);
       elapsed += FIXED_STEP;
     }
-    expect(body.eliminated).toBe(true);
-    expect(elapsed).toBeLessThan(20);
-    // The centre hex is no longer permanently safe.
-    const centre = level
-      .queryTiles?.()
-      .find((tile) => Math.abs(tile.x) < 0.01 && Math.abs(tile.z) < 0.01 && tile.tier === 0);
-    expect(centre?.safe).toBe(false);
+    expect(elapsed).toBeGreaterThan(4);
+    expect(player.body.eliminated).toBe(true);
     level.dispose();
-  });
+  }, 30_000);
 });

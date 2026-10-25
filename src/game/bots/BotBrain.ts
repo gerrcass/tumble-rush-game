@@ -105,15 +105,32 @@ export abstract class BotBrain {
   protected maybeShoveNeighbour(context: BotContext): boolean {
     if (this.shoveCooldown > 0) return false;
     if (this.owner.aggression < 0.35) return false;
+    // A dive is a committed 8 u/s lunge. On a narrow Course a shove at the lip
+    // of a gap is not a comedy beat, it is a double elimination: the shover
+    // follows the target into the canyon. A dive travels ~3.6 u, so only pick
+    // a fight when both beans have solid ground under and that far ahead.
+    if (!context.body.grounded) return false;
+    const body = context.body;
+    const speed = Math.hypot(body.velocity.x, body.velocity.z);
+    const dirX = speed > 0.8 ? body.velocity.x / speed : 0;
+    const dirZ = speed > 0.8 ? body.velocity.z / speed : -1;
+    if (!hasGroundAt(context.level, body.position.x + dirX * 1.35, body.position.y - 0.08, body.position.z + dirZ * 1.35) ||
+        !hasGroundAt(context.level, body.position.x + dirX * 4.5, body.position.y - 0.08, body.position.z + dirZ * 4.5)) {
+      return false;
+    }
     for (const other of context.contestants) {
       if (other === this.owner || other.body.eliminated || other.status === 'eliminated') continue;
-      const dx = other.body.position.x - context.body.position.x;
-      const dz = other.body.position.z - context.body.position.z;
-      const dy = other.body.position.y - context.body.position.y;
+      const dx = other.body.position.x - body.position.x;
+      const dz = other.body.position.z - body.position.z;
+      const dy = other.body.position.y - body.position.y;
       if (Math.abs(dy) > 1.4) continue;
       if (dx * dx + dz * dz > 1.9 * 1.9) continue;
-      if (!this.rng.chance(this.owner.aggression * 0.012)) continue;
-      this.shoveCooldown = this.rng.float(1.6, 3.4);
+      if (!hasGroundAt(context.level, other.body.position.x, other.body.position.y - 0.08, other.body.position.z) ||
+          !hasGroundAt(context.level, other.body.position.x + dirX * 4.5, other.body.position.y - 0.08, other.body.position.z + dirZ * 4.5)) {
+        continue;
+      }
+      if (!this.rng.chance(this.owner.aggression * 0.008)) continue;
+      this.shoveCooldown = this.rng.float(2.2, 4.2);
       this.frame.divePressed = true;
       return true;
     }
@@ -251,12 +268,19 @@ export function hazardWithin(
   radius: number,
   forward?: { x: number; z: number },
 ): boolean {
+  const headY = body.position.y + body.height;
   for (const collider of level.colliders) {
     if (!collider.enabled || collider.kind !== 'hazard') continue;
     const dx = collider.position.x - body.position.x;
     const dz = collider.position.z - body.position.z;
     const dy = collider.position.y - body.position.y;
     if (Math.abs(dy) > 2.6) continue;
+    // Only a hazard the bean can actually hurdle belongs in the jump decision.
+    // The Whirlybird pendulums hang at head height on purpose: jumping into a
+    // bob is worse than running under it, so an overhead hazard is ignored.
+    const halfHeight =
+      collider.shape === 'box' ? collider.halfExtents.y : collider.height / 2;
+    if (collider.position.y - halfHeight > headY - 0.12) continue;
     if (forward && dx * forward.x + dz * forward.z <= 0) continue;
     if (dx * dx + dz * dz < radius * radius) return true;
   }

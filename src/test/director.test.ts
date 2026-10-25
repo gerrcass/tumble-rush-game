@@ -154,6 +154,50 @@ describe('Show Director', () => {
     expect(placements.filter((entry) => entry.qualified)).toHaveLength(8);
   });
 
+  it('on a Course timeout advances only finishers and eliminates the idle human', () => {
+    // Seven bots finished; the human is still standing at 0% when the clock
+    // expires. The living-fill branch must not hand the human a slot (or the
+    // +25/+75 kudos that qualification awards).
+    const field = Array.from({ length: 16 }, (_, index) =>
+      performance(index, {
+        finishTime: index >= 1 && index <= 7 ? 30 + index : null,
+        progress: index >= 1 && index <= 7 ? 1 : index >= 8 ? 0.4 : 0,
+        eliminated: index >= 8,
+        eliminatedAt: index >= 8 ? index : null,
+      }),
+    );
+    const placements = resolveRound(SHOW_ROUNDS[0]!, field, { timedOut: true });
+    const player = placements.find((entry) => entry.isPlayer);
+    expect(placements.filter((entry) => entry.qualified)).toHaveLength(7);
+    expect(player?.qualified).toBe(false);
+    expect(player?.status).toBe('ELIMINATED');
+    expect(
+      placements
+        .filter((entry) => entry.qualified)
+        .every((entry) => entry.finishTime !== null),
+    ).toBe(true);
+  });
+
+  it('on a zero-finisher Course timeout advances the last eliminated, never a living runner', () => {
+    const field = Array.from({ length: 16 }, (_, index) =>
+      performance(index, {
+        finishTime: null,
+        // Eight runners are still standing; eight fell in order.
+        progress: index < 8 ? 0.6 - index * 0.02 : 0.2,
+        eliminated: index >= 8,
+        eliminatedAt: index >= 8 ? index : null,
+      }),
+    );
+    const placements = resolveRound(SHOW_ROUNDS[0]!, field, { timedOut: true });
+    expect(placements.filter((entry) => entry.qualified)).toHaveLength(8);
+    expect(
+      placements
+        .filter((entry) => entry.qualified)
+        .every((entry) => entry.eliminated),
+    ).toBe(true);
+    expect(placements.find((entry) => entry.isPlayer)?.qualified).toBe(false);
+  });
+
   it('keeps a fallen human out of the fallback qualifier slots', () => {
     const field = Array.from({ length: 16 }, (_, index) =>
       performance(index, {

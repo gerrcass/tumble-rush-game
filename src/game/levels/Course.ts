@@ -215,8 +215,8 @@ export class Course implements Level {
     this.addBox(0, -0.5, 16, width / 2, 0.5, 4.5, 'solid');
     this.addStartLine(16, width);
 
-    this.addPlatform(0, 4, 9.5 * scale, 13, CREAM, 0x57c7ff, 0xffc145);
-    this.addBox(0, -0.5, 4, 4.75 * scale, 0.5, 6.5, 'solid');
+    this.addPlatform(0, 4, 9.5 * scale, 14, CREAM, 0x57c7ff, 0xffc145);
+    this.addBox(0, -0.5, 4, 4.75 * scale, 0.5, 7, 'solid');
 
     // Low hurdles: readable over-or-around choices, never traps.
     for (const [index, z] of [8.2].entries()) {
@@ -225,8 +225,8 @@ export class Course implements Level {
       this.addHurdle(plan.platformOffset * 0.4, z, hurdleWidth, height);
     }
 
-    this.addPlatform(0, -10, 8.6 * scale, 10, CREAM, 0xffc145, 0xff6b6b);
-    this.addBox(0, -0.5, -10, 4.3 * scale, 0.5, 5, 'solid');
+    this.addPlatform(0, -10, 8.6 * scale, 11, CREAM, 0xffc145, 0xff6b6b);
+    this.addBox(0, -0.5, -10, 4.3 * scale, 0.5, 5.5, 'solid');
     this.addSweeper(
       plan.platformOffset * 0.8,
       0.06,
@@ -247,8 +247,8 @@ export class Course implements Level {
     // The A -> B gap is the signature leap. Keep it a real jump, but leave
     // enough landing lip that a full-speed take-off clears it (tuned against
     // the headless no-input race in courseRun.test.ts).
-    this.addPlatform(0, -21, 8.4 * scale, 7, CREAM, 0x59d9b0, 0x57c7ff);
-    this.addBox(0, -0.5, -21, 4.2 * scale, 0.5, 3.5, 'solid');
+    this.addPlatform(0, -21, 8.4 * scale, 8, CREAM, 0x59d9b0, 0x57c7ff);
+    this.addBox(0, -0.5, -21, 4.2 * scale, 0.5, 4, 'solid');
 
     this.addPlatform(0, -30.5, 10.2 * scale, 13, 0xfff0d2, 0x57c7ff, 0xffc145);
     this.addBox(0, -0.5, -30.5, 5.1 * scale, 0.5, 6.5, 'solid');
@@ -298,38 +298,38 @@ export class Course implements Level {
 
     // The Jelly Jumps gaps are tuned generously: a full-speed jump at 8 u/s
     // must clear them even for a bot with a slower takeoff.
-    this.addPlatform(0, -58, 7.4 * scale, 5, CREAM, 0x59d9b0, 0xff6b6b);
-    this.addBox(0, -0.5, -58, 3.7 * scale, 0.5, 2.5, 'solid');
+    this.addPlatform(0, -58, 7.4 * scale, 5.6, CREAM, 0x59d9b0, 0xff6b6b);
+    this.addBox(0, -0.5, -58, 3.7 * scale, 0.5, 2.8, 'solid');
 
     this.addMotion(
       0,
       -65,
-      4.4,
-      5,
+      5.2,
+      6,
       'x',
-      2.5,
+      2.2,
       0.72,
       phase,
     );
-    this.addPlatform(0, -72, 6.2 * scale, 5, CREAM, 0xffc145, 0x57c7ff);
-    this.addBox(0, -0.5, -72, 3.1 * scale, 0.5, 2.5, 'solid');
+    this.addPlatform(0, -72, 6.2 * scale, 5.6, CREAM, 0xffc145, 0x57c7ff);
+    this.addBox(0, -0.5, -72, 3.1 * scale, 0.5, 2.8, 'solid');
     this.addBouncePad(0, -72);
 
-    this.addPlatform(0, -80.5, 6 * scale, 5.2, CREAM, 0x57c7ff, 0x59d9b0);
-    this.addBox(0, -0.5, -80.5, 3 * scale, 0.5, 2.6, 'solid');
+    this.addPlatform(0, -80.5, 6 * scale, 6.4, CREAM, 0x57c7ff, 0x59d9b0);
+    this.addBox(0, -0.5, -80.5, 3 * scale, 0.5, 3.2, 'solid');
 
     this.addMotion(
       0,
       -88,
-      4.4,
-      5,
+      5.2,
+      6,
       'x',
-      2.9,
+      2.4,
       0.92,
       phase + 2.4,
     );
-    this.addPlatform(0, -94.5, 7.2 * scale, 5.6, CREAM, 0x59d9b0, 0xffc145);
-    this.addBox(0, -0.5, -94.5, 3.6 * scale, 0.5, 2.8, 'solid');
+    this.addPlatform(0, -94.5, 7.2 * scale, 6.4, CREAM, 0x59d9b0, 0xffc145);
+    this.addBox(0, -0.5, -94.5, 3.6 * scale, 0.5, 3.2, 'solid');
 
     this.addSign('JELLY JUMPS', 'commit to the gap · use the pad', 0, 2.6, -72, 3.1, 1.1);
   }
@@ -368,13 +368,13 @@ export class Course implements Level {
 
     // Narrow-ish bridge at the bottom of the slide. It has to leave a bean a
     // lane to recover after a pusher, especially for the AI pack.
-    this.addPlatform(0, -118.5, 6.2 * scale, 12, CREAM, 0xa78bfa, 0xffc145, null, -1.6);
-    this.addBox(0, -2.1, -118.5, 3.1 * scale, 0.5, 6, 'solid');
+    this.addPlatform(0, -118.5, 6.8 * scale, 13, CREAM, 0xa78bfa, 0xffc145, null, -1.6);
+    this.addBox(0, -2.1, -118.5, 3.4 * scale, 0.5, 6.5, 'solid');
 
     // Moving pusher walls: solid, with surface velocity, so they can sweep.
-    this.addPusher(0, -112.8, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.7, phase, 1.2);
-    this.addPusher(0, -117.6, -0.9, 1.4, 2.3, plan.pusherSpeed, phase + 1.6, 1.4);
-    this.addPusher(0, -122.4, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.85, phase + 3.1, 1.1);
+    this.addPusher(0, -112.8, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.6, phase, 1.2);
+    this.addPusher(0, -117.6, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.85, phase + 1.6, 1.4);
+    this.addPusher(0, -122.4, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.7, phase + 3.1, 1.1);
 
     if (plan.shortcut.enabled) {
       const x = plan.shortcut.side * (4.6 * scale);

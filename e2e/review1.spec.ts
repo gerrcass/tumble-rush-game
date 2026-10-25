@@ -194,6 +194,7 @@ test.describe('Review 1 — copy, seeds, focus and leaks', () => {
     await expect(page.locator('#play-show')).toBeVisible();
 
     const counts: number[] = [];
+    const textures: number[] = [];
     for (let show = 0; show < 3; show += 1) {
       await page.getByRole('button', { name: 'PLAY SHOW' }).click();
       await expect(page.locator('.round-intro')).toBeVisible();
@@ -201,14 +202,22 @@ test.describe('Review 1 — copy, seeds, focus and leaks', () => {
       await expect(page.locator('#hud')).toBeVisible();
       await page.waitForTimeout(500);
       counts.push((await page.evaluate(() => window.__tumble?.renderInfo.geometries)) ?? 0);
+      textures.push((await page.evaluate(() => window.__tumble?.renderInfo.textures)) ?? 0);
       await page.keyboard.press('Escape');
       await page.getByRole('button', { name: 'QUIT TO MENU' }).click();
       await expect(page.locator('#play-show')).toBeVisible();
     }
     expect(counts[1]).toBeLessThanOrEqual(counts[0]! + 2);
     expect(counts[2]).toBeLessThanOrEqual(counts[1]! + 2);
+    // Name-tag/pattern textures are cached by cosmetic identity; a Show must not
+    // leave another copy of the roster behind.
+    expect(textures[2]).toBeLessThanOrEqual(textures[0]! + 4);
 
+    // Let the rebuilt menu cast render at least one frame before measuring the
+    // Customize baseline. Immediate reads raced the first texture upload.
+    await page.waitForTimeout(300);
     const before = (await page.evaluate(() => window.__tumble?.renderInfo.geometries)) ?? 0;
+    const texturesBefore = (await page.evaluate(() => window.__tumble?.renderInfo.textures)) ?? 0;
     await page.getByRole('button', { name: 'CUSTOMIZE' }).click();
     await page.getByRole('tab', { name: 'HAT' }).click();
     for (const hat of ['crown', 'ducky', 'halo', 'flower', 'propeller', 'cone', 'antenna', 'none']) {
@@ -218,7 +227,9 @@ test.describe('Review 1 — copy, seeds, focus and leaks', () => {
     await page.getByRole('button', { name: '← BACK' }).click();
     await page.waitForTimeout(300);
     const after = (await page.evaluate(() => window.__tumble?.renderInfo.geometries)) ?? 0;
+    const texturesAfter = (await page.evaluate(() => window.__tumble?.renderInfo.textures)) ?? 0;
     expect(after).toBeLessThanOrEqual(before + 2);
+    expect(texturesAfter).toBeLessThanOrEqual(texturesBefore + 2);
   });
 
   test('Course start stays inside the draw-call and triangle budgets', async ({ page }) => {

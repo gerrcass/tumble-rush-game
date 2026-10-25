@@ -191,6 +191,74 @@ describe('Match show progression', () => {
     expect(match.phase).toBe('defeat');
   });
 
+  it('eliminates an idle human on a Course timeout with seven finishers', () => {
+    const contestants = Array.from({ length: 16 }, (_, index) => fakeContestant(index, index === 0));
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.beginRound();
+    for (const contestant of contestants) {
+      if (contestant.id >= 1 && contestant.id <= 7) {
+        contestant.finishTime = 30 + contestant.id;
+        contestant.status = 'qualified';
+        contestant.progress = 1;
+      } else if (contestant.id >= 8) {
+        contestant.body.eliminated = true;
+        contestant.status = 'eliminated';
+        contestant.eliminatedAt = 5 + contestant.id;
+        contestant.progress = 0.4;
+      }
+    }
+    // The clock, not the win condition, ends the Round.
+    match.tick(match.definition.timeLimit);
+    expect(match.phase).toBe('results');
+    const placements = match.finalPlacements;
+    const player = placements.find((entry) => entry.isPlayer);
+    expect(placements.filter((entry) => entry.qualified)).toHaveLength(7);
+    expect(placements.filter((entry) => entry.qualified).every((entry) => entry.finishTime !== null)).toBe(
+      true,
+    );
+    expect(player?.qualified).toBe(false);
+    expect(player?.status).toBe('ELIMINATED');
+    expect(match.player.status).toBe('eliminated');
+    expect(match.player.body.eliminated).toBe(true);
+  });
+
+  it('does not resolve a two-entrant Hexapop on the first step', () => {
+    const contestants = [fakeContestant(0, true), fakeContestant(1)];
+    const stamps: string[] = [];
+    const match = new Match({
+      seed: 11,
+      seedLabel: '#0000000B',
+      difficulty: 'show',
+      contestants,
+      player: contestants[0]!,
+      callbacks: {
+        prepareRound: () => undefined,
+        onStamp: (stamp) => stamps.push(stamp.text),
+        onPhase: () => undefined,
+        onSpectate: () => undefined,
+        onShowEnd: () => undefined,
+      },
+    });
+    match.startShow();
+    match.jumpToRound(1);
+    match.beginRound();
+    expect(match.entrantsList).toHaveLength(2);
+
+    match.afterPhysics(fakeLevel());
+    expect(match.phase).toBe('playing');
+    match.tick(3.9);
+    match.afterPhysics(fakeLevel());
+    expect(match.phase).toBe('playing');
+    expect(stamps).not.toContain('NOT ENOUGH SURVIVORS');
+
+    match.tick(0.2);
+    match.afterPhysics(fakeLevel());
+    expect(stamps).toContain('NOT ENOUGH SURVIVORS');
+    expect(match.phase).toBe('results');
+    expect(match.finalPlacements.filter((entry) => entry.qualified)).toHaveLength(2);
+  });
+
   it('marks a Crown Climb timeout winner as won, qualified and not eliminated', () => {
     const contestants = Array.from({ length: 4 }, (_, index) => fakeContestant(index, index === 0));
     const player = contestants[0]!;

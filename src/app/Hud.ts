@@ -45,6 +45,7 @@ export class Hud {
   private readonly live: HTMLElement;
 
   private readonly skipButton: HTMLButtonElement;
+  private skipVisible = false;
   private lastSecond = -1;
   private lastRound = '';
   private lastPhase = '';
@@ -151,6 +152,7 @@ export class Hud {
     this.spectateBar.appendChild(this.spectateName);
     this.skipButton = el('button', 'btn btn--tiny', 'SKIP TO RESULTS');
     this.skipButton.type = 'button';
+    this.skipButton.hidden = true;
     this.skipButton.addEventListener('click', () => options.onSkipSpectate());
     this.spectateBar.appendChild(this.skipButton);
     this.element.appendChild(this.spectateBar);
@@ -255,6 +257,13 @@ export class Hud {
       this.spectateBar.hidden = !hud.spectating;
     }
     if (hud.spectating) this.spectateName.textContent = hud.spectateName;
+    // SPEC §4: the banner is immediate, the action appears after 3 s so a
+    // spectating player sees who is left before skipping the Round.
+    const skipReady = hud.spectating && hud.spectateSeconds >= 3;
+    if (skipReady !== this.skipVisible) {
+      this.skipVisible = skipReady;
+      this.skipButton.hidden = !skipReady;
+    }
 
     // Cinematic last stretch: the finish sign and crown are dead centre in the
     // evidence framing. Collapse the round panel instead of covering them.
@@ -285,6 +294,7 @@ export class Hud {
       progressLabel: status.progressLabel,
       spectating: false,
       spectateName: '',
+      spectateSeconds: 0,
       playerStatus: 'RACING',
       seedLabel: '',
     });

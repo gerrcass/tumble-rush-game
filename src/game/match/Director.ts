@@ -119,6 +119,15 @@ export interface RoundPlacement extends RoundPerformance {
   status: 'QUALIFIED' | 'ELIMINATED';
 }
 
+export interface ResolveRoundOptions {
+  /**
+   * The Round clock expired rather than the win condition being met. On a
+   * Course timeout only finishers may advance; living runners still on the
+   * course are not qualifiers just because they did not fall.
+   */
+  timedOut?: boolean;
+}
+
 /**
  * Resolve one Round into a full placement table.
  *
@@ -128,6 +137,8 @@ export interface RoundPlacement extends RoundPerformance {
  *   Round's progress metric. A fallen Tumbler can no longer outrank a runner.
  * - If fewer living entrants remain than qualifier slots, all of them advance.
  *   The field gets smaller; the show continues with whoever is left.
+ * - On a Course timeout only finishers advance. A living non-finisher never
+ *   fills a slot, even at 0% with the clock at zero.
  * - Only when zero living entrants remain do the best eliminated rows fill the
  *   remaining slots (last out first). That is the mass-wipe fallback and is the
  *   only path that can label an eliminated performance QUALIFIED.
@@ -140,13 +151,29 @@ export interface RoundPlacement extends RoundPerformance {
 export function resolveRound(
   definition: RoundDefinition,
   performances: readonly RoundPerformance[],
+  options: ResolveRoundOptions = {},
 ): RoundPlacement[] {
   const ordered = [...performances].sort((a, b) => compareForRound(definition, a, b));
   const slots = Math.min(definition.qualifiers, ordered.length);
   const living = ordered.filter((entry) => !entry.eliminated || entry.finishTime !== null);
   const qualified = new Set<string>();
 
-  if (living.length >= slots) {
+  if (options.timedOut && definition.mode === 'course') {
+    // Course win condition is "top finishers", not "top survivors". A bean
+    // still jogging at 0% when the 120 s clock expires has not qualified.
+    const finishers = ordered.filter((entry) => entry.finishTime !== null);
+    if (finishers.length > 0) {
+      // Fewer than the authored slots is legal: the next Round starts with a
+      // smaller field. Never backfill with a living non-finisher.
+      for (const entry of finishers.slice(0, slots)) qualified.add(entry.id);
+    } else {
+      // Nobody finished. The only legal field is the last beans eliminated by
+      // elimination order (the mass-wipe fallback), never a living 0% bean.
+      for (const entry of ordered.filter((entry) => entry.eliminated).slice(0, slots)) {
+        qualified.add(entry.id);
+      }
+    }
+  } else if (living.length >= slots) {
     for (const entry of living.slice(0, slots)) qualified.add(entry.id);
   } else if (living.length > 0) {
     // Mass elimination: everyone still standing advances, even if that leaves
