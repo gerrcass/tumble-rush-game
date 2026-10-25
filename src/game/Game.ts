@@ -29,7 +29,7 @@ import {
   type StampTone,
 } from './match/Match';
 import { Contestant, createBotProfiles } from './match/Contestant';
-import { createBotBrain } from './bots/BotBrain';
+import { createBotBrain, createCasualPilot, type BotBrain } from './bots/BotBrain';
 import {
   MODE_CATALOGUE,
   type Level,
@@ -39,6 +39,7 @@ import {
   type Quality,
 } from './levels/Level';
 import { createLevel } from './levels/factory';
+import type { Course } from './levels/Course';
 import { startPositionsFor } from './levels/startPositions';
 import { Rng, formatSeed } from './Rng';
 import { AudioEngine, type SfxName } from './audio/AudioEngine';
@@ -84,6 +85,11 @@ export interface StartShowOptions {
   difficulty?: DifficultyId;
   practice?: boolean;
   practiceMode?: LevelMode;
+  /**
+   * Debug/QA only: keep measuring all three Rounds after the human is out.
+   * Normal shows still end on a missed qualification.
+   */
+  observe?: boolean;
 }
 
 const PRACTICE_BOTS = 3;
@@ -157,6 +163,8 @@ export class Game {
   private practice = false;
   private spectateBody: BeanBody | null = null;
   private menuMode = true;
+  private autopilotMode: 'off' | 'casual' = 'off';
+  private casualPilot: BotBrain | null = null;
 
   constructor(options: GameOptions) {
     this.mount = options.mount;
@@ -321,6 +329,7 @@ export class Game {
             roundIndex: 0,
             roundNumber: 1,
             roundTitle: MODE_CATALOGUE[game.mode].label,
+            roundMode: game.mode,
             time: game.elapsed,
             qualified: 0,
             qualifiers: 0,
@@ -338,6 +347,7 @@ export class Game {
           roundIndex: match.roundIndex,
           roundNumber: hud.roundNumber,
           roundTitle: hud.roundTitle,
+          roundMode: match.definition.mode,
           time: hud.time,
           qualified: hud.qualified,
           qualifiers: hud.qualifiers,
@@ -377,6 +387,27 @@ export class Game {
       get roundPlacements(): readonly RoundPlacement[] {
         return game.match?.finalPlacements ?? [];
       },
+      get autopilot() {
+        return game.autopilotMode;
+      },
+      get course() {
+        if (game.level.mode !== 'course') return null;
+        const level = game.level as Course;
+        return {
+          laps: level.plan.lapCount,
+          lapOffsetZ: level.plan.lapOffsetZ,
+          lapOffsetY: level.plan.lapOffsetY,
+          length: level.plan.courseLength,
+          finishZ: level.finishPosition.z,
+          finishY: level.finishPosition.y,
+          waypointCount: level.waypoints.length,
+        };
+      },
+      isAtFinish: (x: number, y: number, z: number) =>
+        game.level.isAtFinish(new Vector3(x, y, z)),
+      setPlayerAutopilot: (mode: 'off' | 'casual') => this.setPlayerAutopilot(mode),
+      startCasualRun: (difficulty?: DifficultyId) => this.startCasualRun(difficulty),
+      startObservedShow: (difficulty?: DifficultyId) => this.startObservedShow(difficulty),
       setQuality: (quality: Quality) => this.setQuality(quality),
       teleport: (x: number, y: number, z: number) => this.teleport(x, y, z),
       startMode: (mode: LevelMode) => this.startMode(mode),
@@ -436,6 +467,7 @@ export class Game {
     this.leavePause();
     this.blurControls();
     this.ensureIdentity();
+    this.setPlayerAutopilot('off');
     this.disposeBots();
     this.match = null;
     this.practice = false;
@@ -450,6 +482,7 @@ export class Game {
       difficulty: this.difficulty,
       contestants: this.contestants,
       player: this.player,
+      continueWhenPlayerOut: options.observe ?? false,
       callbacks: {
         prepareRound: (index, entrants) => this.prepareRound(index, entrants),
         onStamp: (stamp) => this.callbacks.onStamp?.(stamp.text, stamp.tone),
@@ -496,6 +529,28 @@ export class Game {
     this.accumulator = 0;
     this.input.reset();
     this.callbacks.onStateChange?.(this.currentState);
+  }
+
+  /**
+   * Debug/QA only. Installs (or removes) a scripted player brain that fills the
+   * same ControllerFrame as human input. It never runs in normal play; the
+   * default is off and `startShow` always resets it.
+   */
+  setPlayerAutopilot(mode: 'off' | 'casual'): void {
+    this.autopilotMode = mode;
+    this.casualPilot =
+      mode === 'casual' && this.match ? createCasualPilot(this.player, this.currentSeed) : null;
+  }
+
+  /** Debug/QA: a full observed show played by the scripted casual brain. */
+  startCasualRun(difficulty: DifficultyId = 'show'): void {
+    this.startShow({ difficulty, observe: true });
+    this.setPlayerAutopilot('casual');
+  }
+
+  /** Debug/QA: a full observed show with no player input. */
+  startObservedShow(difficulty: DifficultyId = 'show'): void {
+    this.startShow({ difficulty, observe: true });
   }
 
   /** Course or Training Deck with respawns and no elimination. */
@@ -1172,9 +1227,30 @@ export class Game {
       (max, contestant) => (contestant.body.eliminated ? max : Math.max(max, contestant.progress)),
       0,
     );
+    const humanProgress = active.includes(this.player)
+      ? this.player.body.eliminated
+        ? null
+        : this.player.progress
+      : null;
     for (const contestant of active) {
       if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
+        if (this.autopilotMode === 'casual' && this.level.mode === 'course') {
+          const pilot = this.casualPilot ?? createCasualPilot(contestant, this.currentSeed);
+          this.casualPilot = pilot;
+          contestant.controller.update(
+            dt,
+            pilot.think({
+              level: this.level,
+              body: contestant.body,
+              contestants: active,
+              leaderProgress,
+              humanProgress,
+              dt,
+            }),
+          );
+          continue;
+        }
         this.controllerFrame.cameraYaw = this.rig.yaw;
         const input = this.input.readFrame();
         this.controllerFrame.moveX = input.moveX;
@@ -1196,6 +1272,7 @@ export class Game {
           body: contestant.body,
           contestants: active,
           leaderProgress,
+          humanProgress,
           dt,
         });
         contestant.controller.update(dt, frame);
@@ -1220,6 +1297,7 @@ export class Game {
       (max, contestant) => (contestant.body.eliminated ? max : Math.max(max, contestant.progress)),
       0,
     );
+    const humanProgress = this.player.body.eliminated ? null : this.player.progress;
     for (const contestant of active) {
       if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
@@ -1244,6 +1322,7 @@ export class Game {
           body: contestant.body,
           contestants: active,
           leaderProgress,
+          humanProgress,
           dt,
         });
         contestant.controller.update(dt, frame);

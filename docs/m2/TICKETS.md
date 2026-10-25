@@ -35,13 +35,13 @@ A repeatable command that drives the real `Match` through a full show with no in
 
 **Acceptance**
 
-- [ ] `npm run measure:show -- --runs=10` outputs per-Round clocks, finishers, qualifiers, player status, living-winner state, total show clock, and a median.
-- [ ] A full-show mode advances through all three Rounds using the real Match/Director; it does not use `forcePlayerWin` to skip play.
-- [ ] A scripted "casual" input path exists and reports whether the human qualified (no wall-clock sleeps).
-- [ ] `npm run verify:pacing` fails outside the M2 bands and passes when the bands are met.
-- [ ] `docs/METRICS.md` records the v1 baseline and the new command.
-- [ ] Unit/helper tests for the pace bands and anchor math; no flaky timing assertions.
-- [ ] `npm run check` and the existing `verify:show` stay green.
+- [x] `npm run measure:show -- --runs=10` outputs per-Round clocks, finishers, qualifiers, player status, living-winner state, total show clock, and a median.
+- [x] A full-show mode advances through all three Rounds using the real Match/Director; it does not use `forcePlayerWin` to skip play.
+- [x] A scripted "casual" input path exists and reports whether the human qualified (no wall-clock sleeps).
+- [x] `npm run verify:pacing` fails outside the M2 bands and passes when the bands are met.
+- [x] `docs/METRICS.md` records the v1 baseline and the new command.
+- [x] Unit/helper tests for the pace bands and anchor math; no flaky timing assertions.
+- [x] `npm run check` and the existing `verify:show` stay green.
 
 **Evidence:** baseline JSON, 10-seed sweep output, failing/passing `verify:pacing` log.
 
@@ -57,14 +57,14 @@ A Course that lasts 45–90 seconds with humanized bots, a bounded human-pace an
 
 **Acceptance**
 
-- [ ] Show-preset Course clock is 45–90 s in the 10-seed sweep (median and per-seed bounds).
-- [ ] 8+ real finishers before the timer on the baseline seed and the sweep.
-- [ ] A scripted casual input path qualifies at least 7/10; an idle human never qualifies.
-- [ ] Bots use 0.62–0.78 of max target speed with skill variation; no teleport, no free jump, no hidden speed above the player's cap.
-- [ ] The human-pace anchor is bounded to 8–10% and only slows bots when the human is >25% behind; it never applies in the final.
-- [ ] If a second lap is added, it reuses the existing section grammar, colliders, and waypoints; the finish gate and qualification rule are coherent.
-- [ ] No new mode, biome, or art direction.
-- [ ] Real-Match Course tests and Playwright results pass; no console errors.
+- [x] Show-preset Course clock is 45–90 s in the 10-seed sweep (median and per-seed bounds).
+- [x] 8+ real finishers before the timer on the baseline seed and the sweep.
+- [x] A scripted casual input path qualifies at least 7/10; an idle human never qualifies.
+- [x] Bots use 0.62–0.78 of max target speed with skill variation; no teleport, no free jump, no hidden speed above the player's cap.
+- [x] The human-pace anchor is bounded to 8–10% and only slows bots when the human is >25% behind; it never applies in the final.
+- [x] If a second lap is added, it reuses the existing section grammar, colliders, and waypoints; the finish gate and qualification rule are coherent.
+- [x] No new mode, biome, or art direction.
+- [x] Real-Match Course tests and Playwright results pass; no console errors.
 
 **Evidence:** before/after `measure:show` Course rows, casual qualification log, screenshot of the extended Course/finish if a second lap is used.
 

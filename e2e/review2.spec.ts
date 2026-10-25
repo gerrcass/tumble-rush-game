@@ -18,7 +18,7 @@ test.describe('Review 2 — real pack and real spawn', () => {
       // Step in small chunks and stop as soon as Round 1 posts results, before
       // the five-second results timer advances to the show-end screen.
       await page.evaluate(() => {
-        for (let i = 0; i < 130; i += 1) {
+        for (let i = 0; i < 200; i += 1) {
           if (window.__tumble?.show.phase === 'results') break;
           window.__tumble?.simulate(0.5);
         }

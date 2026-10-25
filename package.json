@@ -17,6 +17,7 @@
     "verify:show": "playwright test e2e/review2.spec.ts",
     "check:release": "npm run check && playwright test e2e/review1.spec.ts e2e/review2.spec.ts",
     "measure:show": "node scripts/measure-show.mjs",
+    "verify:pacing": "node scripts/verify-pacing.mjs",
     "evidence": "playwright test e2e/screenshots.spec.ts",
     "ci:local": "bash scripts/ci-local.sh"
   },

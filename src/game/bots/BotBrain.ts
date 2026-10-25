@@ -12,7 +12,44 @@ export interface BotContext {
   body: BeanBody;
   contestants: readonly Contestant[];
   leaderProgress: number;
+  /**
+   * The human's Course progress, or null when they are eliminated. The M2
+   * anchor only ever slows the pack when the human is far behind.
+   */
+  humanProgress?: number | null;
   dt: number;
+}
+
+/**
+ * M2 Course humanization. Bots target 0.62–0.78 of the player's 8 u/s cap,
+ * scaled by skill; they never receive speed above the player's cap.
+ */
+export const COURSE_SPEED_MIN = 0.62;
+export const COURSE_SPEED_MAX = 0.78;
+
+/** Human-pace anchor: only when the human is >25% behind, never above 10%. */
+export const HUMAN_ANCHOR_THRESHOLD = 0.25;
+export const HUMAN_ANCHOR_MAX_SLOWDOWN = 0.1;
+/** A human who has not left the start deck is not "behind"; no anchor for idlers. */
+export const HUMAN_ANCHOR_MIN_PROGRESS = 0.02;
+
+export interface CourseBrainOptions {
+  /** Multiplier on the skill-scaled 0.62–0.78 target speed. */
+  speedScale?: number;
+  /** Added to the bot's reaction time before re-planning. */
+  reactionBonus?: number;
+  /** Hazard lookahead radius in world units (humanized bots react later). */
+  hazardRadius?: number;
+  /** Multiplier on the contestant's seeded mistake chance. */
+  mistakeScale?: number;
+  /** Flat mistake chance independent of the contestant profile. */
+  baseMistake?: number;
+  /** Chance a close hazard becomes a jump on any given step. */
+  hazardJumpChance?: number;
+  /** Chance a scripted run/jump waypoint is committed to. */
+  jumpDiscipline?: number;
+  /** Multiplier on the per-contestant lane offset (0 = centre line). */
+  laneScale?: number;
 }
 
 const IDLE_FRAME: ControllerFrame = {
@@ -96,9 +133,13 @@ export abstract class BotBrain {
     this.frame.moveZ = clamp(speed, 0, 1);
   }
 
-  /** ±8% pacing from distance to the leader, never above the player's cap. */
+  /** Bounded human-pace anchor from the Course, never above the player cap. */
   protected courseSpeed(base: number, context: BotContext): number {
-    const pace = coursePace(this.owner.progress, context.leaderProgress);
+    const pace = humanPaceAnchor(
+      context.humanProgress,
+      context.leaderProgress,
+      context.level.mode,
+    );
     return clamp(base * pace, 0, 1);
   }
 
@@ -129,12 +170,21 @@ export abstract class BotBrain {
           !hasGroundAt(context.level, other.body.position.x + dirX * 4.5, other.body.position.y - 0.08, other.body.position.z + dirZ * 4.5)) {
         continue;
       }
-      if (!this.rng.chance(this.owner.aggression * 0.008)) continue;
+      if (!this.rng.chance(this.owner.aggression * this.shoveChance(context))) continue;
       this.shoveCooldown = this.rng.float(2.2, 4.2);
       this.frame.divePressed = true;
       return true;
     }
     return false;
+  }
+
+  /**
+   * Course racers are contestants, not assassins: a dive at the lip of a gap
+   * is a double elimination, and a two-lap race cannot afford the pack to
+   * delete itself. Crown Climb keeps the original shove appetite.
+   */
+  protected shoveChance(context: BotContext): number {
+    return context.level.mode === 'course' || context.level.mode === 'training' ? 0.0015 : 0.008;
   }
 
   protected updateCommon(context: BotContext): void {
@@ -258,9 +308,9 @@ export function platformTopAt(level: Level, target: Vector3, tolerance = 2.6): n
 
 /**
  * True when a posted hazard collider is close enough, and optionally ahead of
- * the body, to warrant a hop. The direction check matters: sweeping past a
- * sweeper and then jumping because it is still within the radius is how bots
- * used to overshoot the A -> B lip and land in the gap.
+ * the body, to warrant a hop. Distance is measured to the hazard's rotated
+ * footprint, not its centre: a long sweeper can reach a bot from several units
+ * away, and reacting to the centre alone let the tip clip the pack.
  */
 export function hazardWithin(
   level: Level,
@@ -281,15 +331,108 @@ export function hazardWithin(
     const halfHeight =
       collider.shape === 'box' ? collider.halfExtents.y : collider.height / 2;
     if (collider.position.y - halfHeight > headY - 0.12) continue;
-    if (forward && dx * forward.x + dz * forward.z <= 0) continue;
-    if (dx * dx + dz * dz < radius * radius) return true;
+    // A tall pusher bar can sweep into a runner from beside them; the forward
+    // gate is for rotating sweepers, where jumping after passing overshoots.
+    const pusher = collider.shape === 'box' && collider.halfExtents.y >= 0.9;
+    if (forward && !pusher && dx * forward.x + dz * forward.z <= 0) continue;
+    if (hazardGap(collider, dx, dz) < radius) return true;
   }
   return false;
+}
+
+/** Planar distance from a body offset to the collider's rotated footprint. */
+function hazardGap(collider: Collider, dx: number, dz: number): number {
+  const halfX = collider.shape === 'box' ? collider.halfExtents.x : collider.radius;
+  const halfZ = collider.shape === 'box' ? collider.halfExtents.z : collider.radius;
+  if (collider.shape === 'box') {
+    const { x: qx, y: qy, z: qz, w } = collider.quaternion;
+    const ix = -qx;
+    const iy = -qy;
+    const iz = -qz;
+    const tx = 2 * (iy * dz);
+    const ty = 2 * (iz * dx - ix * dz);
+    const tz = 2 * (-iy * dx);
+    const localX = dx + w * tx + (iy * tz - iz * ty);
+    const localZ = dz + w * tz + (ix * ty - iy * tx);
+    return Math.hypot(Math.max(0, Math.abs(localX) - halfX), Math.max(0, Math.abs(localZ) - halfZ));
+  }
+  return Math.max(0, Math.hypot(dx, dz) - halfX);
 }
 
 /** A pure pacing function: behind speeds up, ahead eases off. */
 export function coursePace(botProgress: number, leaderProgress: number): number {
   return clamp(1 + (leaderProgress - botProgress) * 1.4, 0.92, 1.08);
+}
+
+/**
+ * Is an authored bounce pad close ahead? The pad launches a bean for a fixed
+ * hang time, so a human survives it by holding full run. Bots commit to the
+ * top of their humanized band when one is near instead of landing short.
+ */
+export function bouncePadAhead(level: Level, body: BeanBody, distance = 12): boolean {
+  for (const collider of level.colliders) {
+    if (!collider.enabled || collider.kind !== 'bounce') continue;
+    if (body.position.z - collider.position.z < -0.5) continue;
+    if (body.position.z - collider.position.z > distance) continue;
+    if (Math.abs(collider.position.x - body.position.x) > 3.2) continue;
+    if (Math.abs(collider.position.y - body.position.y) > 2.2) continue;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * The nearest tall, non-rotating hazard bar ahead: the Slime Slide pushers.
+ * Sweepers are thin (half-height < 0.9), pendulums rotate, so this identifies
+ * the authored pushers without a name or level-specific branch.
+ */
+export function pusherAhead(level: Level, body: BeanBody, distance = 6.5): Collider | null {
+  let best: Collider | null = null;
+  let bestGap = distance;
+  for (const collider of level.colliders) {
+    if (!collider.enabled || collider.kind !== 'hazard' || collider.shape !== 'box') continue;
+    if (collider.halfExtents.y < 0.9) continue;
+    if (collider.angularVelocity.lengthSq() > 1e-6) continue;
+    const gap = body.position.z - collider.position.z;
+    if (gap < 1.4 || gap > bestGap) continue;
+    if (Math.abs(collider.position.y - body.position.y) > 2.6) continue;
+    best = collider;
+    bestGap = gap;
+  }
+  return best;
+}
+
+/**
+ * Skill-scaled bot target speed in controller units (fraction of MAX_RUN_SPEED).
+ * It is a target, not an applied impulse: the same BeanController still owns
+ * acceleration, friction and the 8 u/s cap.
+ */
+export function courseBotSpeed(skill: number): number {
+  const clamped = clamp(skill, 0, 1);
+  return COURSE_SPEED_MIN + clamped * (COURSE_SPEED_MAX - COURSE_SPEED_MIN);
+}
+
+/**
+ * M2 human-pace anchor. When the human is more than 25% of the Course behind
+ * the leader, bots lose up to 10% of their target speed, ramped over the next
+ * 25% of deficit. It returns 1 outside the Course and never returns >1, so it
+ * can only slow the pack; it cannot speed a bot up or touch player physics.
+ */
+export function humanPaceAnchor(
+  humanProgress: number | null | undefined,
+  leaderProgress: number,
+  mode: Level['mode'],
+): number {
+  if (mode !== 'course' || humanProgress === null || humanProgress === undefined) return 1;
+  if (humanProgress < HUMAN_ANCHOR_MIN_PROGRESS) return 1;
+  const deficit = leaderProgress - humanProgress;
+  if (deficit <= HUMAN_ANCHOR_THRESHOLD) return 1;
+  const ramp = clamp(
+    (deficit - HUMAN_ANCHOR_THRESHOLD) / HUMAN_ANCHOR_THRESHOLD,
+    0,
+    1,
+  );
+  return 1 - ramp * HUMAN_ANCHOR_MAX_SLOWDOWN;
 }
 
 /**
@@ -361,15 +504,40 @@ export function selectHexTarget(
   return best;
 }
 
+const COURSE_TUNING: Required<CourseBrainOptions> = {
+  speedScale: 1,
+  reactionBonus: 0.14,
+  hazardRadius: 2.35,
+  mistakeScale: 1,
+  baseMistake: 0,
+  hazardJumpChance: 0.9,
+  jumpDiscipline: 0.88,
+  laneScale: 1,
+};
+
 export class CourseBrain extends BotBrain {
   private waypointIndex = 0;
   private laneOffset = 0;
+  private jumpRollIndex = -1;
+  private jumpAllowed = true;
+  private pusherId = '';
+  private pusherLane = 0;
+  private readonly tuning: Required<CourseBrainOptions>;
+
+  constructor(owner: Contestant, seed: number, salt = 1, options: CourseBrainOptions = {}) {
+    super(owner, seed, salt);
+    this.tuning = { ...COURSE_TUNING, ...options };
+  }
 
   reset(): void {
     super.reset();
     this.waypointIndex = 0;
+    this.jumpRollIndex = -1;
+    this.jumpAllowed = true;
+    this.pusherId = '';
+    this.pusherLane = 0;
     const lane = (this.owner.id % 7) - 3;
-    this.laneOffset = lane * 0.55;
+    this.laneOffset = lane * 0.55 * this.tuning.laneScale;
   }
 
   think(context: BotContext): ControllerFrame {
@@ -386,10 +554,15 @@ export class CourseBrain extends BotBrain {
     if (!target) return frame;
 
     if (this.decisionTimer <= 0) {
-      this.decisionTimer = this.owner.reaction + 0.12;
-      if (this.rng.chance(this.owner.mistakeChance * 0.45)) {
-        this.hesitation = this.rng.float(0.2, 0.55);
-        this.laneOffset = this.rng.float(-1.1, 1.1);
+      this.decisionTimer = this.owner.reaction + this.tuning.reactionBonus;
+      const mistakeChance = clamp(
+        this.owner.mistakeChance * this.tuning.mistakeScale + this.tuning.baseMistake,
+        0,
+        0.4,
+      );
+      if (this.rng.chance(mistakeChance * 0.45)) {
+        this.hesitation = this.rng.float(0.22, 0.62);
+        this.laneOffset = this.rng.float(-1.1, 1.1) * this.tuning.laneScale;
       }
     }
 
@@ -399,17 +572,57 @@ export class CourseBrain extends BotBrain {
     const bypass = finalTarget ? 0 : (level.hurdleLane?.(body.position.z) ?? 0);
     const lane = bypass > 0 ? (this.owner.id % 2 === 0 ? -bypass : bypass) : this.laneOffset;
     const landingX = finalTarget ? null : landingCenterX(level, target, body.position.x);
-    const targetX = (landingX ?? target.x) + (finalTarget ? 0 : lane);
+    let targetX = (landingX ?? target.x) + (finalTarget ? 0 : lane);
+    // Pushers sweep most of the narrow bridge. Pick the free side once per bar
+    // and hold it until the bar is behind, so a shove has room to recover.
+    const pusher = finalTarget ? null : pusherAhead(level, body);
+    if (pusher) {
+      if (pusher.id !== this.pusherId) {
+        this.pusherId = pusher.id;
+        const barRight = pusher.position.x + pusher.velocity.x * 0.4 >= 0;
+        this.pusherLane = barRight ? -2.1 : 2.1;
+      }
+      targetX = this.pusherLane;
+    } else if (this.pusherId) {
+      this.pusherId = '';
+      this.pusherLane = 0;
+    }
     const targetZ = target.z;
     const dx = targetX - body.position.x;
     const dz = targetZ - body.position.z;
-    const baseSpeed = 0.9 + this.owner.skill * 0.1;
-    const speed = this.courseSpeed(this.hesitation > 0 ? baseSpeed * 0.55 : baseSpeed, context);
+    const rise = target.y - body.position.y;
+    // A sliding/moving platform is a timing beat, not a coin flip. Wait at the
+    // lip until its current centre is reachable, then commit. This is the same
+    // visible hesitation the player sees; no speed is granted.
+    const rideX = waypoint?.action === 'ride' && !finalTarget ? landingX : null;
+    if (
+      rideX !== null &&
+      body.grounded &&
+      Math.abs(rideX - body.position.x) > 1.5 &&
+      Math.abs(targetZ - body.position.z) < 9.2
+    ) {
+      this.steer(rideX - body.position.x, 0, 0.7);
+      this.owner.targetLabel = `${this.owner.targetLabel} WAIT`;
+      this.staleTimer = 0;
+      return frame;
+    }
+    const baseSpeed = courseBotSpeed(this.owner.skill) * this.tuning.speedScale;
+    // A flat scripted jump can be a bounce pad: the authored pad throws a bean
+    // ~1.15 s forward and a human clears it by holding full run. Commit to the
+    // top of the humanized band (never above it), and do not let the pack
+    // anchor shorten that jump into the gap after the pad.
+    const commitJump =
+      bouncePadAhead(level, body) ||
+      (waypoint?.action === 'jump' &&
+        rise < 0.45 &&
+        Math.abs(targetZ - body.position.z) < 4.5);
+    const speed = commitJump
+      ? COURSE_SPEED_MAX * this.tuning.speedScale
+      : this.courseSpeed(this.hesitation > 0 ? baseSpeed * 0.55 : baseSpeed, context);
     this.steer(dx, dz, speed);
 
     if (this.maybeShoveNeighbour(context)) return frame;
 
-    const rise = target.y - body.position.y;
     const directionLength = Math.hypot(dx, dz) || 1;
     const dirX = dx / directionLength;
     const dirZ = dz / directionLength;
@@ -427,19 +640,20 @@ export class CourseBrain extends BotBrain {
     // start deck and the next platform still needs its jump.
     const suppressedByLane = bypass > 0 && (waypoint?.position.z ?? 0) < 9.5;
     const hazardClose =
-      body.grounded && hazardWithin(level, body, 2.8, { x: dirX, z: dirZ });
+      body.grounded &&
+      hazardWithin(level, body, this.tuning.hazardRadius, { x: dirX, z: dirZ });
     this.owner.targetLabel = `${this.owner.targetLabel}${groundAhead ? '' : ' NOGROUND'}${hazardClose ? ' HAZARD' : ''}`;
     if (body.grounded && hazardClose) {
-      frame.jumpPressed = true;
+      // A late reaction is the point: the jump appears on a random step inside
+      // the lookahead instead of the frame the hazard first enters the radius.
+      frame.jumpPressed = this.rng.chance(this.tuning.hazardJumpChance);
       frame.jumpHeld = true;
       this.staleTimer = 0;
     } else if (!groundAhead && (body.grounded || body.wasGrounded)) {
       // A missing floor always beats hesitation or a hurdle detour. Commit at
-      // full run speed for the leap: a hesitating bot that keeps its 55% pace
-      // in the air lands in the gap. Limit the press to the last grounded step
-      // (plus the controller's coyote window) so a bot cannot bunny-hop across
-      // an entire gap chain.
-      this.steer(dx, dz, 1);
+      // least the bottom of the humanized band, never above the pack's cap:
+      // the 1.5 u authored gaps are clearable at 0.62 of max.
+      this.steer(dx, dz, Math.max(speed, COURSE_SPEED_MIN));
       frame.jumpPressed = true;
       frame.jumpHeld = true;
       this.staleTimer = 0;
@@ -448,9 +662,18 @@ export class CourseBrain extends BotBrain {
       const jumpDistance = waypoint?.action === 'jump' ? 1.7 : 2.6;
       const forwardDistance = Math.abs(target.z - body.position.z);
       if (wantsJump && forwardDistance < jumpDistance) {
-        frame.jumpPressed = true;
-        frame.jumpHeld = true;
-        this.staleTimer = 0;
+        // Decide once per waypoint whether this contestant commits cleanly.
+        // A skipped jump is a visible stumble; the ledge probe above is still
+        // the safety net, so a missed hop never becomes a hidden teleport.
+        if (this.jumpRollIndex !== this.waypointIndex) {
+          this.jumpRollIndex = this.waypointIndex;
+          this.jumpAllowed = this.rng.chance(this.tuning.jumpDiscipline);
+        }
+        if (this.jumpAllowed) {
+          frame.jumpPressed = true;
+          frame.jumpHeld = true;
+          this.staleTimer = 0;
+        }
       }
     }
 
@@ -461,7 +684,7 @@ export class CourseBrain extends BotBrain {
       this.stuckTime = 0;
       this.recoverCooldown = 0.8;
       if (this.rng.chance(0.25)) this.waypointIndex = Math.min(this.waypointIndex + 1, waypoints.length);
-      else this.laneOffset = this.rng.float(-0.9, 0.9);
+      else this.laneOffset = this.rng.float(-0.9, 0.9) * this.tuning.laneScale;
     }
 
     if (frame.jumpPressed) this.owner.targetLabel = `${this.owner.targetLabel} JUMP`;
@@ -623,7 +846,11 @@ export class CrownBrain extends BotBrain {
       return frame;
     }
 
-    this.steer(dx, dz, this.courseSpeed(baseSpeed, context));
+    this.steer(
+      dx,
+      dz,
+      this.courseSpeed(baseSpeed * coursePace(this.owner.progress, context.leaderProgress), context),
+    );
 
     if (this.maybeShoveNeighbour(context)) return frame;
 
@@ -700,4 +927,17 @@ export function createBotBrain(
     default:
       return null;
   }
+}
+
+/**
+ * Debug-only scripted "casual" Course player. It fills the same ControllerFrame
+ * the human input does, so it runs through the exact player body, controller,
+ * camera basis and physics. It is never installed by normal play; only
+ * `__tumble.startCasualRun()` / `setPlayerAutopilot('casual')` reach it.
+ *
+ * The tuning is deliberately below the bot pack's median: a slightly lower
+ * target speed, a longer reaction, later hazard reads and ordinary mistakes.
+ */
+export function createCasualPilot(owner: Contestant, seed: number): CourseBrain {
+  return new CourseBrain(owner, seed, 17, { laneScale: 0.15, hazardRadius: 3.1 });
 }

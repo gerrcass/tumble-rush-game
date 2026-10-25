@@ -215,7 +215,10 @@ test.describe('Phase 2 mechanics in debug rounds', () => {
   test('course finish gate qualifies and shows the end overlay', async ({ page }) => {
     await page.evaluate(() => window.__tumble?.startMode('course'));
     await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
-    await page.evaluate(() => window.__tumble?.teleport(0, 4.55, -155));
+    await page.evaluate(() => {
+      const finish = window.__tumble?.course;
+      window.__tumble?.teleport(0, (finish?.finishY ?? 9.1) - 0.05, (finish?.finishZ ?? -340) + 1);
+    });
     await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('finished');
     await expect(page.locator('#finish-overlay')).toContainText('QUALIFIED!');
   });

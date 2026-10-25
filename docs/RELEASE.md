@@ -9,6 +9,7 @@ Use this before merging any feature branch into `main`. It is deliberately short
 - [ ] `npm run verify:show` passes (real 16-bean Course + real Hexapop spawn).
 - [ ] `npm run test:e2e` passes (full show, mobile, review, evidence).
 - [ ] `npm run measure:show` recorded and compared with [`docs/METRICS.md`](METRICS.md); the change has a stated pacing effect.
+- [ ] `npm run verify:pacing` passes (or its Phase A pass plus documented Phase B gaps); Hexapop/Crown/show-total are not claimed until M2-003/004.
 - [ ] `npm run evidence` refreshed the canonical screenshots.
 - [ ] No console errors, no failed network requests, no dead controls.
 - [ ] The PR body uses the `pr` skill template and includes the live URL, test plan, and before/after evidence.

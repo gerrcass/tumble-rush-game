@@ -2,6 +2,11 @@ import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+// SwiftShader occasionally drops the page's execution context under the full
+// suite's memory pressure. The FPS number is recorded, not asserted, so retry
+// once rather than turning an environment hiccup into a red build.
+test.describe.configure({ retries: 1 });
+
 /**
  * Honest performance evidence. The CI/dev container has no GPU, so Chromium
  * falls back to SwiftShader software rasterisation; the resulting number is

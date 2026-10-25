@@ -27,12 +27,33 @@ export interface CourseShortcutPlan {
   width: number;
 }
 
+/**
+ * M2 pacing: the 173 u lap alone cannot last 45–90 s once the pack runs at a
+ * humanized 0.62–0.78 of max speed, so Sunrise Scramble runs the same five
+ * authored sections twice. Lap 2 is a pure translation of the existing grammar
+ * (no new section, collider recipe, or art direction).
+ */
+export const COURSE_LAP_COUNT = 2;
+/** Lap 2 starts just beyond lap 1's raised finish/lap gate. */
+export const COURSE_LAP_OFFSET_Z = -184;
+/** Lap 2 sits on top of lap 1's finish deck so the lap gate is a real surface. */
+export const COURSE_LAP_OFFSET_Y = 4.5;
+
 export interface CoursePlan {
   seed: number;
   startZ: number;
+  /** End of a single lap's section E, in local (lap 1) coordinates. */
   finishZ: number;
-  /** Total authored length in world units (160–196). */
+  /** Total authored length of one lap in world units (160–196). */
   length: number;
+  /** Number of times the five-section grammar is authored. */
+  lapCount: number;
+  lapOffsetZ: number;
+  lapOffsetY: number;
+  /** Final finish-gate z after every lap; `finishZ + lapOffsetZ * (laps-1)`. */
+  courseFinishZ: number;
+  /** Start-to-final-gate length in world units (one lap times lapCount). */
+  courseLength: number;
   laneScale: number;
   platformOffset: number;
   hurdleHeight: number;
@@ -86,12 +107,18 @@ export function planCourse(seed: number): CoursePlan {
   const propColors = [0, 1, 2, 3, 4].map(() => rng.pick(COLOR_POOL));
   const crowdArrangement = Array.from({ length: 8 }, () => rng.float(0, 1));
   const finishZ = -166;
+  const courseFinishZ = finishZ + COURSE_LAP_OFFSET_Z * (COURSE_LAP_COUNT - 1);
 
   return {
     seed: seed >>> 0,
     startZ: 18,
     finishZ,
     length: 18 - finishZ,
+    lapCount: COURSE_LAP_COUNT,
+    lapOffsetZ: COURSE_LAP_OFFSET_Z,
+    lapOffsetY: COURSE_LAP_OFFSET_Y,
+    courseFinishZ,
+    courseLength: 18 - courseFinishZ,
     laneScale,
     platformOffset,
     hurdleHeight,

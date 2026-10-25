@@ -52,7 +52,14 @@ import type {
   Quality,
   Waypoint,
 } from './Level';
-import { planCourse, type CoursePlan, type CourseSectionPlan } from './coursePlan';
+import {
+  COURSE_LAP_COUNT,
+  COURSE_LAP_OFFSET_Y,
+  COURSE_LAP_OFFSET_Z,
+  planCourse,
+  type CoursePlan,
+  type CourseSectionPlan,
+} from './coursePlan';
 
 interface Sweeper {
   collider: Collider;
@@ -117,7 +124,11 @@ export class Course implements Level {
   readonly group = new Group();
   readonly colliders: Collider[] = [];
   readonly startPosition = new Vector3(0, 0.02, 16);
-  readonly finishPosition = new Vector3(0, 4.6, -156);
+  readonly finishPosition = new Vector3(
+    0,
+    4.6 + COURSE_LAP_OFFSET_Y * (COURSE_LAP_COUNT - 1),
+    -156 + COURSE_LAP_OFFSET_Z * (COURSE_LAP_COUNT - 1),
+  );
   readonly respawnAllowed = false;
   readonly killY = -14;
   readonly cameraFloor = 0.8;
@@ -133,15 +144,18 @@ export class Course implements Level {
   private readonly crowd: Rocker[] = [];
   private readonly clouds: Drifter[] = [];
   private readonly balloons: Drifter[] = [];
-  private readonly beltTexture = makeBeltTexture();
+  private readonly beltTexture = makeBeltTexture(2, 3);
   private readonly confetti: Confetti;
   private readonly directional: DirectionalLight;
   private readonly materials = createMaterialCache();
   private readonly staticVisuals = new Group();
-  private readonly padVisual = new Group();
-  private readonly finishSign = new Group();
+  private readonly padVisuals: Group[] = [];
+  private readonly finishSigns: Group[] = [];
   private readonly scratchQuaternion = new Quaternion();
   private readonly scratchBob = new Vector3();
+  private lapZ = 0;
+  private lapY = 0;
+  private lapIndex = 0;
   private elapsed = 0;
   private bodyProgress = 0;
   private result: LevelResult | null = null;
@@ -150,8 +164,7 @@ export class Course implements Level {
     this.seed = seed >>> 0;
     this.plan = planCourse(this.seed);
     const rng = new Rng((this.seed ^ 0x517e5) >>> 0);
-    this.ownedTextures.add(this.beltTexture);
-    this.beltTexture.repeat.set(2, 3);
+
 
     this.group.add(makeSky());
     this.group.add(new HemisphereLight(0xffe8d0, 0x7fd4ff, 0.5));
@@ -162,21 +175,18 @@ export class Course implements Level {
     this.directional.shadow.mapSize.set(1024, 1024);
     this.directional.shadow.camera.left = -55;
     this.directional.shadow.camera.right = 55;
-    this.directional.shadow.camera.top = 110;
-    this.directional.shadow.camera.bottom = -110;
+    this.directional.shadow.camera.top = 190;
+    this.directional.shadow.camera.bottom = -190;
     this.directional.shadow.camera.near = 1;
-    this.directional.shadow.camera.far = 240;
+    this.directional.shadow.camera.far = 360;
     this.directional.shadow.bias = -0.0004;
     this.directional.shadow.normalBias = 0.03;
-    this.directional.target.position.set(0, 0, -72);
+    this.directional.target.position.set(0, 0, -160);
     this.group.add(this.directional);
     this.group.add(this.directional.target);
 
-    this.buildSectionA();
-    this.buildSectionB();
-    this.buildSectionC();
-    this.buildSectionD();
-    this.buildSectionE();
+    for (let lap = 0; lap < COURSE_LAP_COUNT; lap += 1) this.buildLap(lap);
+    this.buildLapConnector();
     this.buildScenery(rng);
     // Every non-animated Course prop shares a small per-Level material pool,
     // so collapsing by material turns ~200 scenery meshes into a handful of
@@ -184,27 +194,83 @@ export class Course implements Level {
     mergeColoredMeshes(this.staticVisuals);
     this.group.add(this.staticVisuals);
 
-    this.checkpoints = [
-      { position: new Vector3(0, 0.04, 16), minZ: 12, maxZ: 22, maxY: 2 },
-      { position: new Vector3(0, 0.04, -22), minZ: -25, maxZ: -19, maxY: 2 },
-      { position: new Vector3(0, 0.04, -58), minZ: -61, maxZ: -55, maxY: 2 },
-      { position: new Vector3(0, 0.04, -98), minZ: -101, maxZ: -95, maxY: 2 },
-      { position: new Vector3(0, -1.55, -133), minZ: -136, maxZ: -130, maxY: 0.5 },
-    ];
+    const checkpoints: Checkpoint[] = [];
+    for (let lap = 0; lap < COURSE_LAP_COUNT; lap += 1) {
+      const lapZ = COURSE_LAP_OFFSET_Z * lap;
+      const lapY = COURSE_LAP_OFFSET_Y * lap;
+      for (const checkpoint of [
+        [16, 12, 22, 2, 0.04],
+        [-22, -25, -19, 2, 0.04],
+        [-58, -61, -55, 2, 0.04],
+        [-98, -101, -95, 2, 0.04],
+        [-133, -136, -130, 0.5, -1.55],
+      ] as const) {
+        checkpoints.push({
+          position: new Vector3(0, checkpoint[4] + lapY, checkpoint[0] + lapZ),
+          minZ: checkpoint[1] + lapZ,
+          maxZ: checkpoint[2] + lapZ,
+          maxY: checkpoint[3] + lapY,
+        });
+      }
+    }
+    checkpoints.push({
+      position: new Vector3(0, 4.5, -156 + COURSE_LAP_OFFSET_Z),
+      minZ: -161 + COURSE_LAP_OFFSET_Z,
+      maxZ: -151 + COURSE_LAP_OFFSET_Z,
+      maxY: 6.5,
+    });
+    this.checkpoints = checkpoints;
     this.waypoints = this.buildWaypoints();
 
     this.confetti = new Confetti(180, this.seed ^ 0x51a7, {
       minX: -32,
       maxX: 32,
       minY: -2,
-      maxY: 26,
-      minZ: -170,
+      maxY: 30,
+      minZ: -350,
       maxZ: 24,
     });
     this.group.add(this.confetti.mesh);
   }
 
   // ------------------------------------------------------------------ Sections
+
+  /**
+   * Author one lap of the same five sections. Lap 1 is the original Course;
+   * lap 2 is the exact same grammar translated by the plan's lap offset. The
+   * builders below add `lapZ`/`lapY` to every visual and collider so the two
+   * laps cannot drift apart.
+   */
+  private buildLap(lap: number): void {
+    this.lapIndex = lap;
+    this.lapZ = COURSE_LAP_OFFSET_Z * lap;
+    this.lapY = COURSE_LAP_OFFSET_Y * lap;
+    this.buildSectionA();
+    this.buildSectionB();
+    this.buildSectionC();
+    this.buildSectionD();
+    this.buildSectionE();
+    this.lapIndex = 0;
+    this.lapZ = 0;
+    this.lapY = 0;
+  }
+
+  /** A short deck across the lap gate: lap 1's finish deck to lap 2's start. */
+  private buildLapConnector(): void {
+    const y = 4.5;
+    this.addPlatform(0, -162, 6.4, 4, 0xffffff, 0xffc145, 0x59d9b0, null, y);
+    this.addBox(0, y - 0.5, -162, 3.2, 0.5, 2, 'solid');
+    const sign = makeSign(
+      'LAP 2',
+      'one more lap · finish gate at the end',
+      3.4,
+      1.2,
+      this.ownedTextures,
+      this.materials,
+    );
+    sign.position.set(0, y + 3.4, -161.6);
+    this.staticVisuals.add(sign);
+  }
 
   private buildSectionA(): void {
     const plan = this.plan;
@@ -213,7 +279,7 @@ export class Course implements Level {
 
     this.addPlatform(0, 16, width, 9, CREAM, 0x59d9b0, 0xff6b6b);
     this.addBox(0, -0.5, 16, width / 2, 0.5, 4.5, 'solid');
-    this.addStartLine(16, width);
+    if (this.lapIndex === 0) this.addStartLine(16, width);
 
     this.addPlatform(0, 4, 9.5 * scale, 14, CREAM, 0x57c7ff, 0xffc145);
     this.addBox(0, -0.5, 4, 4.75 * scale, 0.5, 7, 'solid');
@@ -354,13 +420,13 @@ export class Course implements Level {
       null,
       this.materials,
     );
-    ramp.position.set(0, -0.85, -107.5);
+    ramp.position.set(0, -0.85 + this.lapY, -107.5 + this.lapZ);
     ramp.rotation.x = rampAngle;
     this.staticVisuals.add(ramp);
     this.colliders.push(
       createBoxCollider({
         kind: 'solid',
-        position: new Vector3(0, -1.35, -107.5),
+        position: new Vector3(0, -1.35 + this.lapY, -107.5 + this.lapZ),
         halfExtents: new Vector3(3.2 * scale, 0.5, 6.4),
         quaternion: rampQuaternion,
       }),
@@ -433,41 +499,52 @@ export class Course implements Level {
 
   private buildFinishGate(width: number): void {
     const gold = this.materials.toon({ color: 0xffc145 });
+    const gateZ = -155.2 + this.lapZ;
     for (const side of [-1, 1]) {
       const post = new Mesh(new CylinderGeometry(0.26, 0.34, 4.4, 12), gold);
-      post.position.set(side * (width / 2 - 0.4), 6.7, -155.2);
+      post.position.set(side * (width / 2 - 0.4), 6.7 + this.lapY, gateZ);
       post.castShadow = true;
       this.staticVisuals.add(post);
       const knob = new Mesh(new SphereGeometry(0.42, 14, 10), gold);
-      knob.position.set(side * (width / 2 - 0.4), 9.1, -155.2);
+      knob.position.set(side * (width / 2 - 0.4), 9.1 + this.lapY, gateZ);
       this.staticVisuals.add(knob);
     }
 
-    this.finishSign.position.set(0, 10.4, -155.2);
-    this.group.add(this.finishSign);
-    const sign = makeSign('FINISH GATE', 'qualify for the next round', 5.2, 1.9, this.ownedTextures, this.materials);
-    this.finishSign.add(sign);
+    const finishSign = new Group();
+    finishSign.position.set(0, 10.4 + this.lapY, gateZ);
+    this.group.add(finishSign);
+    this.finishSigns.push(finishSign);
+    const finalLap = this.lapIndex >= COURSE_LAP_COUNT - 1;
+    const sign = makeSign(
+      finalLap ? 'FINISH GATE' : 'LAP 2',
+      finalLap ? 'qualify for the next round' : 'one more lap · keep tumbling',
+      5.2,
+      1.9,
+      this.ownedTextures,
+      this.materials,
+    );
+    finishSign.add(sign);
 
-    const crown = new Group();
-    crown.position.set(0, 11.7, -155.2);
-    const band = new Mesh(new CylinderGeometry(0.52, 0.58, 0.28, 7), gold);
-    crown.add(band);
-    for (let i = 0; i < 6; i += 1) {
-      const angle = (i / 6) * Math.PI * 2;
-      const spike = new Mesh(new CylinderGeometry(0.03, 0.13, 0.52, 5), gold);
-      spike.position.set(Math.cos(angle) * 0.4, 0.34, Math.sin(angle) * 0.4);
-      crown.add(spike);
+    if (finalLap) {
+      const crown = new Group();
+      crown.position.set(0, 11.7 + this.lapY, gateZ);
+      const band = new Mesh(new CylinderGeometry(0.52, 0.58, 0.28, 7), gold);
+      crown.add(band);
+      for (let i = 0; i < 6; i += 1) {
+        const angle = (i / 6) * Math.PI * 2;
+        const spike = new Mesh(new CylinderGeometry(0.03, 0.13, 0.52, 5), gold);
+        spike.position.set(Math.cos(angle) * 0.4, 0.34, Math.sin(angle) * 0.4);
+        crown.add(spike);
+      }
+      this.staticVisuals.add(crown);
     }
-    this.staticVisuals.add(crown);
 
-    const lineTexture = makeCheckerTexture('#24324a', '#fff6e5');
-    lineTexture.repeat.set(6, 1);
-    this.ownedTextures.add(lineTexture);
+    const lineTexture = makeCheckerTexture('#24324a', '#fff6e5', 6, 1);
     const line = new Mesh(
       new RoundedBoxGeometry(width - 1.2, 0.04, 0.7, 2, 0.02),
       this.materials.toon({ color: 0xffffff, map: lineTexture }),
     );
-    line.position.set(0, 4.53, -152.4);
+    line.position.set(0, 4.53 + this.lapY, -152.4 + this.lapZ);
     line.receiveShadow = true;
     this.staticVisuals.add(line);
   }
@@ -579,7 +656,7 @@ export class Course implements Level {
     phase: number,
   ): void {
     const visual = new Group();
-    visual.position.set(x, y, z);
+    visual.position.set(x, y + this.lapY, z + this.lapZ);
     const beam = new Mesh(
       new RoundedBoxGeometry(length * 2, thickness, thickness * 1.5, 2, 0.12),
       this.materials.toon({ color: 0xff6b6b, emissive: 0xff6b6b, emissiveIntensity: 0.12 }),
@@ -602,7 +679,7 @@ export class Course implements Level {
 
     const collider = createBoxCollider({
       kind: 'hazard',
-      position: new Vector3(x, y, z),
+      position: new Vector3(x, y + this.lapY, z + this.lapZ),
       halfExtents: new Vector3(length, thickness / 2, thickness * 0.75),
       angularVelocity: new Vector3(0, speed, 0),
     });
@@ -619,7 +696,7 @@ export class Course implements Level {
     phase: number,
     amplitude: number,
   ): void {
-    const pivot = new Vector3(x, pivotY, z);
+    const pivot = new Vector3(x, pivotY + this.lapY, z + this.lapZ);
     const arm = new Group();
     arm.position.copy(pivot);
     const rod = new Mesh(
@@ -646,7 +723,7 @@ export class Course implements Level {
 
     const collider = createBoxCollider({
       kind: 'hazard',
-      position: new Vector3(x, pivotY - length, z),
+      position: new Vector3(x, pivotY - length + this.lapY, z + this.lapZ),
       halfExtents: new Vector3(0.85, 0.65, 0.85),
     });
     this.colliders.push(collider);
@@ -665,12 +742,12 @@ export class Course implements Level {
   ): void {
     const visual = makePlatform(width, depth, 0xffc145, 0xff6b6b, 0xfff6e5);
     mergeColoredMeshes(visual);
-    const base = new Vector3(x, 0, z);
-    visual.position.set(x, 0, z);
+    const base = new Vector3(x, this.lapY, z + this.lapZ);
+    visual.position.set(x, this.lapY, z + this.lapZ);
     this.group.add(visual);
     const collider = createBoxCollider({
       kind: 'solid',
-      position: new Vector3(x, -0.5, z),
+      position: new Vector3(x, -0.5 + this.lapY, z + this.lapZ),
       halfExtents: new Vector3(width / 2, 0.5, depth / 2),
     });
     this.colliders.push(collider);
@@ -702,7 +779,7 @@ export class Course implements Level {
     amplitude: number,
   ): void {
     const visual = new Group();
-    visual.position.set(x, y, z);
+    visual.position.set(x, y + this.lapY, z + this.lapZ);
     const bar = new Mesh(
       new RoundedBoxGeometry(width, height, 0.9, 3, 0.18),
       this.materials.toon({ color: 0xa78bfa, emissive: 0xff6b6b, emissiveIntensity: 0.12 }),
@@ -720,7 +797,7 @@ export class Course implements Level {
 
     const collider = createBoxCollider({
       kind: 'hazard',
-      position: new Vector3(x, y, z),
+      position: new Vector3(x, y + this.lapY, z + this.lapZ),
       halfExtents: new Vector3(width / 2, height / 2, 0.45),
     });
     this.colliders.push(collider);
@@ -731,7 +808,7 @@ export class Course implements Level {
     this.motions.push({
       collider,
       visual,
-      base: new Vector3(x, y, -118.5),
+      base: new Vector3(x, y + this.lapY, -118.5 + this.lapZ),
       axis: 'x',
       amplitude,
       speed,
@@ -743,7 +820,7 @@ export class Course implements Level {
   private addHurdle(x: number, z: number, width: number, height: number): void {
     const material = this.materials.toon({ color: 0xff6b6b });
     const hurdle = new Mesh(new RoundedBoxGeometry(width, height, 0.48, 3, 0.14), material);
-    hurdle.position.set(x, height / 2, z);
+    hurdle.position.set(x, height / 2 + this.lapY, z + this.lapZ);
     hurdle.castShadow = true;
     this.staticVisuals.add(hurdle);
     const stripeMaterial = this.materials.toon({ color: 0xfff6e5 });
@@ -752,36 +829,38 @@ export class Course implements Level {
         new RoundedBoxGeometry(0.48, height - 0.06, 0.54, 2, 0.05),
         stripeMaterial,
       );
-      stripe.position.set(x + i * (width / 3.2), height / 2, z);
+      stripe.position.set(x + i * (width / 3.2), height / 2 + this.lapY, z + this.lapZ);
       this.staticVisuals.add(stripe);
     }
     this.addBox(x, height / 2, z, width / 2, height / 2, 0.24, 'solid');
   }
 
   private addBouncePad(x: number, z: number): void {
-    this.padVisual.position.set(x, 0, z);
-    this.group.add(this.padVisual);
+    const padVisual = new Group();
+    padVisual.position.set(x, this.lapY, z + this.lapZ);
+    this.group.add(padVisual);
+    this.padVisuals.push(padVisual);
     const base = new Mesh(
       new CylinderGeometry(1.42, 1.55, 0.18, 24),
       this.materials.toon({ color: 0xff6b6b }),
     );
     base.position.y = 0.09;
     base.castShadow = true;
-    this.padVisual.add(base);
+    padVisual.add(base);
     const cushion = new Mesh(
       new CylinderGeometry(1.2, 1.24, 0.18, 24),
       this.materials.toon({ color: 0xffc145 }),
     );
     cushion.position.y = 0.25;
-    this.padVisual.add(cushion);
+    padVisual.add(cushion);
     const ring = new Mesh(
       new TorusGeometry(1.06, 0.06, 8, 28),
       this.materials.toon({ color: 0xfff6e5 }),
     );
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.35;
-    this.padVisual.add(ring);
-    mergeColoredMeshes(this.padVisual);
+    padVisual.add(ring);
+    mergeColoredMeshes(padVisual);
     this.addCylinder(x, 0.18, z, 1.25, 0.36, 'bounce', 15);
   }
 
@@ -792,7 +871,7 @@ export class Course implements Level {
         new RoundedBoxGeometry(0.26, 0.4, depth, 2, 0.08),
         railMaterial,
       );
-      rail.position.set(x + side * (width / 2 - 0.12), 0.18, z);
+      rail.position.set(x + side * (width / 2 - 0.12), 0.18 + this.lapY, z + this.lapZ);
       rail.castShadow = true;
       this.staticVisuals.add(rail);
     }
@@ -829,19 +908,17 @@ export class Course implements Level {
     height: number,
   ): void {
     const sign = makeSign(title, subtitle, width, height, this.ownedTextures, this.materials);
-    sign.position.set(x, y, z);
+    sign.position.set(x, y + this.lapY, z + this.lapZ);
     this.staticVisuals.add(sign);
     for (const side of [-1, 1]) {
       const post = makePole(y + height / 2, 0xfff6e5, this.materials);
-      post.position.set(x + side * (width / 2 - 0.3), 0, z + 0.2);
+      post.position.set(x + side * (width / 2 - 0.3), this.lapY, z + 0.2 + this.lapZ);
       this.group.add(post);
     }
   }
 
   private addStartLine(z: number, width: number): void {
-    const texture = makeCheckerTexture('#ff6b6b', '#fff6e5');
-    texture.repeat.set(6, 1);
-    this.ownedTextures.add(texture);
+    const texture = makeCheckerTexture('#ff6b6b', '#fff6e5', 6, 1);
     const line = new Mesh(
       new RoundedBoxGeometry(width - 1.4, 0.04, 0.8, 2, 0.02),
       this.materials.toon({ color: 0xffffff, map: texture }),
@@ -851,7 +928,6 @@ export class Course implements Level {
     this.staticVisuals.add(line);
 
     const arrowTexture = makeArrowTexture();
-    this.ownedTextures.add(arrowTexture);
     const arrowMaterial = new MeshBasicMaterial({
       map: arrowTexture,
       transparent: true,
@@ -875,10 +951,7 @@ export class Course implements Level {
   }
 
   private finishChecker(): Texture {
-    const texture = makeCheckerTexture('#fff6e5', '#ff6b6b');
-    texture.repeat.set(3, 3);
-    this.ownedTextures.add(texture);
-    return texture;
+    return makeCheckerTexture('#fff6e5', '#ff6b6b', 3, 3);
   }
 
   private addPlatform(
@@ -901,7 +974,7 @@ export class Course implements Level {
       topTexture,
       this.materials,
     );
-    platform.position.set(x, y, z);
+    platform.position.set(x, y + this.lapY, z + this.lapZ);
     this.staticVisuals.add(platform);
     return platform;
   }
@@ -918,7 +991,7 @@ export class Course implements Level {
   ): Collider {
     const collider = createBoxCollider({
       kind,
-      position: new Vector3(x, y, z),
+      position: new Vector3(x, y + this.lapY, z + this.lapZ),
       halfExtents: new Vector3(hx, hy, hz),
       velocity,
     });
@@ -937,7 +1010,7 @@ export class Course implements Level {
   ): Collider {
     const collider = createCylinderCollider({
       kind,
-      position: new Vector3(x, y, z),
+      position: new Vector3(x, y + this.lapY, z + this.lapZ),
       radius,
       height,
       bounceStrength,
@@ -999,7 +1072,13 @@ export class Course implements Level {
   animate(elapsed: number, dt: number): void {
     this.beltTexture.offset.x = (elapsed * 0.75) % 1;
     this.beltTexture.offset.y = 0;
-    this.padVisual.scale.set(1 + Math.sin(elapsed * 3.4) * 0.035, 1, 1 + Math.sin(elapsed * 3.4) * 0.035);
+    for (const padVisual of this.padVisuals) {
+      padVisual.scale.set(
+        1 + Math.sin(elapsed * 3.4) * 0.035,
+        1,
+        1 + Math.sin(elapsed * 3.4) * 0.035,
+      );
+    }
 
     for (const cloud of this.clouds) {
       cloud.group.position.x =
@@ -1016,7 +1095,9 @@ export class Course implements Level {
     for (const crowd of this.crowd) {
       crowd.group.position.y = crowd.baseY + Math.abs(Math.sin(elapsed * 2.1 + crowd.phase)) * 0.14;
     }
-    this.finishSign.rotation.z = Math.sin(elapsed * 1.5) * 0.012;
+    for (const finishSign of this.finishSigns) {
+      finishSign.rotation.z = Math.sin(elapsed * 1.5) * 0.012;
+    }
     this.confetti.update(dt, elapsed);
   }
 
@@ -1094,14 +1175,19 @@ export class Course implements Level {
   }
 
   isAtFinish(position: Vector3): boolean {
+    const finish = this.finishPosition;
     return (
-      position.y > 4.45 && position.z < -152 && position.z > -162 && Math.abs(position.x) < 6
+      position.y > finish.y - 0.2 &&
+      Math.abs(position.z - finish.z) < 5 &&
+      Math.abs(position.x) < 6
     );
   }
 
   status(): LevelStatus {
     const percent = Math.round(this.bodyProgress * 100);
     const section = this.sectionAt(this.bodyProgress);
+    const lap = this.lapAt(this.bodyProgress);
+    const lapLabel = lap > 0 ? `LAP ${lap + 1} · ` : '';
     return {
       mode: this.mode,
       title: this.title,
@@ -1112,7 +1198,11 @@ export class Course implements Level {
       progressLabel: `${percent}%`,
       metricLabel: 'PROGRESS',
       metricValue: `${percent}%`,
-      phase: this.result ? 'FINISHED' : section ? `SECTION ${section.id} · ${section.name}` : 'SHOWTIME',
+      phase: this.result
+        ? 'FINISHED'
+        : section
+          ? `${lapLabel}SECTION ${section.id} · ${section.name}`
+          : 'SHOWTIME',
       result: this.result,
     };
   }
@@ -1132,13 +1222,28 @@ export class Course implements Level {
 
   dispose(): void {
     disposeObject(this.group, this.ownedTextures);
+    // The renderer owns the shadow render target, not the Course group. A new
+    // Course installs a new DirectionalLight, so release the old map or three
+    // keeps one texture per Show install.
+    this.directional.shadow.map?.dispose();
+    this.directional.shadow.map = null;
     this.materials.dispose();
     this.confetti.dispose();
   }
 
+  private lapAt(progress: number): number {
+    const z = this.plan.startZ - progress * (this.plan.startZ - this.finishPosition.z);
+    if (z <= -161.5) return 1;
+    return 0;
+  }
+
   private sectionAt(progress: number): CourseSectionPlan | null {
     if (progress <= 0) return null;
-    const z = this.plan.startZ - progress * (this.plan.startZ - this.plan.finishZ);
+    const lap = this.lapAt(progress);
+    const z =
+      this.plan.startZ -
+      progress * (this.plan.startZ - this.finishPosition.z) -
+      COURSE_LAP_OFFSET_Z * lap;
     for (const section of this.plan.sections) {
       if (z <= section.startZ && z >= section.endZ) return section;
     }
@@ -1156,7 +1261,7 @@ export class Course implements Level {
       [0, -16.5, 0.02, 'jump'],
       [0, -21, 0.02, 'run'],
       [0, -30, 0.02, 'run'],
-      [0, -41, 0.02, 'jump'],
+      [0, -41, 0.02, 'run'],
       [0, -51, 0.02, 'ride'],
       [0, -58, 0.02, 'jump'],
       [0, -65, 0.02, 'ride'],
@@ -1175,11 +1280,31 @@ export class Course implements Level {
       [0, -149.5, 3.42, 'jump'],
       [0, -156, 4.52, 'run'],
     ];
-    return actions.map(([x, z, y, action], index) => ({
-      position: new Vector3(x + this.plan.platformOffset * (index % 2 === 0 ? 0.3 : -0.3), y, z),
-      action,
-      radius: action === 'jump' ? 1.5 : 1.1,
-      lane: index % 3,
-    }));
+    const waypoints: Waypoint[] = [];
+    for (let lap = 0; lap < COURSE_LAP_COUNT; lap += 1) {
+      const zOffset = COURSE_LAP_OFFSET_Z * lap;
+      const yOffset = COURSE_LAP_OFFSET_Y * lap;
+      actions.forEach(([x, z, y, action], index) => {
+        waypoints.push({
+          position: new Vector3(
+            x + this.plan.platformOffset * (index % 2 === 0 ? 0.3 : -0.3),
+            y + yOffset,
+            z + zOffset,
+          ),
+          action,
+          radius: action === 'jump' ? 1.5 : 1.1,
+          lane: index % 3,
+        });
+      });
+      if (lap < COURSE_LAP_COUNT - 1) {
+        waypoints.push({
+          position: new Vector3(0, 4.52 + yOffset, -162 + zOffset),
+          action: 'run',
+          radius: 1.1,
+          lane: 0,
+        });
+      }
+    }
+    return waypoints;
   }
 }

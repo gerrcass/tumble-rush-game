@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Scene } from 'three';
+import { Scene, Vector3 } from 'three';
 import { createLevel } from '../game/levels/factory';
 import { FIXED_STEP, PhysicsWorld } from '../game/physics/PhysicsWorld';
 import { BeanBody } from '../game/physics/BeanBody';
-import { createBotBrain } from '../game/bots/BotBrain';
+import { createBotBrain, createCasualPilot } from '../game/bots/BotBrain';
 import {
   Contestant,
   createBotProfiles,
@@ -76,6 +76,7 @@ function runShow(
   seed: number,
   mode: 'course' | 'hexapop',
   seconds: number,
+  casual = false,
 ): {
   match: Match;
   level: Level;
@@ -119,6 +120,7 @@ function runShow(
     },
   });
 
+  const casualPilot = casual ? createCasualPilot(player, seed) : null;
   match.startShow();
   if (mode === 'hexapop') match.jumpToRound(1);
   match.beginRound();
@@ -135,7 +137,19 @@ function runShow(
     for (const contestant of active) {
       if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
-        contestant.controller.update(FIXED_STEP, IDLE_FRAME);
+        contestant.controller.update(
+          FIXED_STEP,
+          casualPilot
+            ? casualPilot.think({
+                level,
+                body: contestant.body,
+                contestants: active,
+                leaderProgress,
+                humanProgress: contestant.body.eliminated ? null : contestant.progress,
+                dt: FIXED_STEP,
+              })
+            : IDLE_FRAME,
+        );
       } else {
         const brain =
           contestant.brain ?? createBotBrain(level.mode, contestant, seed);
@@ -152,6 +166,14 @@ function runShow(
       }
     }
     world.step(FIXED_STEP);
+    if (!player.body.eliminated) {
+      if (player.body.landedThisStep) {
+        player.controller.notifyLand(player.body.lastImpactSpeed);
+        player.body.landedThisStep = false;
+      } else if (player.body.lastImpactSpeed > 12) {
+        player.controller.notifyImpact(player.body.lastImpactSpeed);
+      }
+    }
     match.afterPhysics(level);
     elapsed += FIXED_STEP;
   }
@@ -175,6 +197,10 @@ describe('Sunrise Scramble real-pack no-input race', () => {
       expect(finishers[7]?.finishTime ?? Infinity).toBeLessThan(120);
       expect(match.phase).toBe('results');
       expect(placements.filter((entry) => entry.qualified)).toHaveLength(8);
+      // M2 Course band: the second lap and humanized pack must not collapse
+      // back into the 26 s metronome or drag past the 90 s ceiling.
+      expect(elapsed).toBeGreaterThanOrEqual(45);
+      expect(elapsed).toBeLessThanOrEqual(90);
       // The human did not move: a timeout must not hand them a qualifier slot.
       expect(playerEntry?.qualified).toBe(false);
       expect(playerEntry?.status).toBe('ELIMINATED');
@@ -182,6 +208,54 @@ describe('Sunrise Scramble real-pack no-input race', () => {
     },
     30_000,
   );
+});
+
+describe('Course scripted casual qualification (M2)', () => {
+  it('qualifies at least 7/10 while the idle human never qualifies', () => {
+    const seeds = [20260418, 20365147, 20469876, 20574605, 20679334, 20784063, 20888792, 20993521, 21098250, 21202979];
+    let qualified = 0;
+    for (const seed of seeds) {
+      const { match, level, elapsed } = runShow(seed, 'course', 125, true);
+      const placements = match.finalPlacements;
+      const playerEntry = placements.find((entry) => entry.isPlayer);
+      if (playerEntry?.qualified) qualified += 1;
+      const idle = runShow(seed, 'course', 125, false);
+      const idlePlayer = idle.match.finalPlacements.find((entry) => entry.isPlayer);
+      console.log(
+        `CASUAL seed=${seed} ${playerEntry?.qualified ? 'Q' : 'OUT'} finish=${playerEntry?.finishTime?.toFixed(1) ?? '—'} clock=${elapsed.toFixed(1)} finishers=${placements.filter((entry) => entry.finishTime !== null).length}`,
+      );
+      expect(placements.filter((entry) => entry.finishTime !== null).length).toBeGreaterThanOrEqual(8);
+      expect(elapsed).toBeGreaterThanOrEqual(45);
+      expect(elapsed).toBeLessThanOrEqual(90);
+      expect(idlePlayer?.qualified).toBe(false);
+      expect(idlePlayer?.status).toBe('ELIMINATED');
+      level.dispose();
+      idle.level.dispose();
+    }
+    expect(qualified).toBeGreaterThanOrEqual(7);
+  }, 120_000);
+});
+
+describe('Course two-lap grammar (M2)', () => {
+  it('reuses the five sections twice and only finishes at the final gate', () => {
+    const course = createLevel('course', 20260418);
+    const lapTwoFinish = new Vector3(0, 4.6, -156);
+    expect(course.waypoints).toHaveLength(55);
+    expect(course.finishPosition.z).toBeCloseTo(-340, 5);
+    expect(course.finishPosition.y).toBeCloseTo(9.1, 5);
+    // Lap 1's gate is a lap gate, not the finish.
+    expect(course.isAtFinish(lapTwoFinish)).toBe(false);
+    expect(course.isAtFinish(course.finishPosition)).toBe(true);
+    // The start deck sits just inside the authored 18 u start line.
+    expect(course.progress(new Vector3(0, 0, 16))).toBeGreaterThan(0);
+    expect(course.progress(new Vector3(0, 0, 16))).toBeLessThan(0.01);
+    expect(course.progress(course.finishPosition)).toBeCloseTo(1, 5);
+    // The same five section names are authored on both laps.
+    const status = course.status();
+    expect(status.phase).toBe('SHOWTIME');
+    expect(course.title).toBe('SUNRISE SCRAMBLE');
+    course.dispose();
+  });
 });
 
 describe('Course finish gate authority', () => {

@@ -140,7 +140,7 @@ export class TrainingDeck implements Level {
   private readonly ownedTextures = new Set<Texture>();
   private readonly moving: MovingPlatform;
   private readonly confetti: Confetti;
-  private readonly beltTexture = makeBeltTexture();
+  private readonly beltTexture = makeBeltTexture(2, 4);
   private readonly directional: DirectionalLight;
   private readonly cloudDrifters: Drifter[] = [];
   private readonly balloons: Drifter[] = [];
@@ -154,7 +154,7 @@ export class TrainingDeck implements Level {
     this.seed = seed >>> 0;
     const rng = new Rng(this.seed);
     this.ownedTextures.add(this.beltTexture);
-    this.beltTexture.repeat.set(2, 4);
+
 
     this.group.add(makeSky());
 
@@ -220,9 +220,7 @@ export class TrainingDeck implements Level {
     this.addCylinder(0, 0.16, -27.5, 1.2, 0.32, 'bounce', 15.5);
 
     // Raised finish deck with a checkerboard top.
-    const checker = makeCheckerTexture('#fff6e5', '#ff6b6b');
-    checker.repeat.set(2, 2);
-    this.ownedTextures.add(checker);
+    const checker = makeCheckerTexture('#fff6e5', '#ff6b6b', 2, 2);
     this.addPlatform(0, -34.5, 9, 6, 0xffffff, 0x59d9b0, 0xffc145, checker, 3);
     this.addBox(0, 2.5, -34.5, 4.5, 0.5, 3, 'solid');
     this.buildFinishGate();
@@ -619,9 +617,7 @@ export class TrainingDeck implements Level {
   }
 
   private buildStartDecals(): void {
-    const lineTexture = makeCheckerTexture('#ff6b6b', '#fff6e5');
-    lineTexture.repeat.set(5, 1);
-    this.ownedTextures.add(lineTexture);
+    const lineTexture = makeCheckerTexture('#ff6b6b', '#fff6e5', 5, 1);
     const lineMaterial = makeToonMaterial({ color: 0xffffff, map: lineTexture });
     const line = new Mesh(new RoundedBoxGeometry(8.5, 0.035, 0.62, 2, 0.02), lineMaterial);
     line.position.set(0, 0.02, 6.9);
@@ -629,7 +625,6 @@ export class TrainingDeck implements Level {
     this.group.add(line);
 
     const arrowTexture = makeArrowTexture();
-    this.ownedTextures.add(arrowTexture);
     const arrowMaterial = new MeshBasicMaterial({
       map: arrowTexture,
       transparent: true,

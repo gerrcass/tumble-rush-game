@@ -62,6 +62,7 @@ export interface DebugShow {
   roundIndex: number;
   roundNumber: number;
   roundTitle: string;
+  roundMode: LevelMode;
   time: number;
   qualified: number;
   qualifiers: number;
@@ -70,6 +71,16 @@ export interface DebugShow {
   seedLabel: string;
   difficulty: DifficultyId;
   winner: string | null;
+}
+
+export interface DebugCourse {
+  laps: number;
+  lapOffsetZ: number;
+  lapOffsetY: number;
+  length: number;
+  finishZ: number;
+  finishY: number;
+  waypointCount: number;
 }
 
 /**
@@ -101,11 +112,17 @@ export interface TumbleDebugApi {
   readonly show: DebugShow;
   readonly contestants: DebugContestants;
   readonly roundPlacements: readonly RoundPlacement[];
+  readonly autopilot: 'off' | 'casual';
+  readonly course: DebugCourse | null;
   setQuality: (quality: Quality) => void;
   teleport: (x: number, y: number, z: number) => void;
   startMode: (mode: LevelMode) => void;
   finishNow: () => void;
   startShow: (difficulty?: DifficultyId) => void;
+  startObservedShow: (difficulty?: DifficultyId) => void;
+  startCasualRun: (difficulty?: DifficultyId) => void;
+  setPlayerAutopilot: (mode: 'off' | 'casual') => void;
+  isAtFinish: (x: number, y: number, z: number) => boolean;
   startPractice: (mode?: LevelMode) => void;
   beginRound: () => void;
   finishRound: () => void;

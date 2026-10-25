@@ -246,7 +246,12 @@ test.describe('Review 1 — copy, seeds, focus and leaks', () => {
     const info = await page.evaluate(() => window.__tumble?.renderInfo);
     console.log(`COURSE_RENDER_INFO ${JSON.stringify(info)}`);
     expect(info).toBeTruthy();
-    expect(info?.calls).toBeLessThanOrEqual(250);
-    expect(info?.triangles).toBeLessThanOrEqual(120_000);
+    // M2 doubles the authored Course with a second lap of the same five
+    // sections, so the start-of-Course view now contains ~25% more draw calls
+    // and ~60% more triangles than the v1 243/117k baseline. The budget is
+    // scaled once for the longer course (see docs/METRICS.md); it is still a
+    // hard gate against accidental duplication or new scenery.
+    expect(info?.calls).toBeLessThanOrEqual(320);
+    expect(info?.triangles).toBeLessThanOrEqual(200_000);
   });
 });

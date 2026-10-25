@@ -68,6 +68,13 @@ export interface MatchOptions {
   contestants: readonly Contestant[];
   player: Contestant;
   callbacks: MatchCallbacks;
+  /**
+   * Debug/QA measurement only. When true, an eliminated or non-qualifying
+   * human does not end the Show: the next Round fields the bots that did
+   * qualify. Normal play leaves this false and a missed qualification still
+   * ends the Show immediately.
+   */
+  continueWhenPlayerOut?: boolean;
 }
 
 export interface MatchHud {
@@ -124,6 +131,7 @@ export class Match {
   spectating: Contestant | null = null;
 
   private readonly callbacks: MatchCallbacks;
+  private readonly continueWhenPlayerOut: boolean;
   private entrants: Contestant[] = [];
   private finishers = new Set<string>();
   private winnerId: string | null = null;
@@ -141,6 +149,7 @@ export class Match {
     this.contestants = options.contestants;
     this.player = options.player;
     this.callbacks = options.callbacks;
+    this.continueWhenPlayerOut = options.continueWhenPlayerOut ?? false;
     this.applyDifficulty();
   }
 
@@ -635,8 +644,12 @@ export class Match {
     if (!last) return;
     const playerEntry = last.placements.find((entry) => entry.isPlayer);
     const playerQualified = Boolean(playerEntry?.qualified);
-    if (!playerQualified || this.roundIndex >= SHOW_ROUNDS.length - 1) {
-      this.finishShow(playerQualified && this.roundIndex >= SHOW_ROUNDS.length - 1, last, playerEntry);
+    const lastRound = this.roundIndex >= SHOW_ROUNDS.length - 1;
+    // Normal play: a missed qualification ends the Show. The pacing harness
+    // opts into an observed show so it can measure all three Rounds even when
+    // its idle human is out of the Course. That switch is debug-only.
+    if (lastRound || (!playerQualified && !this.continueWhenPlayerOut)) {
+      this.finishShow(playerQualified && lastRound, last, playerEntry);
       return;
     }
     this.roundIndex += 1;
