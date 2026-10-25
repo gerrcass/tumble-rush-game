@@ -9,6 +9,8 @@
     <a href="https://github.com/gerrcass/tumble-rush-game/actions/workflows/deploy.yml">Deployment</a>
     &nbsp;·&nbsp;
     <a href="docs/SPEC.md">Spec</a>
+    &nbsp;·&nbsp;
+    <a href="docs/LABELS.md">Tracker labels</a>
   </p>
 </div>
 
