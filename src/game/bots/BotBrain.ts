@@ -473,12 +473,13 @@ export function selectHexTarget(
   y: number,
   lane: number,
   occupied?: readonly { x: number; z: number }[],
+  preferRing?: number,
 ): LevelTile | null {
   const laneAngle = (lane % 6) * (Math.PI / 3);
   let best: LevelTile | null = null;
   let bestScore = Infinity;
   for (const tile of tiles) {
-    if (tile.state !== 'idle') continue;
+    if (tile.state !== 'idle' || tile.safe) continue;
     const dx = tile.x - x;
     const dz = tile.z - z;
     const distance = Math.hypot(dx, dz);
@@ -487,9 +488,17 @@ export function selectHexTarget(
     if (vertical > 1.5 || vertical < -4.4) continue;
     if (distance > 3.2 && vertical < -2.4) continue;
     let score = distance + Math.abs(vertical) * 0.9 + tile.ring * 0.28;
+    // Hexapop's floor should be eaten ring by ring. Without this penalty a
+    // pack at the edge of the consumed circle always picks the next tile
+    // outward, reaches the rim in ~15 s and falls off the world. Staying on
+    // the current ring (or stepping in) lets the arena last the full beat.
+    if (preferRing !== undefined) {
+      const outward = tile.ring - preferRing;
+      if (outward > 0) score += outward * 3.2;
+    }
     if (distance > 1.2) {
       const angle = Math.atan2(dz, dx);
-      score += Math.abs(Math.sin(angle - laneAngle)) * 0.22;
+      score += Math.abs(Math.sin(angle - laneAngle)) * 0.55;
     }
     if (occupied) {
       for (const other of occupied) {
@@ -711,79 +720,154 @@ export class HexBrain extends BotBrain {
 
     const current = nearestTile(tiles, body.position);
     const currentKey = current ? `${current.x.toFixed(2)},${current.z.toFixed(2)}` : 'air';
-    const warning = current?.state === 'warning' || current?.state === 'falling';
-
     if (currentKey === this.lastTileKey && body.grounded) {
       this.staleTimer += context.dt;
+    } else {
+      this.staleTimer = Math.max(0, this.staleTimer - context.dt * 2);
     }
     this.lastTileKey = currentKey;
 
-    const targetGone = !this.target || this.target.state !== 'idle';
+    // M2-003: a readable dwell. A bot shares the tile's warning with the
+    // player: it stays put while the cracks are wide, then leaves on the last
+    // beat. This is the same 3.3 s warning the player sees, never a private
+    // timer, and it keeps the pack from deleting the floor with bunny hops.
+    const leaveAt = 0.55 + (1 - this.owner.skill) * 0.35;
+    const dangerLeft = current?.state === 'warning' ? current.warning : 0;
+    const holding =
+      body.grounded &&
+      current !== null &&
+      current.state === 'warning' &&
+      dangerLeft > leaveAt &&
+      !current.safe;
+
+    if (holding) {
+      this.target = null;
+      this.owner.targetLabel = `hold ${dangerLeft.toFixed(1)}`;
+      this.steer(0, 0, 0);
+      return frame;
+    }
+
     const targetReached = this.target
-      ? Math.hypot(this.target.x - body.position.x, this.target.z - body.position.z) < 0.5
+      ? Math.hypot(this.target.x - body.position.x, this.target.z - body.position.z) < 0.6
       : false;
-    if (targetGone || targetReached || this.decisionTimer <= 0 || warning || this.staleTimer > 1.1) {
-      const occupied = context.contestants
-        .filter((other) => other !== this.owner && !other.body.eliminated)
-        .map((other) => ({ x: other.body.position.x, z: other.body.position.z }));
-      this.target = selectHexTarget(
-        tiles,
-        body.position.x,
-        body.position.z,
-        body.position.y,
-        this.owner.lane,
-        occupied,
-      );
-      if (!this.target) {
-        const fallback = level.nearestSafeTile?.(body.position) ?? null;
-        this.target = fallback;
-      }
-      this.decisionTimer = this.owner.reaction + 0.18;
-      this.staleTimer = 0;
-      if (this.rng.chance(this.owner.mistakeChance * 0.35)) {
-        this.hesitation = this.rng.float(0.12, 0.35);
+    if (
+      !this.target ||
+      this.target.state !== 'idle' ||
+      targetReached ||
+      this.staleTimer > 1.6 ||
+      this.decisionTimer <= 0
+    ) {
+      // An adjacent idle tile is the natural next beat. If there is none, the
+      // nearest safe tile is the fallback; the brain never aims at a gap.
+      this.target = this.pickNeighbour(tiles, context);
+      this.decisionTimer = 0.4 + this.owner.reaction;
+      if (this.rng.chance(this.owner.mistakeChance * 0.2)) {
+        this.hesitation = this.rng.float(0.2, 0.5);
       }
     }
 
     const target = this.target;
-    this.owner.targetLabel = target ? `tile ${target.tier}/${target.state}` : 'no-tile';
+    this.owner.targetLabel = target ? `tile ${target.tier}/${target.ring}` : 'no-tile';
     if (!target) {
-      this.steer(-body.position.x, -body.position.z, 0.82);
-      if (body.grounded && this.staleTimer > 0.7) frame.jumpPressed = true;
+      // Nowhere left to stand: drift toward the middle and take the drop.
+      this.steer(-body.position.x, -body.position.z, 0.62);
       return frame;
     }
 
     const dx = target.x - body.position.x;
     const dz = target.z - body.position.z;
     const horizontal = Math.hypot(dx, dz);
-    const speed = this.hesitation > 0 ? 0.7 : 0.92 + this.owner.skill * 0.06;
+    const speed = this.hesitation > 0 ? 0.38 : 0.5 + this.owner.skill * 0.07;
     this.steer(dx, dz, speed);
+    this.owner.targetLabel = `${this.owner.targetLabel} ${horizontal.toFixed(1)}`;
 
     if (body.grounded) {
-      if (warning) {
+      const directionLength = horizontal || 1;
+      const groundAhead = hasGroundAt(
+        context.level,
+        body.position.x + (dx / directionLength) * 0.72,
+        body.position.y - 0.08,
+        body.position.z + (dz / directionLength) * 0.72,
+      );
+      // Walk between adjacent hexes; commit to a hop when the next step is a
+      // gap or the tile below is already dropping. The jump is just an intent
+      // frame: the same controller and gravity decide the landing.
+      if (!groundAhead) {
         frame.jumpPressed = true;
         frame.jumpHeld = true;
-      } else if (horizontal < 2.15 && target.state === 'idle') {
+        this.staleTimer = 0;
+      } else if (current?.state === 'falling') {
         frame.jumpPressed = true;
         frame.jumpHeld = true;
-      } else if (this.staleTimer > 0.8) {
+        this.staleTimer = 0;
+      } else if (horizontal > 1.35 && (dangerLeft <= leaveAt + 0.05 || this.staleTimer > 0.8)) {
         frame.jumpPressed = true;
+        frame.jumpHeld = true;
         this.staleTimer = 0;
       }
     }
 
     return frame;
   }
+
+  /**
+   * Prefer a neighbouring hex at the same height: it is reachable with one
+   * walking step, so the bot leaves before the warning expires. The public
+   * target selector still handles occupancy and lane preference.
+   */
+  private pickNeighbour(
+    tiles: readonly LevelTile[],
+    context: BotContext,
+  ): LevelTile | null {
+    const body = context.body;
+    const occupied = context.contestants
+      .filter((other) => other !== this.owner && !other.body.eliminated)
+      .map((other) => ({ x: other.body.position.x, z: other.body.position.z }));
+    const near = tiles.filter((tile) => {
+      if (tile.state !== 'idle' || tile.safe) return false;
+      if (Math.abs(tile.y - body.position.y) > 1.4) return false;
+      return Math.hypot(tile.x - body.position.x, tile.z - body.position.z) <= 2.4;
+    });
+    // A hop reaches ~2.6 u. Only fall back to a drop within that envelope;
+    // aiming at a tile 4 u across a hole made the bot leap into the slime and
+    // made the Round end before its Sugar Rush beat.
+    const reachable = tiles.filter((tile) => {
+      if (tile.state !== 'idle' || tile.safe) return false;
+      const vertical = tile.y - body.position.y;
+      if (vertical > 1.5 || vertical < -3.2) return false;
+      return Math.hypot(tile.x - body.position.x, tile.z - body.position.z) <= 2.9;
+    });
+    const pool = near.length > 0 ? near : reachable;
+    if (pool.length === 0) return null;
+    const current = nearestTile(tiles, body.position);
+    return (
+      selectHexTarget(
+        pool,
+        body.position.x,
+        body.position.z,
+        body.position.y,
+        this.owner.lane,
+        occupied,
+        current?.ring,
+      ) ?? context.level.nearestSafeTile?.(body.position) ?? null
+    );
+  }
 }
 
 export class CrownBrain extends BotBrain {
   private waypointIndex = 0;
   private climbTimer = 0;
+  private pauseTimer = 0;
+  private pauseIndex = -1;
+  private recoveryTimer = 0;
 
   reset(): void {
     super.reset();
     this.waypointIndex = 0;
     this.climbTimer = 0;
+    this.pauseTimer = 0;
+    this.pauseIndex = -1;
+    this.recoveryTimer = 0;
   }
 
   think(context: BotContext): ControllerFrame {
@@ -813,16 +897,12 @@ export class CrownBrain extends BotBrain {
       break;
     }
 
-    // Recover from a beam hit: if we fell below the current step, re-route from
-    // an earlier waypoint instead of running at geometry above us.
-    if (body.position.y < (waypoints[this.waypointIndex]?.position.y ?? 0) - 3.2) {
-      while (
-        this.waypointIndex > 0 &&
-        body.position.y < (waypoints[this.waypointIndex]?.position.y ?? 0) - 1.4
-      ) {
-        this.waypointIndex -= 1;
-      }
-    }
+    // A knock can drop a finalist past several steps. Re-route from the
+    // highest platform at or below them instead of running at geometry above
+    // their head; the stop is a short recovery, never an elimination. Without
+    // this, a fall back to the start deck left the bot pressed against the lip
+    // forever, because it kept aiming at a step it could no longer jump to.
+    this.rerouteIfBelowRoute(waypoints);
 
     this.owner.targetLabel = `${this.waypointIndex}`;
     const waypoint = waypoints[Math.min(this.waypointIndex, waypoints.length - 1)];
@@ -830,10 +910,38 @@ export class CrownBrain extends BotBrain {
       this.waypointIndex >= waypoints.length
         ? level.crownPosition ?? level.finishPosition
         : waypoints[this.waypointIndex]!.position;
+
+    // Authored waiting beats stretch the climb without teleporting: the bot
+    // stands still at the lip, reads the rotating beam or bobbing donut, then
+    // commits. Every one of these is a normal grounded stand.
+    if (this.pauseIndex !== this.waypointIndex) {
+      const pause = crownPauseFor(this.waypointIndex);
+      if (pause > 0) {
+        this.pauseIndex = this.waypointIndex;
+        this.pauseTimer = pause;
+      }
+    }
+    if (this.pauseTimer > 0) {
+      this.pauseTimer = Math.max(0, this.pauseTimer - context.dt);
+      this.recoveryTimer = 0;
+      this.owner.targetLabel = `${this.waypointIndex} WATCH`;
+      this.steer(0, 0, 0);
+      return frame;
+    }
+    if (this.recoveryTimer > 0) {
+      this.recoveryTimer = Math.max(0, this.recoveryTimer - context.dt);
+      this.owner.targetLabel = `${this.waypointIndex} RECOVER`;
+      this.steer(0, 0, 0);
+      return frame;
+    }
+
     const dx = target.x - body.position.x;
     const dz = target.z - body.position.z;
     const horizontal = Math.hypot(dx, dz);
-    const baseSpeed = 0.9 + this.owner.skill * 0.1;
+    const baseSpeed = 0.77 + this.owner.skill * 0.08;
+    const directionLength = horizontal || 1;
+    const dirX = dx / directionLength;
+    const dirZ = dz / directionLength;
 
     // Donuts rise and fall under the authored waypoint. Wait at the lip for a
     // low pass instead of jumping into the side of a platform that is 2 u up.
@@ -854,6 +962,22 @@ export class CrownBrain extends BotBrain {
 
     if (this.maybeShoveNeighbour(context)) return frame;
 
+    // A missing floor ahead is a take-off, not a place to run. This is the same
+    // ledge probe a human uses; it never adds a jump the controller would not
+    // allow, it only presses the button while still grounded.
+    const groundAhead = hasGroundAt(
+      level,
+      body.position.x + dirX * 0.72,
+      body.position.y - 0.08,
+      body.position.z + dirZ * 0.72,
+    );
+    if (body.grounded && !groundAhead) {
+      frame.jumpPressed = true;
+      frame.jumpHeld = true;
+      this.staleTimer = 0;
+      return frame;
+    }
+
     if (body.grounded && hazardWithin(level, body, 3.7)) {
       // A sweeping beam at ankle height is the final's biggest filter. A hop
       // clears it and costs less than a stumble off the spiral.
@@ -865,10 +989,9 @@ export class CrownBrain extends BotBrain {
     if (body.grounded && this.hesitation <= 0) {
       const wantsJump = waypoint?.action === 'jump' || waypoint?.action === 'ride' || rise > 0.3;
       // A 1.1 u riser needs the jump to start while the bean is still ~1.5 u
-      // from the lip. Starting at 2.7 u (the old value) arrived at the side of
-      // the step below its top, so every finalist face-planted into the first
-      // stair. Scale the take-off window with the step height instead.
-      const trigger = clamp(1.9 + Math.max(0, rise) * 1.45, 2.2, 3.9);
+      // from the lip. A slower M2 climb needs a shorter runway than the original
+      // sprint, or the bean reaches the apex before the step and lands short.
+      const trigger = clamp(1.45 + Math.max(0, rise) * 1.1, 1.75, 3.05);
       if (wantsJump && horizontal < trigger) {
         frame.jumpPressed = true;
         frame.jumpHeld = true;
@@ -891,13 +1014,79 @@ export class CrownBrain extends BotBrain {
 
     return frame;
   }
+
+  /**
+   * If a knock left the bot below the current step, walk the route back to the
+   * highest authored platform it is actually standing at or above. The pause
+   * is the "recovery grace": a beat to re-read the climb, not a free jump.
+   */
+  private rerouteIfBelowRoute(waypoints: readonly Waypoint[]): void {
+    if (!this.owner.body.grounded) return;
+    const bodyY = this.owner.body.position.y;
+    const current = waypoints[this.waypointIndex];
+    if (!current || bodyY >= current.position.y - 1) return;
+    let index = this.waypointIndex;
+    while (index > 0) {
+      const previous = waypoints[index - 1]!;
+      if (previous.position.y <= bodyY + 0.65) break;
+      index -= 1;
+    }
+    if (index !== this.waypointIndex) {
+      this.waypointIndex = index;
+      this.pauseIndex = -1;
+      this.recoveryTimer = 0.45;
+    }
+  }
+}
+
+/**
+ * Authored waiting beats for the final. These are display rhythm, not physics:
+ * the bot stands on its platform, lets the hazard cycle, and commits again.
+ * Sum is roughly 11 s, which lifts the climb into the M2 45–80 s band without
+ * touching the player's controller or the level geometry.
+ */
+function crownPauseFor(index: number): number {
+  switch (index) {
+    case 1:
+      return 0.6;
+    case 4:
+      return 0.45;
+    case 8:
+      return 0.5;
+    case 12:
+      return 0.7;
+    case 13:
+    case 15:
+    case 17:
+    case 19:
+    case 21:
+      return 0.4;
+    case 22:
+      return 0.8;
+    case 26:
+      return 0.55;
+    case 30:
+      return 0.55;
+    case 34:
+      return 0.6;
+    case 38:
+      return 0.7;
+    case 41:
+      return 0.6;
+    case 42:
+      return 0.55;
+    case 43:
+      return 0.75;
+    default:
+      return 0;
+  }
 }
 
 function nearestTile(tiles: readonly LevelTile[], position: Vector3): LevelTile | null {
   let best: LevelTile | null = null;
   let bestDistance = 1.1;
   for (const tile of tiles) {
-    if (tile.state === 'gone') continue;
+    if (tile.state === 'gone' || tile.safe) continue;
     const dx = tile.x - position.x;
     const dz = tile.z - position.z;
     const dy = Math.abs(tile.y - position.y);

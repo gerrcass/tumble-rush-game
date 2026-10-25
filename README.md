@@ -24,11 +24,11 @@ Tumble Rush is an original, single-player 3D party battle royale. You are one of
 
 | Round | Mode | Field | Advance | The idea |
 | --- | --- | --- | --- | --- |
-| 1 | **Sunrise Scramble** | 16 | Top 8 finishers | Five obstacle sections, rotating sweepers, pendulums, jelly jumps, pushers and a raised Finish Gate. |
+| 1 | **Sunrise Scramble** | 16 | Top 8 finishers | Two laps of five obstacle sections, rotating sweepers, pendulums, jelly jumps, pushers and a raised Finish Gate. |
 | 2 | **Hexapop** | 8 | Last 4 standing | Three honeycomb tiers over pink slime. Every tile warns, then drops. Sugar Rush eats the arena from the outside in. |
 | 3 | **Crown Climb** | 4 | First to the crown | A vertical spiral of rotating beams, rising donuts and pendulums while candy slime climbs below. |
 
-A full show runs a few minutes, with a two-minute clock on the Course and final. Qualifying earns **kudos**; winning earns a **crown**. Kudos unlock colors, patterns, hats, and emotes in the live 3D Customize screen. Everything is stored locally in your browser.
+A full show runs **3–4 minutes**, with a two-minute clock on the Course and final. Qualifying earns **kudos**; winning earns a **crown**. Kudos unlock colors, patterns, hats, and emotes in the live 3D Customize screen. Everything is stored locally in your browser.
 
 ## Features
 
@@ -40,7 +40,7 @@ A full show runs a few minutes, with a two-minute clock on the Course and final.
 - **Desktop and touch** — keyboard + mouse, gamepad, and a touch joystick with jump/dive/grab/emote buttons. Responsive down to 390×844.
 - **Accessible by default** — keyboard routes, visible focus, ARIA live announcements, reduced motion, name-tag toggle, and independent audio controls.
 - **Local progression** — versioned profile, safe corrupt-data recovery, kudos economy, cosmetic unlocks, best finish, and a daily seeded show.
-- **Tested and deployed** — 95 Vitest unit tests, 43 Playwright checks, CI on every PR, and GitHub Pages deployment from `main`.
+- **Tested and deployed** — 109 Vitest unit tests, 48 Playwright checks, a 10-seed pacing gate in CI, and GitHub Pages deployment from `main`.
 
 ## Play
 
@@ -117,6 +117,7 @@ docs/                    spec, tickets, decisions, reviews, evidence
 | `npm run test:e2e` | Playwright show, mobile, review, and evidence suite |
 | `npm run verify:show` | Real 16-bean Course + Hexapop spawn release gate |
 | `npm run measure:show` | Real-Match pacing baseline (see `docs/METRICS.md`) |
+| `npm run verify:pacing -- --phase=b` | 10-seed pacing gate: Course, Hexapop, Crown living winner, show total |
 | `npm run evidence` | Canonical screenshot set |
 | `npm run check:release` | Typecheck, unit tests, build, and focused review specs |
 | `npm run ci:local` | Clean install with a workspace-local npm cache + check |

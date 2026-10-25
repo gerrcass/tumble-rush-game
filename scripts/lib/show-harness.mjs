@@ -82,6 +82,8 @@ export async function measureShow(page, url, seed, mode) {
           playerStatus: player?.status ?? 'NOT_IN_ROUND',
           playerQualified: Boolean(player?.qualified),
           livingWinner: Boolean(winner && !winner.eliminated),
+          winnerTouchedCrown: Boolean(winner && winner.finishTime !== null),
+          sugarRushReached: show.roundMode === 'hexapop' ? show.time >= 45 : null,
           winner: winner?.name ?? null,
           placements: placements.map((entry) => ({
             id: entry.id,

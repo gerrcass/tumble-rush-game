@@ -198,6 +198,11 @@ export class Bean {
     this.nameTag.visible = visible;
   }
 
+  /** Read-only test hook: is this billboard currently drawn? */
+  get nameTagVisible(): boolean {
+    return this.nameTag.visible;
+  }
+
   /**
    * Fade name tags near the lens and at the far edge of the play space. The
    * player's own tag stays readable over a wider envelope than a bot's.

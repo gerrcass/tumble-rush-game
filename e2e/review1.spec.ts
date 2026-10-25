@@ -101,8 +101,11 @@ test.describe('Review 1 — keyboard ownership', () => {
     await page.waitForTimeout(250);
     await page.locator('canvas.game-canvas').click({ position: { x: 400, y: 300 } });
     await page.keyboard.press('Space');
+    // SwiftShader can take a few hundred ms to present the jump; poll instead
+    // of sampling a fixed 700 ms window, otherwise the assertion measures the
+    // GPU, not the keyboard route.
     let peak = 0;
-    for (let i = 0; i < 14; i += 1) {
+    for (let i = 0; i < 60 && peak <= 0.9; i += 1) {
       await page.waitForTimeout(50);
       const y = await page.evaluate(() => window.__tumble?.playerPos.y ?? 0);
       peak = Math.max(peak, y);

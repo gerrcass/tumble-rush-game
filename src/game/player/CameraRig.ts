@@ -24,8 +24,11 @@ const MIN_DISTANCE = 3.5;
 const MAX_DISTANCE = 10;
 const SHOW_DISTANCE = 6.7;
 const SHOW_PITCH = (31 * Math.PI) / 180;
-const SPECTATE_DISTANCE = 9.2;
-const SPECTATE_PITCH = (42 * Math.PI) / 180;
+const SPECTATE_DISTANCE = 9.8;
+const SPECTATE_PITCH = (40 * Math.PI) / 180;
+/** Hexapop is a stack of wide decks; watch it from outside the rim, not above. */
+const ARENA_DISTANCE = 16.5;
+const ARENA_PITCH = (14 * Math.PI) / 180;
 const NEAR_TAG = 1.4;
 const SPECTATE_CLEARANCE = 1.9;
 const OCCLUDER_RADIUS = 0.95;
@@ -66,6 +69,8 @@ export class CameraRig {
   private invertY = false;
 
   private shake = 0;
+  private spectateArena = false;
+  private readonly arenaCenter = new Vector3();
   private spectateLift = 0;
   private elapsed = 0;
   private timeSinceOrbit = 99;
@@ -106,11 +111,23 @@ export class CameraRig {
     this.camera.lookAt(this.smoothLook);
   }
 
+  /**
+   * M2-005: Hexapop is three wide decks stacked over slime. An overhead follow
+   * shot is occluded by the deck above, and the collision sweep then pulls the
+   * lens under the floor. Watch the arena from outside its rim instead.
+   */
+  setSpectateArena(enabled: boolean, centerX = 0, centerZ = 0): void {
+    this.spectateArena = enabled;
+    this.arenaCenter.set(centerX, 0, centerZ);
+  }
+
   /** A wider establishing shot for the follow-cam after elimination. */
   snapSpectate(body: BeanBody): void {
-    this.yaw = 0;
-    this.pitch = SPECTATE_PITCH;
-    this.distance = SPECTATE_DISTANCE;
+    this.yaw = this.spectateArena
+      ? Math.atan2(body.position.x - this.arenaCenter.x, body.position.z - this.arenaCenter.z)
+      : 0;
+    this.pitch = this.spectateArena ? ARENA_PITCH : SPECTATE_PITCH;
+    this.distance = this.spectateArena ? ARENA_DISTANCE : SPECTATE_DISTANCE;
     this.spectateLift = 0;
     this.timeSinceOrbit = 99;
     this.pivotFor(body, this.smoothPivot);
@@ -224,11 +241,21 @@ export class CameraRig {
       this.pitch = (24 * Math.PI) / 180;
       this.distance = damp(this.distance, 7.8, 2.5, dt);
     } else if (context.spectating) {
-      this.pitch = damp(this.pitch, SPECTATE_PITCH, 3, dt);
-      this.distance = damp(this.distance, SPECTATE_DISTANCE, 2.5, dt);
-      if (speed > 1.2) {
-        const travelYaw = Math.atan2(-body.velocity.x, -body.velocity.z);
-        this.yaw = dampAngle(this.yaw, travelYaw, 1.9, dt);
+      if (this.spectateArena) {
+        this.pitch = damp(this.pitch, ARENA_PITCH, 3, dt);
+        this.distance = damp(this.distance, ARENA_DISTANCE, 2.5, dt);
+        const outwardX = body.position.x - this.arenaCenter.x;
+        const outwardZ = body.position.z - this.arenaCenter.z;
+        if (Math.hypot(outwardX, outwardZ) > 1.2) {
+          this.yaw = dampAngle(this.yaw, Math.atan2(outwardX, outwardZ), 2.4, dt);
+        }
+      } else {
+        this.pitch = damp(this.pitch, SPECTATE_PITCH, 3, dt);
+        this.distance = damp(this.distance, SPECTATE_DISTANCE, 2.5, dt);
+        if (speed > 1.2) {
+          const travelYaw = Math.atan2(-body.velocity.x, -body.velocity.z);
+          this.yaw = dampAngle(this.yaw, travelYaw, 1.9, dt);
+        }
       }
     } else if (speed > 1.2 && this.timeSinceOrbit > 0.8) {
       const travelYaw = Math.atan2(-body.velocity.x, -body.velocity.z);
@@ -244,7 +271,11 @@ export class CameraRig {
     }
     this.smoothPivot.lerp(this.target, 1 - Math.exp(-10 * dt));
 
-    this.desiredFrom(this.smoothPivot, this.desired);
+    if (context.spectating) {
+      this.spectateShot(this.smoothPivot, this.desired);
+    } else {
+      this.desiredFrom(this.smoothPivot, this.desired);
+    }
     this.applyCollision(this.smoothPivot, this.desired, this.desired);
 
     if (context.celebrating) {
@@ -352,14 +383,44 @@ export class CameraRig {
   private readonly scratchTarget = new Vector3();
 
   private desiredFrom(pivot: Vector3, out: Vector3): void {
-    const cosPitch = Math.cos(this.pitch);
+    this.desiredFromAt(pivot, this.pitch, this.distance, out);
+  }
+
+  private desiredFromAt(pivot: Vector3, pitch: number, distance: number, out: Vector3): void {
+    const cosPitch = Math.cos(pitch);
     this.offset.set(
-      Math.sin(this.yaw) * cosPitch * this.distance,
-      Math.sin(this.pitch) * this.distance + 0.35,
-      Math.cos(this.yaw) * cosPitch * this.distance,
+      Math.sin(this.yaw) * cosPitch * distance,
+      Math.sin(pitch) * distance + 0.35,
+      Math.cos(this.yaw) * cosPitch * distance,
     );
     out.copy(pivot).add(this.offset);
   }
+
+  /**
+   * Pick the widest unblocked follow shot. A leader on a lower Hexapop tier
+   * sits beneath the tier above; the direct high/wide ray crosses that floor
+   * and the collision sweep would pull the lens under it. Try progressively
+   * lower and wider side shots and keep the one with the most clear line of
+   * sight. The look target never changes, so this is framing only.
+   */
+  private spectateShot(pivot: Vector3, out: Vector3): void {
+    const pitches = [this.pitch, 32, 24, 16, 8, 3];
+    const distances = [this.distance, 12.4, 14.2];
+    let bestFraction = -1;
+    for (const pitch of pitches) {
+      for (const distance of distances) {
+        this.desiredFromAt(pivot, pitch, distance, this.shotCandidate);
+        const fraction = this.world.sweepCamera(pivot, this.shotCandidate, 0.3);
+        if (fraction > bestFraction) {
+          bestFraction = fraction;
+          out.copy(this.shotCandidate);
+        }
+        if (fraction >= 0.999) return;
+      }
+    }
+  }
+
+  private readonly shotCandidate = new Vector3();
 
   private lookPoint(): Vector3 {
     return this.debugLookActive && this.debugLook ? this.debugLook : this.smoothLook;

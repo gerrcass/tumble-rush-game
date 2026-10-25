@@ -83,6 +83,23 @@ export interface DebugCourse {
   waypointCount: number;
 }
 
+/** M2-005 spectate evidence: who the camera follows and what it can see. */
+export interface DebugSpectate {
+  active: boolean;
+  name: string;
+  seconds: number;
+  camera: { x: number; y: number; z: number };
+  leader: { x: number; y: number; z: number } | null;
+  /** Lens-to-leader distance; the follow-cam should sit in the wide band. */
+  leaderDistance: number;
+  leaderTagVisible: boolean;
+  nonTargetTagsVisible: number;
+  /** Distance from the lens to the nearest living bean capsule centre. */
+  nearestBeanClearance: number;
+  /** Clearance above the Round's lethal surface. */
+  slimeClearance: number;
+}
+
 /**
  * Test/debug surface exposed on window.__tumble in dev builds only. The old
  * phase-one/two hooks remain for physics and Round evidence; the show hooks
@@ -114,6 +131,7 @@ export interface TumbleDebugApi {
   readonly roundPlacements: readonly RoundPlacement[];
   readonly autopilot: 'off' | 'casual';
   readonly course: DebugCourse | null;
+  readonly spectate: DebugSpectate;
   setQuality: (quality: Quality) => void;
   teleport: (x: number, y: number, z: number) => void;
   startMode: (mode: LevelMode) => void;
@@ -122,6 +140,7 @@ export interface TumbleDebugApi {
   startObservedShow: (difficulty?: DifficultyId) => void;
   startCasualRun: (difficulty?: DifficultyId) => void;
   setPlayerAutopilot: (mode: 'off' | 'casual') => void;
+  eliminateContestant: (name: string) => void;
   isAtFinish: (x: number, y: number, z: number) => boolean;
   startPractice: (mode?: LevelMode) => void;
   beginRound: () => void;

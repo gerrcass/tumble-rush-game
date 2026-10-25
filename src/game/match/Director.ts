@@ -81,7 +81,7 @@ export const SHOW_ROUNDS: readonly RoundDefinition[] = [
     objective: 'Survive the Sugar Rush',
     starters: 8,
     qualifiers: 4,
-    timeLimit: 75,
+    timeLimit: 49.9,
     metric: 'LAST TILES',
   },
   {

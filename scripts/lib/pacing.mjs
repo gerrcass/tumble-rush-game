@@ -68,6 +68,8 @@ export function summarize(idleRuns, casualRuns) {
   const crownRuns = idleRuns.map((run) => roundFor(run, 'crown-climb')).filter(Boolean);
   const casualCourseRuns = casualRuns.map((run) => roundFor(run, 'course')).filter(Boolean);
   const livingCrown = crownRuns.filter((round) => round.livingWinner).length;
+  const touchingCrown = crownRuns.filter((round) => round.winnerTouchedCrown).length;
+  const sugarRush = hexRuns.filter((round) => round.sugarRushReached).length;
 
   return {
     runs: idleRuns.length,
@@ -80,11 +82,17 @@ export function summarize(idleRuns, casualRuns) {
       finishers: stats(courseRuns.map((round) => round.finishers)),
       qualifiers: stats(courseRuns.map((round) => round.qualified)),
     },
-    hexapop: stats(hexRuns.map((round) => round.seconds)),
+    hexapop: {
+      ...stats(hexRuns.map((round) => round.seconds)),
+      sugarRushReached: sugarRush,
+      sugarRushRate: hexRuns.length === 0 ? 0 : round2(sugarRush / hexRuns.length),
+    },
     crown: {
       ...stats(crownRuns.map((round) => round.seconds)),
       livingWinners: livingCrown,
       livingWinnerRate: crownRuns.length === 0 ? 0 : round2(livingCrown / crownRuns.length),
+      touchedCrown: touchingCrown,
+      touchedCrownRate: crownRuns.length === 0 ? 0 : round2(touchingCrown / crownRuns.length),
     },
     idleQualified: courseRuns.filter((round) => round.playerQualified).length,
     casualQualified: casualCourseRuns.filter((round) => round.playerQualified).length,
@@ -167,6 +175,15 @@ export function evaluatePacing(summary, { phase = 'a' } = {}) {
   );
   checks.push(
     check(
+      'hexapop-sugar-rush',
+      'Sugar Rush reached at 45 s',
+      `${summary.hexapop.sugarRushReached} / ${summary.runs} (${Math.round(summary.hexapop.sugarRushRate * 100)}%)`,
+      summary.hexapop.sugarRushRate >= 0.7,
+      { target: '≥ 70% of seeds', pending, detail: 'M2-003 owns the Hexapop tuning' },
+    ),
+  );
+  checks.push(
+    check(
       'crown-clock',
       'Crown clock 45–80 s',
       `${summary.crown.min}–${summary.crown.max} s (median ${summary.crown.median} s)`,
@@ -181,6 +198,15 @@ export function evaluatePacing(summary, { phase = 'a' } = {}) {
       `${summary.crown.livingWinners} / ${summary.runs} (${Math.round(summary.crown.livingWinnerRate * 100)}%)`,
       summary.crown.livingWinnerRate >= bands.crownLivingWinnerRate,
       { target: '≥ 95%', pending, detail: 'M2-004 owns the Crown tuning' },
+    ),
+  );
+  checks.push(
+    check(
+      'crown-touches-crown',
+      'Crown winner physically touched the crown',
+      `${summary.crown.touchedCrown} / ${summary.runs} (${Math.round(summary.crown.touchedCrownRate * 100)}%)`,
+      summary.crown.touchedCrownRate >= bands.crownLivingWinnerRate,
+      { target: '≥ 95%', pending, detail: 'no timeout fallback in the winning run' },
     ),
   );
   checks.push(
@@ -225,9 +251,11 @@ export function formatReport(summary, evaluation) {
   lines.push(
     `  Course   ${String(summary.course.median).padStart(6)} s  finishers ${summary.course.finishers.median}  qualifiers ${summary.course.qualifiers.median}`,
   );
-  lines.push(`  Hexapop  ${String(summary.hexapop.median).padStart(6)} s`);
   lines.push(
-    `  Crown    ${String(summary.crown.median).padStart(6)} s  living winner ${Math.round(summary.crown.livingWinnerRate * 100)}%`,
+    `  Hexapop  ${String(summary.hexapop.median).padStart(6)} s  Sugar Rush ${Math.round(summary.hexapop.sugarRushRate * 100)}%`,
+  );
+  lines.push(
+    `  Crown    ${String(summary.crown.median).padStart(6)} s  living winner ${Math.round(summary.crown.livingWinnerRate * 100)}%  touched ${Math.round(summary.crown.touchedCrownRate * 100)}%`,
   );
   lines.push(
     `  Total    ${String(summary.total.median).padStart(6)} s (round clocks ${summary.roundSeconds.median} s, incl. intros/results)`,

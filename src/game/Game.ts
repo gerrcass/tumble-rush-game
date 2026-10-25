@@ -44,7 +44,7 @@ import { startPositionsFor } from './levels/startPositions';
 import { Rng, formatSeed } from './Rng';
 import { AudioEngine, type SfxName } from './audio/AudioEngine';
 import { Bursts, particleBudget } from './fx/Bursts';
-import type { TumbleDebugApi } from '../types/debug';
+import type { DebugSpectate, TumbleDebugApi } from '../types/debug';
 import { clamp } from './util/math';
 import { DEFAULT_LOOK, type BeanLook } from './cosmetics';
 
@@ -390,6 +390,58 @@ export class Game {
       get autopilot() {
         return game.autopilotMode;
       },
+      get spectate(): DebugSpectate {
+        const match = game.match;
+        const leader = match?.spectating ?? null;
+        const camera = game.camera.position;
+        let nearest = Infinity;
+        let nonTargets = 0;
+        for (const contestant of match?.entrantsList ?? []) {
+          if (contestant.body.eliminated || contestant.status === 'eliminated') continue;
+          const centerY = contestant.body.position.y + 0.75;
+          nearest = Math.min(
+            nearest,
+            Math.hypot(
+              camera.x - contestant.body.position.x,
+              camera.y - centerY,
+              camera.z - contestant.body.position.z,
+            ),
+          );
+          if (
+            contestant !== leader &&
+            contestant.bean.nameTagVisible &&
+            game.nameTagsVisible
+          ) {
+            nonTargets += 1;
+          }
+        }
+        return {
+          active: leader !== null,
+          name: leader?.name ?? '',
+          seconds: match ? match.hud(game.level).spectateSeconds : 0,
+          camera: { x: camera.x, y: camera.y, z: camera.z },
+          leader: leader
+            ? {
+                x: leader.body.position.x,
+                y: leader.body.position.y,
+                z: leader.body.position.z,
+              }
+            : null,
+          leaderDistance: leader
+            ? Number(
+                Math.hypot(
+                  camera.x - leader.body.position.x,
+                  camera.y - (leader.body.position.y + 0.75),
+                  camera.z - leader.body.position.z,
+                ).toFixed(2),
+              )
+            : 0,
+          leaderTagVisible: leader?.bean.nameTagVisible ?? false,
+          nonTargetTagsVisible: nonTargets,
+          nearestBeanClearance: Number.isFinite(nearest) ? Number(nearest.toFixed(2)) : 99,
+          slimeClearance: Number((camera.y - (game.level.slimeHeight ?? -10)).toFixed(2)),
+        };
+      },
       get course() {
         if (game.level.mode !== 'course') return null;
         const level = game.level as Course;
@@ -406,6 +458,10 @@ export class Game {
       isAtFinish: (x: number, y: number, z: number) =>
         game.level.isAtFinish(new Vector3(x, y, z)),
       setPlayerAutopilot: (mode: 'off' | 'casual') => this.setPlayerAutopilot(mode),
+      eliminateContestant: (name: string) => {
+        const target = game.match?.entrantsList.find((contestant) => contestant.name === name);
+        if (target) target.body.eliminated = true;
+      },
       startCasualRun: (difficulty?: DifficultyId) => this.startCasualRun(difficulty),
       startObservedShow: (difficulty?: DifficultyId) => this.startObservedShow(difficulty),
       setQuality: (quality: Quality) => this.setQuality(quality),
@@ -488,8 +544,13 @@ export class Game {
         onStamp: (stamp) => this.callbacks.onStamp?.(stamp.text, stamp.tone),
         onPhase: (phase) => this.callbacks.onShowPhase?.(phase),
         onSpectate: (leader) => {
-          this.spectateBody = leader?.body ?? null;
-          if (leader) this.rig.snapSpectate(leader.body);
+          const next = leader?.body ?? null;
+          const first = next !== null && this.spectateBody === null;
+          this.spectateBody = next;
+          // Establish the wide shot once, then let the rig lerp to a new
+          // leader over a few frames. A hard cut on every lead change broke
+          // the dense-pack read and could land the lens inside a rival.
+          if (next && first) this.rig.snapSpectate(next);
         },
         onFx: (event) => this.handleShowFx(event),
         onCountdown: (value) => this.handleCountdown(value),
@@ -500,9 +561,29 @@ export class Game {
           this.input.reset();
           this.audio.setMusicMode('menu');
           this.audio.play(result.won ? 'crown' : 'eliminate');
-          if (result.won) {
-            const crown = this.level.crownPosition;
-            const winner = result.winnerLook;
+          const crownEnding = result.finalRoundMode === 'crown-climb';
+          const winner = result.winnerLook;
+          const crown = this.level.crownPosition;
+          if (crownEnding && winner) {
+            // Both a human and a bot crown win get the same ceremony: frame
+            // the dais, celebrate the actual winner, and confetti the crown.
+            this.spectateBody = winner.body;
+            winner.body.frozen = true;
+            winner.bean.setVisible(true);
+            winner.bean.setCelebrating(true);
+            if (crown) {
+              this.rig.lookAt(crown.x, crown.y + 0.2, crown.z);
+              this.rig.setCamera(this.rig.yaw, (20 * Math.PI) / 180, 11.2);
+            }
+            this.bursts.spawn(
+              'crown',
+              crown?.x ?? winner.body.position.x,
+              crown?.y ?? winner.body.position.y + 1,
+              crown?.z ?? winner.body.position.z,
+              1.15,
+            );
+            this.rig.addShake(0.16);
+          } else if (result.won) {
             if (crown) {
               this.rig.lookAt(crown.x, crown.y + 0.2, crown.z);
               this.rig.setCamera(this.rig.yaw, (18 * Math.PI) / 180, 10.5);
@@ -1022,6 +1103,11 @@ export class Game {
     for (const collider of this.level.colliders) this.world.addCollider(collider);
     this.level.setQuality(this.quality);
     this.rig.setFloor(this.level.cameraFloor);
+    this.rig.setSpectateArena(
+      mode === 'hexapop',
+      this.level.startPosition.x,
+      this.level.startPosition.z,
+    );
     this.world.killY = this.level.killY;
   }
 

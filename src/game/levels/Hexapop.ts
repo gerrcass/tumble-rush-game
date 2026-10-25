@@ -52,6 +52,7 @@ interface Tile {
   base: Vector3;
   state: TileState;
   warning: number;
+  warningDuration: number;
   fallSpeed: number;
   fallY: number;
   spin: number;
@@ -78,21 +79,35 @@ interface Bubble {
   speed: number;
 }
 
-const TIER_RADII = [4, 3, 2] as const;
+const TIER_RADII = [6, 4, 3] as const;
 const TIER_Y = [0, -2.8, -5.6] as const;
-/** Slight cascade keeps all three tiers readable from the follow camera. */
+/**
+ * Slight cascade keeps all three tiers readable from the follow camera. The
+ * lower tiers sit just far enough out that the centre column drops straight
+ * into the slime: the middle perch can never become a safe second floor.
+ */
 const TIER_OFFSETS = [
   { x: 0, z: 0 },
   { x: 3.6, z: 0 },
   { x: -3.2, z: 2.2 },
 ] as const;
 const TILE_SIZE = 1.15;
-const TILE_WARNING = 0.45;
+/**
+ * M2-003: the floor is patient before the Sugar Rush. Bots can stand on a
+ * cracking tile for a readable beat, hop to a neighbour, and the pack survives
+ * long enough for the 45 s beat to matter. The warning shortens in the Sugar
+ * Rush so the end is a panic, not a slow leak.
+ */
+const TILE_WARNING = 3.3;
+const SUGAR_RUSH_WARNING = 1;
+const SUGAR_RUSH_AT = 45;
+const WAVE_INTERVAL = 3.5;
 const SLIME_Y = -9.5;
-const ROUND_LIMIT = 75;
+const ROUND_LIMIT = 49.9;
 /** The starting perch holds for this long, then drops away with the floor. */
 const PERCH_GRACE = 3.4;
-const TOTAL_TILES = 61 + 37 + 19;
+/** Radius of the clear drop under the starting perch, so it is a real trapdoor. */
+const PERCH_CHUTE = 1.45;
 
 /**
  * Hexapop — the collapsing-tile survival Round.
@@ -144,9 +159,11 @@ export class Hexapop implements Level {
   private snapshotVersion = -1;
   private tileVersion = 0;
   private elapsed = 0;
+  private sugarRush = false;
   private nextWaveAt = 45;
   private result: LevelResult | null = null;
-  private tileCountValue = TOTAL_TILES;
+  private totalTiles = 0;
+  private tileCountValue = 0;
 
   constructor(seed: number) {
     this.seed = seed >>> 0;
@@ -180,6 +197,8 @@ export class Hexapop implements Level {
 
     this.buildSlime(rng);
     this.buildTiers(rng);
+    this.totalTiles = this.tiles.length;
+    this.tileCountValue = this.totalTiles;
     this.tileMesh = this.buildTileMesh(rng);
     this.buildTierRims();
     this.buildPodium();
@@ -249,6 +268,13 @@ export class Hexapop implements Level {
         );
         const position = hexToWorld(coord, TILE_SIZE);
         const offset = TIER_OFFSETS[tier]!;
+        // Keep a narrow chute under the starting perch. The lower decks are
+        // hidden under the top tier, so this is invisible scenery surgery: a
+        // stationary human must fall to the slime, not bounce down three
+        // intact floors after the podium expires.
+        if (tier > 0 && Math.hypot(position.x + offset.x, position.z + offset.z) < PERCH_CHUTE) {
+          continue;
+        }
         const tile: Tile = {
           tier,
           coord,
@@ -256,6 +282,7 @@ export class Hexapop implements Level {
           base: new Vector3(position.x + offset.x, baseY, position.z + offset.z),
           state: 'idle',
           warning: 0,
+          warningDuration: TILE_WARNING,
           fallSpeed: 0,
           fallY: 0,
           spin: tierRng.float(-2.4, 2.4),
@@ -468,6 +495,7 @@ export class Hexapop implements Level {
 
   step(dt: number, bodies: readonly BeanBody[]): void {
     this.elapsed += dt;
+    if (!this.sugarRush && this.elapsed >= SUGAR_RUSH_AT) this.sugarRush = true;
 
     // The safe start perch is temporary: a short grace, then the podium
     // collider disables and the centre tile is just another collapsing hex.
@@ -525,9 +553,17 @@ export class Hexapop implements Level {
     if (changed) this.tileMesh.instanceMatrix.needsUpdate = true;
 
     if (this.elapsed >= this.nextWaveAt && this.tileCountValue > 4) {
-      this.collapseOuterRing();
-      const interval = this.elapsed >= 65 ? 2.5 : 4;
-      this.nextWaveAt += interval;
+      // Sugar Rush: the untouched outer ring drops away. Once four Tumblers are
+      // left the floor stops being taken away, so the Round ends in a result
+      // rather than a total wipe. The wave never targets the last four tiles.
+      let living = 0;
+      for (const body of bodies) if (!body.eliminated) living += 1;
+      // An empty field (solo/level tests and practice) still gets the show
+      // beat; a live Round stops taking floor away at four survivors.
+      if (bodies.length === 0 || living > 4) {
+        this.collapseOuterRing();
+        this.nextWaveAt = Math.max(this.nextWaveAt + WAVE_INTERVAL, this.elapsed + 1);
+      }
     }
 
     if (!this.result && this.tileCountValue <= 4) {
@@ -584,9 +620,10 @@ export class Hexapop implements Level {
 
   resetKinematics(): void {
     this.elapsed = 0;
+    this.sugarRush = false;
     this.nextWaveAt = 45;
     this.result = null;
-    this.tileCountValue = TOTAL_TILES;
+    this.tileCountValue = this.totalTiles;
     this.perchOpen = false;
     this.perchTimer = PERCH_GRACE;
     this.podium.visible = true;
@@ -594,6 +631,7 @@ export class Hexapop implements Level {
     for (const tile of this.tiles) {
       tile.state = 'idle';
       tile.warning = 0;
+      tile.warningDuration = TILE_WARNING;
       tile.fallSpeed = 0;
       tile.fallY = 0;
       tile.collider.enabled = true;
@@ -643,6 +681,7 @@ export class Hexapop implements Level {
         tier: tile.tier,
         ring: tile.ring,
         state: tile.state,
+        warning: tile.state === 'warning' ? tile.warning : 0,
         safe: tile.safe,
       }));
     }
@@ -696,7 +735,7 @@ export class Hexapop implements Level {
   }
 
   status(): LevelStatus {
-    const percent = Math.round((1 - this.tileCountValue / TOTAL_TILES) * 100);
+    const percent = Math.round((1 - this.tileCountValue / this.totalTiles) * 100);
     const phase =
       this.elapsed >= 45 ? 'SUGAR RUSH' : this.elapsed >= 30 ? 'THE FLOOR IS NERVOUS' : 'STEADY';
     return {
@@ -705,10 +744,10 @@ export class Hexapop implements Level {
       objective: this.objective,
       elapsed: this.elapsed,
       timeLimit: ROUND_LIMIT,
-      progress: 1 - this.tileCountValue / TOTAL_TILES,
+      progress: 1 - this.tileCountValue / this.totalTiles,
       progressLabel: `${percent}%`,
       metricLabel: 'TILES LEFT',
-      metricValue: `${this.tileCountValue} / ${TOTAL_TILES}`,
+      metricValue: `${this.tileCountValue} / ${this.totalTiles}`,
       phase,
       result: this.result,
     };
@@ -737,20 +776,30 @@ export class Hexapop implements Level {
     if (this.podiumCollider) this.podiumCollider.enabled = false;
     for (const index of this.safeTileIndices) {
       const tile = this.tiles[index];
-      if (tile) tile.safe = false;
+      if (!tile) continue;
+      // The trapdoor under the podium goes first, with a shorter, readable
+      // warning. A human who never touches the stick drops straight to slime;
+      // the lower decks have a chute under this spot, so it cannot be a
+      // three-storey free ride.
+      tile.safe = false;
+      this.warnTile(tile, 1);
     }
     this.tileVersion += 1;
   }
 
-  private warnTile(tile: Tile): void {
+  private warnTile(tile: Tile, duration = this.sugarRush ? SUGAR_RUSH_WARNING : TILE_WARNING): void {
     tile.state = 'warning';
-    tile.warning = TILE_WARNING;
+    tile.warningDuration = duration;
+    tile.warning = tile.warningDuration;
     this.tileMesh.setColorAt(tile.instanceIndex, this.flashScratch.set(0xfff6e5));
     if (this.tileMesh.instanceColor) this.tileMesh.instanceColor.needsUpdate = true;
   }
 
   private updateTileMatrix(tile: Tile): boolean {
-    const warningShake = tile.state === 'warning' ? Math.max(0, tile.warning / TILE_WARNING) : 0;
+    const warningShake =
+      tile.state === 'warning'
+        ? Math.max(0, Math.min(1, tile.warning / Math.max(0.001, tile.warningDuration)))
+        : 0;
     const shake = Math.sin(this.elapsed * 75 + tile.instanceIndex) * 0.045 * warningShake;
     this.dummy.position.set(
       tile.base.x + shake,

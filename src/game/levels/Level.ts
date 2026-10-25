@@ -51,6 +51,8 @@ export interface LevelTile {
   tier: number;
   ring: number;
   state: LevelTileState;
+  /** Seconds left before a warning tile drops, 0 when it is not warning. */
+  warning: number;
   safe: boolean;
 }
 

@@ -39,6 +39,13 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Pacing gate (Phase B, 10 seeds)
+        run: |
+          set -o pipefail
+          npm run verify:pacing -- --phase=b \
+            --out=docs/evidence/pacing/m2-phase-b-pacing.json \
+            | tee docs/evidence/pacing/m2-phase-b-pacing.log
+
       - name: Playwright smoke and screenshot
         run: npm run test:e2e
         env:
@@ -51,6 +58,7 @@ jobs:
           name: tumble-rush-evidence
           path: |
             docs/evidence/*.png
+            docs/evidence/pacing/*
             playwright-report/
             test-results/
           if-no-files-found: ignore

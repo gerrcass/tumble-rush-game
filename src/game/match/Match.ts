@@ -107,6 +107,14 @@ const RESULTS_SECONDS = 5;
 const SPECTATE_SWITCH_SECONDS = 1.5;
 /** Let a tiny Hexapop field play briefly before skipping it. */
 const HEXAPOP_GRACE = 4;
+/**
+ * The Sugar Rush is the survival Round's fourth act, not an optional extra.
+ * When a full four-Tumbler qualifying field is already safe, hold the result
+ * for the 45 s ring drop and its one-second warning, then resolve. A field
+ * that has already lost a slot (< qualifiers alive) still resolves at once.
+ */
+const HEXAPOP_SUGAR_RUSH_SECONDS = 45;
+const HEXAPOP_RUSH_SETTLE_SECONDS = HEXAPOP_SUGAR_RUSH_SECONDS + 1.15;
 
 /**
  * Show Director: owns Rounds, qualification, advancement, spectating and the
@@ -402,7 +410,10 @@ export class Match {
 
     // A follow-cam must never stay on a Tumbler that just fell. Switch on the
     // same step; if nobody is left, resolve the Round instead of staring at slime.
-    if (this.spectating && this.spectating.body.eliminated) {
+    if (
+      this.spectating &&
+      (this.spectating.body.eliminated || this.spectating.eliminatedAt !== null)
+    ) {
       const leader = this.currentLeader();
       if (!leader) {
         this.resolveRound();
@@ -452,10 +463,13 @@ export class Match {
       const hasElimination = this.entrants.some(
         (contestant) => contestant.body.eliminated || contestant.status === 'eliminated',
       );
+      const fullField = this.entrants.length > definition.qualifiers;
+      const sugarRushSettled = this.roundTime >= HEXAPOP_RUSH_SETTLE_SECONDS;
       if (
         this.roundTime >= HEXAPOP_GRACE &&
         (hasElimination || underfilled) &&
-        alive.length <= definition.qualifiers
+        alive.length <= definition.qualifiers &&
+        (alive.length < definition.qualifiers || !fullField || sugarRushSettled)
       ) {
         this.resolveRound();
       }
@@ -713,7 +727,7 @@ export class Match {
   private currentLeader(): Contestant | null {
     let leader: Contestant | null = null;
     for (const contestant of this.entrants) {
-      if (contestant.body.eliminated) continue;
+      if (contestant.body.eliminated || contestant.eliminatedAt !== null) continue;
       if (!leader || contestant.progress > leader.progress + 0.02) leader = contestant;
       else if (
         Math.abs(contestant.progress - leader.progress) <= 0.02 &&

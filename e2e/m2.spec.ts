@@ -142,3 +142,128 @@ test.describe('M2 Course pacing and fair qualification', () => {
     expect(errors, errors.join('\n')).toEqual([]);
   });
 });
+
+test.describe('M2 Phase B show feel', () => {
+  test('spectate follows the living leader, hides other tags and stays clear of bodies', async ({
+    page,
+  }) => {
+    test.setTimeout(150_000);
+    const errors = watchErrors(page);
+    await openShow(page);
+    await page.evaluate(() => {
+      window.__tumble?.jumpToRound(1);
+      window.__tumble?.beginRound();
+    });
+    await expect.poll(() => page.evaluate(() => window.__tumble?.show.roundNumber)).toBe(2);
+
+    // Drop the human off the perch so the Round starts spectating a bot leader.
+    await page.evaluate(() => {
+      window.__tumble?.simulate(0.4);
+      window.__tumble?.teleport(0, -12, 0);
+      window.__tumble?.simulate(0.8);
+    });
+    await expect(page.locator('.hud-spectate')).toBeVisible();
+
+    const first = await page.evaluate(() => window.__tumble?.spectate ?? null);
+    expect(first?.active).toBe(true);
+    expect(first?.name).not.toBe('');
+    expect(first?.leaderTagVisible).toBe(true);
+    expect(first?.nonTargetTagsVisible).toBe(0);
+    expect(first?.nearestBeanClearance ?? 0).toBeGreaterThan(0.6);
+    expect(first?.slimeClearance ?? 0).toBeGreaterThan(0.2);
+    expect(first?.leaderDistance ?? 0).toBeGreaterThan(6);
+    expect(first?.leaderDistance ?? 0).toBeLessThan(24);
+
+    await page.evaluate(() => window.__tumble?.simulate(3.2));
+    await expect(page.getByRole('button', { name: 'SKIP TO RESULTS' })).toBeVisible();
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: path.resolve('docs/evidence/m2-spectate.png') });
+
+    // Remove the followed leader: the same file step must retarget a living
+    // leader, not resolve the Round or keep the dead tag.
+    await page.evaluate(() => {
+      const current = window.__tumble?.spectate.name ?? '';
+      window.__tumble?.eliminateContestant(current);
+      window.__tumble?.simulate(1.8);
+    });
+    const second = await page.evaluate(() => window.__tumble?.spectate ?? null);
+    expect(second?.active).toBe(true);
+    expect(second?.name).not.toBe(first?.name);
+    expect(second?.name).not.toBe('');
+    expect(second?.leaderTagVisible).toBe(true);
+    expect(second?.nonTargetTagsVisible).toBe(0);
+    expect(second?.nearestBeanClearance ?? 0).toBeGreaterThan(0.6);
+    expect(second?.slimeClearance ?? 0).toBeGreaterThan(0.2);
+    expect(second?.leaderDistance ?? 0).toBeGreaterThan(6);
+    expect(second?.leaderDistance ?? 0).toBeLessThan(24);
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: path.resolve('docs/evidence/m2-spectate-leader-change.png') });
+
+    expect(errors, errors.join('\n')).toEqual([]);
+  });
+
+  test('captures the Hexapop floor, the 45 s Sugar Rush and the Crown ascent', async ({ page }) => {
+    test.setTimeout(180_000);
+    const errors = watchErrors(page);
+    await openShow(page);
+    await page.evaluate(() => window.__tumble?.setQuality('high'));
+    await page.evaluate(() => {
+      window.__tumble?.jumpToRound(1);
+      window.__tumble?.beginRound();
+      window.__tumble?.simulate(15);
+    });
+    await expect.poll(() => page.evaluate(() => window.__tumble?.show.roundNumber)).toBe(2);
+    await page.waitForTimeout(2600);
+    await page.screenshot({ path: path.resolve('docs/evidence/m2-hexapop.png') });
+
+    // Watch the pack into the 45 s beat. The human is already out, so this is
+    // the real spectate shot of the ring dropping.
+    const rush = await page.evaluate(() => {
+      const t = window.__tumble;
+      if (!t) return null;
+      for (let i = 0; i < 120; i += 1) {
+        if (t.show.phase !== 'playing' || t.show.time >= 45.2) break;
+        t.simulate(0.5);
+      }
+      return { phase: t.show.phase, time: t.show.time, tiles: t.tileCount };
+    });
+    expect(rush?.phase).toBe('playing');
+    expect(rush?.time ?? 0).toBeGreaterThanOrEqual(45);
+    expect(rush?.tiles ?? 999).toBeLessThan(223);
+    await page.waitForTimeout(2200);
+    await page.screenshot({ path: path.resolve('docs/evidence/m2-hexapop-sugar-rush.png') });
+
+    await page.evaluate(() => {
+      window.__tumble?.jumpToRound(2);
+      window.__tumble?.beginRound();
+      window.__tumble?.simulate(22);
+    });
+    await expect.poll(() => page.evaluate(() => window.__tumble?.show.roundNumber)).toBe(3);
+    await page.waitForTimeout(2300);
+    await page.screenshot({ path: path.resolve('docs/evidence/m2-crown.png') });
+
+    // Play the final out: a bot must touch the crown and the ceremony must
+    // name that bot, even though the human is a spectator.
+    await page.evaluate(() => {
+      const t = window.__tumble;
+      if (!t) return;
+      for (let i = 0; i < 60; i += 1) {
+        if (t.state === 'finished') break;
+        t.simulate(2);
+      }
+    });
+    await expect(page.locator('.show-end')).toBeVisible();
+    await expect(page.locator('.show-end__winner')).toContainText('takes the crown');
+    const result = await page.evaluate(() => ({
+      state: window.__tumble?.state ?? null,
+      winner: window.__tumble?.winner ?? null,
+      round: window.__tumble?.show.roundMode ?? null,
+    }));
+    expect(result.state).toBe('finished');
+    expect(result.round).toBe('crown-climb');
+    expect(result.winner).not.toBe(null);
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: path.resolve('docs/evidence/m2-crown-ceremony.png') });
+    expect(errors, errors.join('\n')).toEqual([]);
+  });
+});
