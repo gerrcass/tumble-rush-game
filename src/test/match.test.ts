@@ -3,10 +3,12 @@ import { Vector3 } from 'three';
 import type { Contestant } from '../game/match/Contestant';
 import { Match } from '../game/match/Match';
 import { SHOW_ROUNDS } from '../game/match/Director';
+import type { Level } from '../game/levels/Level';
 
 function fakeContestant(id: number, isPlayer = false): Contestant {
   const body = {
     position: new Vector3(0, 0, 0),
+    velocity: new Vector3(),
     eliminated: false,
   };
   return {
@@ -33,6 +35,32 @@ function fakeContestant(id: number, isPlayer = false): Contestant {
     applyDifficulty: () => undefined,
     hide: () => undefined,
   } as unknown as Contestant;
+}
+
+
+function makeMatch(contestants: Contestant[]): Match {
+  return new Match({
+    seed: 11,
+    seedLabel: '#0000000B',
+    difficulty: 'show',
+    contestants,
+    player: contestants.find((contestant) => contestant.isPlayer) ?? contestants[0]!,
+    callbacks: {
+      prepareRound: () => undefined,
+      onStamp: () => undefined,
+      onPhase: () => undefined,
+      onSpectate: () => undefined,
+      onShowEnd: () => undefined,
+    },
+  });
+}
+
+function fakeLevel(): Level {
+  return {
+    progress: () => 0,
+    isAtFinish: () => false,
+    crownPosition: undefined,
+  } as unknown as Level;
 }
 
 describe('Match show progression', () => {
@@ -113,6 +141,79 @@ describe('Match show progression', () => {
     match.nextRound();
     expect(match.phase).toBe('defeat');
     expect(match.showResult?.playerPlacement).toBeGreaterThan(8);
+  });
+
+
+  it('resolves a Course with zero living contestants immediately', () => {
+    const contestants = Array.from({ length: 16 }, (_, index) => fakeContestant(index, index === 0));
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.beginRound();
+    for (const contestant of contestants) contestant.body.eliminated = true;
+    match.afterPhysics(fakeLevel());
+    expect(match.phase).toBe('results');
+    expect(match.finalPlacements).toHaveLength(16);
+    expect(match.finalPlacements.filter((entry) => entry.qualified)).toHaveLength(8);
+    expect(match.finalPlacements.find((entry) => entry.isPlayer)?.qualified).toBe(false);
+  });
+
+  it('keeps an eliminated human out of later Rounds even with high progress', () => {
+    const contestants = Array.from({ length: 16 }, (_, index) => fakeContestant(index, index === 0));
+    const player = contestants[0]!;
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.beginRound();
+    player.body.eliminated = true;
+    player.eliminatedAt = 1;
+    player.progress = 0.99;
+    match.finishRound();
+    expect(match.finalPlacements.find((entry) => entry.isPlayer)?.qualified).toBe(false);
+    match.nextRound();
+    expect(match.phase).toBe('defeat');
+    expect(match.showResult?.won).toBe(false);
+  });
+
+  it('does not promote an idle non-eliminated player over bots that ran further', () => {
+    const contestants = Array.from({ length: 16 }, (_, index) => fakeContestant(index, index === 0));
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.beginRound();
+    for (const contestant of contestants) {
+      if (!contestant.isPlayer) contestant.progress = 0.25 + contestant.id * 0.02;
+    }
+    match.finishRound();
+    expect(match.finalPlacements.find((entry) => entry.isPlayer)?.qualified).toBe(false);
+    match.nextRound();
+    expect(match.phase).toBe('defeat');
+  });
+
+  it('marks a Crown Climb timeout winner as won, qualified and not eliminated', () => {
+    const contestants = Array.from({ length: 4 }, (_, index) => fakeContestant(index, index === 0));
+    const player = contestants[0]!;
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.jumpToRound(2);
+    match.beginRound();
+    player.body.position.y = 30;
+    player.eliminatedAt = 2;
+    player.body.eliminated = true;
+    for (const contestant of contestants.slice(1)) {
+      contestant.body.position.y = 10 + contestant.id;
+      contestant.body.eliminated = true;
+      contestant.eliminatedAt = 3;
+    }
+    match.finishRound();
+    const winner = match.finalPlacements[0];
+    expect(winner?.isPlayer).toBe(true);
+    expect(winner?.won).toBe(true);
+    expect(winner?.qualified).toBe(true);
+    expect(winner?.eliminated).toBe(false);
+    expect(player.body.eliminated).toBe(false);
+    expect(player.status).toBe('qualified');
+    match.nextRound();
+    expect(match.phase).toBe('victory');
+    expect(match.showResult?.won).toBe(true);
+    expect(match.showResult?.winnerName).toBe('YOU');
   });
 
   it('forces the human to win for accelerated QA and evidence', () => {

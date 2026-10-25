@@ -124,8 +124,8 @@ export interface RoundPlacement extends RoundPerformance {
  * `definition.qualifiers` QUALIFIED rows.
  *
  * Tie-break order is explicit per Round:
- * - Course: finish time, then non-eliminated progress, then last-eliminated,
- *   then progress, then id.
+ * - Course: finish time, then progress, then last-eliminated, then id. A
+ *   fallen human never takes a fallback qualifier slot.
  * - Hexapop: survivor height, then distance to the arena centre, then id;
  *   fallen Tumblers rank by elimination time (last out is best).
  * - Crown Climb: crown winner, then height, then horizontal distance to the
@@ -177,15 +177,27 @@ function compareCourse(a: RoundPerformance, b: RoundPerformance): number {
   if (a.finishTime !== null) return -1;
   if (b.finishTime !== null) return 1;
 
+  // A fallen human is out of the Show even if their last progress number is
+  // high; 15 bots always leave enough fallback rows to fill qualifier slots.
+  if (a.isPlayer && a.eliminated) return 1;
+  if (b.isPlayer && b.eliminated) return -1;
+
+  // Progress decides first. An idle Tumbler at the start must never outrank a
+  // bot that actually ran further just because the idle one is still standing.
+  if (a.progress !== b.progress) return b.progress - a.progress;
   if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
   if (a.eliminated) {
+    // The human never rides a mass-wipe fallback into a later Round.
+    if (a.isPlayer !== b.isPlayer) return a.isPlayer ? 1 : -1;
     const eliminationOrder = (b.eliminatedAt ?? 0) - (a.eliminatedAt ?? 0);
     if (eliminationOrder !== 0) return eliminationOrder;
   }
-  return b.progress - a.progress || a.id.localeCompare(b.id);
+  return a.id.localeCompare(b.id);
 }
 
 function compareHexapop(a: RoundPerformance, b: RoundPerformance): number {
+  if (a.isPlayer && a.eliminated) return 1;
+  if (b.isPlayer && b.eliminated) return -1;
   if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
   if (!a.eliminated) {
     return b.height - a.height || a.distanceToCrown - b.distanceToCrown || a.id.localeCompare(b.id);

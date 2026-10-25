@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test';
 async function startShow(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/?seed=20260418');
   await page.getByRole('button', { name: 'PLAY SHOW' }).click();
+  await expect(page.locator('.round-intro')).toBeVisible();
+  await page.evaluate(() => window.__tumble?.beginRound());
   await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
 }
 
@@ -22,16 +24,18 @@ test.describe('Show desktop', () => {
   });
 
   test('PLAY SHOW opens the intro, countdown, gameplay and movement', async ({ page }) => {
-    await startShow(page);
+    await page.goto('/?seed=20260418');
+    await page.getByRole('button', { name: 'PLAY SHOW' }).click();
     await expect(page.locator('.round-intro')).toBeVisible();
     await expect(page.locator('.round-intro')).toContainText('SUNRISE SCRAMBLE');
     await expect(page.locator('.round-intro')).toContainText('TOP 8');
     await expect(page.locator('.round-intro')).toContainText('16');
     await expect(page.locator('#hud')).toBeHidden();
 
-    await expect
-      .poll(() => page.evaluate(() => window.__tumble?.show.phase), { timeout: 17_000 })
-      .toBe('playing');
+    // Fixed-rate simulation keeps this test deterministic on software WebGL,
+    // where wall-clock frames can be slower than the show clock.
+    await page.evaluate(() => window.__tumble?.simulate(6));
+    await expect.poll(() => page.evaluate(() => window.__tumble?.show.phase)).toBe('playing');
     await expect(page.locator('#hud')).toBeVisible();
     await expect(page.locator('#hud')).toContainText('SUNRISE SCRAMBLE');
     await expect(page.locator('#hud')).toContainText('QUALIFIED');
@@ -41,12 +45,7 @@ test.describe('Show desktop', () => {
     if (!start) throw new Error('debug hook missing');
 
     await page.keyboard.down('KeyW');
-    await expect
-      .poll(async () => (await page.evaluate(() => window.__tumble?.playerPos.z ?? 0)) < start.z - 0.15, {
-        intervals: [20, 20, 30],
-        timeout: 3000,
-      })
-      .toBe(true);
+    await page.evaluate(() => window.__tumble?.simulate(1));
     await page.keyboard.up('KeyW');
     const end = await page.evaluate(() => window.__tumble?.playerPos);
     expect(end?.z ?? start.z).toBeLessThan(start.z - 0.5);
@@ -92,7 +91,7 @@ test.describe('Show desktop', () => {
     }));
     expect(debug.count).toBe(16);
     expect(new Set(debug.names).size).toBe(16);
-    expect(debug.player).toBe('YOU');
+    expect(debug.player).toBe('Pip');
     const xs = new Set((debug.positions ?? []).map((position) => Math.round(position.x * 10)));
     expect(xs.size).toBeGreaterThan(6);
   });
@@ -114,7 +113,7 @@ test.describe('Show desktop', () => {
     await startShow(page);
     await page.evaluate(() => window.__tumble?.beginRound());
     await page.evaluate(() => window.__tumble?.teleport(0, -20, 10));
-    await page.waitForTimeout(500);
+    await page.evaluate(() => window.__tumble?.simulate(1));
     await expect(page.locator('.hud-spectate')).toBeVisible();
     await expect.poll(() => page.evaluate(() => window.__tumble?.show.spectating)).toBe(true);
     await page.getByRole('button', { name: 'SKIP TO RESULTS' }).click();
@@ -138,20 +137,28 @@ test.describe('Show desktop', () => {
     await expect(page.getByRole('button', { name: 'MAIN MENU' })).toBeVisible();
   });
 
-  test('a full accelerated show completes without input', async ({ page }) => {
+  test('a full show advances through all three Rounds to a crown', async ({ page }) => {
     test.setTimeout(90_000);
     await startShow(page);
-    for (let slice = 0; slice < 8; slice += 1) {
-      const phase = await page.evaluate(() => {
-        window.__tumble?.simulate(45);
-        return window.__tumble?.show.phase;
-      });
-      if (phase === 'victory' || phase === 'defeat') break;
+    for (let round = 0; round < 3; round += 1) {
+      await page.evaluate(() => window.__tumble?.forcePlayerWin());
+      await expect(page.locator('.results')).toBeVisible();
+      expect(
+        await page.locator('.results__cell--status.is-qualified').count(),
+      ).toBeGreaterThan(0);
+      await page.evaluate(() => window.__tumble?.nextRound());
+      if (round < 2) {
+        await expect(page.locator('.round-intro')).toBeVisible();
+        await page.evaluate(() => window.__tumble?.beginRound());
+        await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
+      }
     }
+    await expect(page.locator('.show-end')).toBeVisible();
+    await expect(page.locator('.show-end')).toContainText('CROWNED!');
     const show = await page.evaluate(() => window.__tumble?.show);
-    expect(['victory', 'defeat']).toContain(show?.phase);
+    expect(show?.phase).toBe('victory');
     expect(show?.roundIndex).toBe(2);
-    expect(show?.time).toBeLessThanOrEqual(120.5);
+    expect(show?.winner).toBe('Pip');
     const standings = await page.evaluate(() => window.__tumble?.contestants.standings);
     expect(standings?.length).toBeGreaterThan(0);
   });

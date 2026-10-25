@@ -2,10 +2,11 @@ import { expect, test } from '@playwright/test';
 import path from 'node:path';
 
 /**
- * Phase-three evidence from the real build at exactly 1440×810. Debug hooks only
- * frame the show; every pixel is the running game, not a mockup.
+ * Phase 3/4 evidence from the real build at exactly 1440×810. Screenshots use
+ * only debug timing hooks; every pixel is the running game and DOM.
  */
-test('captures the phase-three Show evidence set', async ({ page }) => {
+test('captures the phase 4 front-end and refreshed show evidence', async ({ page }) => {
+  test.setTimeout(120_000);
   const errors: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());
@@ -13,47 +14,57 @@ test('captures the phase-three Show evidence set', async ({ page }) => {
   page.on('pageerror', (error) => errors.push(error.message));
 
   await page.goto('/?seed=20260418');
+  await expect(page.locator('#play-show')).toBeVisible();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: path.resolve('docs/evidence/phase4-menu.png') });
+
+  await page.getByRole('button', { name: 'CUSTOMIZE' }).click();
+  await expect(page.locator('.customize-screen')).toBeVisible();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: path.resolve('docs/evidence/phase4-customize.png') });
+  await page.getByRole('button', { name: '← BACK' }).click();
+  await expect(page.locator('#play-show')).toBeVisible();
+
+  await page.getByRole('button', { name: 'SETTINGS' }).click();
+  await expect(page.locator('.settings-screen')).toBeVisible();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.resolve('docs/evidence/phase4-settings.png') });
+  await page.getByRole('button', { name: '← BACK' }).click();
+
+  await page.getByRole('button', { name: 'HOW TO PLAY' }).click();
+  await expect(page.locator('.howto-screen')).toBeVisible();
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.resolve('docs/evidence/phase4-howto.png') });
+  await page.getByRole('button', { name: '← BACK' }).click();
+
+  // Refreshed show evidence: the spawn/camera fix at the start deck.
   await page.getByRole('button', { name: 'PLAY SHOW' }).click();
   await expect(page.locator('.round-intro')).toBeVisible();
-  await page.waitForTimeout(700);
-
-  // 1. Round intro card.
+  await page.waitForTimeout(500);
   await page.screenshot({ path: path.resolve('docs/evidence/phase3-intro.png') });
 
-  // 2. Sunrise Scramble gameplay: start the Round, let the pack move, then
-  // frame the player among the bots on the first sweeper platform.
   await page.evaluate(() => window.__tumble?.beginRound());
   await expect(page.locator('#hud')).toBeVisible();
-  await page.evaluate(() => window.__tumble?.simulate(4.5));
-  await page.evaluate(() => {
-    window.__tumble?.teleport(0.2, 0.08, -2);
-    window.__tumble?.setCamera(-0.04, 0.22, 8.2);
-    window.__tumble?.lookAt(0, 1.6, -42);
-  });
-  await page.waitForTimeout(1100);
+  await page.evaluate(() => window.__tumble?.simulate(0.9));
+  await page.waitForTimeout(700);
   await page.screenshot({ path: path.resolve('docs/evidence/phase3-show-course.png') });
 
-  // 3. Spectate: eliminate the human and show the follow-cam banner + skip.
+  // Spectate: eliminate the human, let the follow-cam choose a living leader.
   await page.evaluate(() => {
-    window.__tumble?.beginRound();
-    window.__tumble?.simulate(2);
     window.__tumble?.teleport(0, -20, 4);
-    window.__tumble?.simulate(1.2);
-    window.__tumble?.clearLookAt();
-    window.__tumble?.setCamera(0.5, 0.2, 8.5);
+    window.__tumble?.simulate(1.5);
   });
-  await page.waitForTimeout(1000);
+  await expect(page.locator('.hud-spectate')).toBeVisible();
+  await page.waitForTimeout(2600);
   await page.screenshot({ path: path.resolve('docs/evidence/phase3-spectate.png') });
 
-  // 4. Results table with the human row highlighted at the top.
-  await page.evaluate(() => {
-    window.__tumble?.forcePlayerWin();
-  });
+  // Results table with the human row and the kudos reward line.
+  await page.evaluate(() => window.__tumble?.forcePlayerWin());
   await expect(page.locator('.results')).toBeVisible();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(400);
   await page.screenshot({ path: path.resolve('docs/evidence/phase3-results.png') });
 
-  // 5. Victory crown ceremony.
+  // Victory crown ceremony with career stats.
   await page.evaluate(() => {
     window.__tumble?.jumpToRound(2);
     window.__tumble?.beginRound();
@@ -61,7 +72,7 @@ test('captures the phase-three Show evidence set', async ({ page }) => {
     window.__tumble?.nextRound();
   });
   await expect(page.locator('.show-end')).toBeVisible();
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(600);
   await page.screenshot({ path: path.resolve('docs/evidence/phase3-victory.png') });
 
   expect(errors, errors.join('\n')).toEqual([]);

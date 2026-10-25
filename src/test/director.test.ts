@@ -50,7 +50,7 @@ describe('Show Director', () => {
       performance(index, {
         eliminated: index !== 0,
         eliminatedAt: index === 0 ? null : index,
-        progress: index / 20,
+        progress: index === 0 ? 0.95 : index / 20,
       }),
     );
     const placements = resolveRound(SHOW_ROUNDS[0]!, field);
@@ -108,6 +108,36 @@ describe('Show Director', () => {
         );
     }
     expect(field).toHaveLength(1);
+  });
+
+
+  it('never lets an idle non-eliminated player outrank bots that ran further', () => {
+    const field = Array.from({ length: 16 }, (_, index) =>
+      performance(index, {
+        finishTime: index >= 10 && index < 12 ? 55 : null,
+        progress: index === 0 ? 0 : 0.12 + index * 0.02,
+        eliminated: false,
+      }),
+    );
+    const placements = resolveRound(SHOW_ROUNDS[0]!, field);
+    const player = placements.find((entry) => entry.isPlayer);
+    expect(player?.qualified).toBe(false);
+    expect(player?.placement).toBe(16);
+    expect(placements.filter((entry) => entry.qualified)).toHaveLength(8);
+  });
+
+  it('keeps a fallen human out of the fallback qualifier slots', () => {
+    const field = Array.from({ length: 16 }, (_, index) =>
+      performance(index, {
+        eliminated: true,
+        eliminatedAt: index,
+        progress: index === 0 ? 0.99 : 0.1,
+      }),
+    );
+    const placements = resolveRound(SHOW_ROUNDS[0]!, field);
+    const player = placements.find((entry) => entry.isPlayer);
+    expect(player?.qualified).toBe(false);
+    expect(placements.slice(0, 8).every((entry) => !entry.isPlayer)).toBe(true);
   });
 
   it('keeps difficulty presets within conservative bot bounds', () => {

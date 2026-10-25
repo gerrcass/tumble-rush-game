@@ -2,7 +2,17 @@ import { Game, type GameState } from '../game/Game';
 import { dailySeed, formatSeed } from '../game/Rng';
 import type { LevelMode, LevelResult } from '../game/levels/Level';
 import type { DifficultyId } from '../game/match/Director';
-import type { ShowResult, StampTone } from '../game/match/Match';
+import type { RoundHistory, ShowResult, StampTone } from '../game/match/Match';
+import {
+  awardQualification,
+  awardWin,
+  browserStorage,
+  readProfile,
+  recordShowFinish,
+  resetProfile,
+  saveProfile,
+  type Profile,
+} from '../game/profile';
 import { Hud } from './Hud';
 import {
   FinishOverlay,
@@ -11,7 +21,11 @@ import {
   RoundIntro,
   ShowEndOverlay,
   formatTime,
+  type RoundReward,
 } from './screens/Overlays';
+import { CustomizeScreen } from './screens/CustomizeScreen';
+import { HowToScreen } from './screens/HowToScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
 import { StartScreen } from './screens/StartScreen';
 import { byId } from './dom';
 
@@ -31,20 +45,25 @@ const TOUCH_CONTROLS = `
   </div>
 `;
 
+type ScreenName = 'menu' | 'customize' | 'settings' | 'howto';
+
 interface ShowChoice {
   difficulty: DifficultyId;
   daily: boolean;
 }
 
 /**
- * Top-level UI router. Owns the DOM shell, Start Screen, Round intro, HUD,
- * results, spectate controls and the end screens. DOM/CSS only.
+ * Top-level UI router. Owns the DOM shell, every menu screen, the HUD, results,
+ * spectate controls and the end screens. DOM/CSS only; the Game owns WebGL.
  */
 export class App {
   private readonly root: HTMLElement;
   private readonly game: Game;
   private readonly hud: Hud;
   private readonly startScreen: StartScreen;
+  private readonly customizeScreen: CustomizeScreen;
+  private readonly settingsScreen: SettingsScreen;
+  private readonly howToScreen: HowToScreen;
   private readonly roundIntro: RoundIntro;
   private readonly pauseOverlay: PauseOverlay;
   private readonly resultsOverlay: ResultsOverlay;
@@ -53,34 +72,53 @@ export class App {
   private readonly abort = new AbortController();
   private readonly quickSeed: number;
   private readonly daily: { label: string; seed: number };
+  private readonly touchDevice: boolean;
+  private readonly live: HTMLElement;
+  private readonly toast: HTMLElement;
+  private readonly storage = browserStorage();
+  private profile: Profile;
+  private screen: ScreenName = 'menu';
+  private settingsReturn: 'menu' | 'pause' = 'menu';
   private hintTimer = 0;
+  private toastTimer = 0;
   private finishResult: LevelResult | null = null;
   private lastShowChoice: ShowChoice = { difficulty: 'show', daily: false };
   private introKey = '';
   private resultsKey = '';
   private endKey = '';
   private lastHudPhase = '';
+  private firstQualificationAwarded = false;
+  private winAwarded = false;
+  private showKudos = 0;
+  private showCrowns = 0;
+  private showNewBest = false;
+  private readonly rewardedRounds = new Map<string, RoundReward | null>();
 
   constructor(root: HTMLElement, seed: number) {
     this.root = root;
     this.quickSeed = seed;
     this.daily = dailySeed();
+    const loaded = readProfile(this.storage);
+    this.profile = loaded.profile;
     root.classList.add('tumble-app');
-
-    const touch = detectTouch();
-    if (touch) root.classList.add('app--touch');
+    this.touchDevice = detectTouch();
     root.dataset.state = 'menu';
+    root.dataset.screen = 'menu';
 
     root.innerHTML = `
       <div id="scene" class="scene"></div>
       <div class="scene-grade" aria-hidden="true"></div>
       <div id="ui" class="ui-layer"></div>
       <div id="touch-controls" class="touch-controls" aria-label="Touch controls">${TOUCH_CONTROLS}</div>
+      <div id="app-toast" class="app-toast" role="status" aria-live="polite"></div>
+      <div id="app-live" class="sr-only" role="status" aria-live="polite"></div>
     `;
 
     const sceneMount = byId<HTMLElement>(root, 'scene');
     const touchRoot = byId<HTMLElement>(root, 'touch-controls');
     const ui = byId<HTMLElement>(root, 'ui');
+    this.live = byId<HTMLElement>(root, 'app-live');
+    this.toast = byId<HTMLElement>(root, 'app-toast');
 
     this.hud = new Hud({
       onPause: () => this.game.pause(),
@@ -89,12 +127,35 @@ export class App {
     this.startScreen = new StartScreen({
       seedLabel: formatSeed(seed),
       dailyLabel: this.daily.label,
-      touch,
+      touch: this.touchDevice,
       initialDifficulty: 'show',
+      profile: this.profile,
       onShow: (difficulty, daily) => this.startShow({ difficulty, daily }),
       onPractice: (mode) => this.startPractice(mode),
+      onCustomize: () => this.openScreen('customize'),
+      onSettings: () => this.openScreen('settings', 'menu'),
+      onHowTo: () => this.openScreen('howto'),
+      onToggleSound: () => this.toggleSound(),
       onDebugRound: (mode) => this.startDebugRound(mode),
     });
+    this.customizeScreen = new CustomizeScreen(
+      {
+        onBack: () => this.closeScreen(),
+        onChange: (profile, notice) => this.onProfileChanged(profile, notice),
+        onNotice: (message) => this.announce(message),
+      },
+      this.profile,
+    );
+    this.settingsScreen = new SettingsScreen(
+      {
+        onBack: () => this.closeScreen(),
+        onChange: (profile) => this.onProfileChanged(profile),
+        onReset: () => this.resetProfile(),
+        onNotice: (message) => this.announce(message),
+      },
+      this.profile,
+    );
+    this.howToScreen = new HowToScreen({ onBack: () => this.closeScreen() });
     this.roundIntro = new RoundIntro();
     this.resultsOverlay = new ResultsOverlay({
       onContinue: () => this.game.match?.nextRound(),
@@ -105,7 +166,11 @@ export class App {
     });
     this.pauseOverlay = new PauseOverlay({
       onResume: () => this.game.resume(),
-      onRestart: () => this.game.restart(),
+      onRestart: () => {
+        this.closeScreens();
+        this.game.restart();
+      },
+      onSettings: () => this.openScreen('settings', 'pause'),
       onQuit: () => this.quitToMenu(),
     });
     this.finishOverlay = new FinishOverlay({
@@ -114,6 +179,9 @@ export class App {
     });
 
     ui.appendChild(this.startScreen.element);
+    ui.appendChild(this.customizeScreen.element);
+    ui.appendChild(this.settingsScreen.element);
+    ui.appendChild(this.howToScreen.element);
     ui.appendChild(this.roundIntro.element);
     ui.appendChild(this.hud.element);
     ui.appendChild(this.resultsOverlay.element);
@@ -125,6 +193,7 @@ export class App {
       mount: sceneMount,
       touchRoot,
       seed,
+      identity: { name: this.profile.name, look: this.profile.look },
       callbacks: {
         onStateChange: (state) => this.handleState(state),
         onTick: () => this.syncMatch(),
@@ -149,7 +218,7 @@ export class App {
       },
     });
 
-    // The game starts at the menu state; make the DOM agree before the first frame.
+    this.applySettings();
     this.handleState('menu');
     this.bindKeyboard();
     this.game.start();
@@ -158,17 +227,26 @@ export class App {
       window.__tumble = this.game.debug;
     }
 
+    if (loaded.recovered) {
+      requestAnimationFrame(() => {
+        this.announce('Your saved profile could not be read, so a fresh Tumbler was created.');
+      });
+    }
     requestAnimationFrame(() => {
-      if (this.game.state === 'menu') this.startScreen.focusPlay();
+      if (this.game.state === 'menu' && this.screen === 'menu') this.startScreen.focusPlay();
     });
   }
 
   dispose(): void {
     this.abort.abort();
     window.clearTimeout(this.hintTimer);
+    window.clearTimeout(this.toastTimer);
     this.game.dispose();
     this.hud.dispose();
     this.startScreen.dispose();
+    this.customizeScreen.dispose();
+    this.settingsScreen.dispose();
+    this.howToScreen.dispose();
     this.roundIntro.dispose();
     this.pauseOverlay.dispose();
     this.resultsOverlay.dispose();
@@ -181,11 +259,23 @@ export class App {
 
   private startShow(choice: ShowChoice): void {
     if (this.game.state !== 'menu' && this.game.state !== 'finished') return;
+    this.closeScreens(true);
     this.lastShowChoice = choice;
+    this.firstQualificationAwarded = false;
+    this.winAwarded = false;
+    this.introKey = '';
+    this.resultsKey = '';
+    this.endKey = '';
+    this.lastHudPhase = '';
+    this.showKudos = 0;
+    this.showCrowns = 0;
+    this.showNewBest = false;
+    this.rewardedRounds.clear();
     const seed = choice.daily ? this.daily.seed : this.quickSeed;
     const seedLabel = choice.daily ? this.daily.label : formatSeed(this.quickSeed);
     this.finishResult = null;
     this.blurActive();
+    this.game.setIdentity(this.profile.name, this.profile.look);
     this.game.startShow({ seed, seedLabel, difficulty: choice.difficulty });
   }
 
@@ -200,37 +290,198 @@ export class App {
 
   private startPractice(mode: LevelMode): void {
     if (this.game.state !== 'menu' && this.game.state !== 'finished') return;
+    this.closeScreens(true);
     this.finishResult = null;
     this.blurActive();
+    this.game.setIdentity(this.profile.name, this.profile.look);
     this.game.startPractice(mode);
   }
 
   private startDebugRound(mode: LevelMode): void {
+    this.closeScreens(true);
     this.finishResult = null;
     this.blurActive();
     this.game.startMode(mode);
   }
 
   private quitToMenu(): void {
+    this.closeScreens(true);
     this.finishResult = null;
     this.game.quitToMenu();
+    this.startScreen.setProfile(this.profile);
     this.startScreen.show();
     this.startScreen.focusPlay();
   }
 
   private onStamp(text: string, tone: StampTone): void {
     this.hud.showStamp(text, tone);
+    this.announce(text);
   }
 
   private onShowEnd(result: ShowResult): void {
-    void result;
+    if (result.won && !this.winAwarded) {
+      awardWin(this.profile);
+      this.winAwarded = true;
+      this.showCrowns += 1;
+      this.showKudos += 100;
+    }
+    const finish = recordShowFinish(this.profile, {
+      won: result.won,
+      placement: result.playerPlacement,
+      daily: this.lastShowChoice.daily,
+      date: this.daily.label,
+    });
+    this.showNewBest = finish.newBest;
+    this.persistProfile();
+    this.startScreen.setProfile(this.profile);
     this.syncMatch(true);
+  }
+
+  /** Earn kudos the moment a Round result is shown, and the crown on a final win. */
+  private awardRound(match: NonNullable<Game['match']>, last: RoundHistory): RoundReward | null {
+    const key = `${match.roundIndex}:${match.history.length}`;
+    if (this.rewardedRounds.has(key)) return this.rewardedRounds.get(key) ?? null;
+    const entry = last.placements.find((placement) => placement.isPlayer);
+    if (!entry) {
+      this.rewardedRounds.set(key, null);
+      return null;
+    }
+    const reward: RoundReward = {
+      qualified: entry.qualified,
+      kudos: 0,
+      bonus: 0,
+      crown: 0,
+      bestFinish: this.profile.bestFinish,
+      newBest: false,
+    };
+    if (entry.qualified) {
+      const first = !this.firstQualificationAwarded;
+      const award = awardQualification(this.profile, first);
+      this.firstQualificationAwarded = true;
+      reward.kudos = award.kudos;
+      reward.bonus = award.bonus;
+      this.showKudos += award.kudos;
+      if (entry.won && !this.winAwarded) {
+        const win = awardWin(this.profile);
+        this.winAwarded = true;
+        reward.crown = win.crowns;
+        reward.kudos += win.kudos;
+        this.showCrowns += win.crowns;
+        this.showKudos += win.kudos;
+      }
+      this.persistProfile();
+    }
+    this.rewardedRounds.set(key, reward);
+    return reward;
+  }
+
+  private onProfileChanged(profile: Profile, notice?: string): void {
+    this.profile = profile;
+    this.persistProfile();
+    this.applySettings();
+    this.startScreen.setProfile(profile);
+    this.settingsScreen.setProfile(profile);
+    this.customizeScreen.setProfile(profile);
+    if (notice) this.announce(notice);
+  }
+
+  private toggleSound(): void {
+    this.profile.settings.muted = !this.profile.settings.muted;
+    this.persistProfile();
+    this.startScreen.setProfile(this.profile);
+    this.settingsScreen.setProfile(this.profile);
+    this.announce(this.profile.settings.muted ? 'Sound muted.' : 'Sound on.');
+  }
+
+  private resetProfile(): Profile {
+    this.profile = resetProfile(this.storage);
+    this.applySettings();
+    this.game.setIdentity(this.profile.name, this.profile.look);
+    this.startScreen.setProfile(this.profile);
+    this.settingsScreen.setProfile(this.profile);
+    this.customizeScreen.setProfile(this.profile);
+    return this.profile;
+  }
+
+  private persistProfile(): void {
+    saveProfile(this.profile, this.storage);
+  }
+
+  private applySettings(): void {
+    const settings = this.profile.settings;
+    this.game.setQualitySetting(settings.quality);
+    this.game.setReducedMotion(
+      settings.reducedMotion ||
+        (typeof window.matchMedia === 'function' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches),
+    );
+    this.game.setNameTagsVisible(settings.nameTags);
+    this.game.setCameraPreferences(settings.cameraSensitivity, settings.invertY);
+    this.root.classList.toggle('reduce-motion', settings.reducedMotion);
+    const touch =
+      settings.touchControls === 'on' ||
+      (settings.touchControls === 'auto' && this.touchDevice);
+    this.root.classList.toggle('app--touch', touch);
+  }
+
+  private openScreen(screen: ScreenName, from: 'menu' | 'pause' = 'menu'): void {
+    if (this.screen !== 'menu' && this.screen !== screen) return;
+    this.settingsReturn = from;
+    this.screen = screen;
+    this.root.dataset.screen = screen;
+    this.startScreen.hide();
+    this.customizeScreen.hide();
+    this.settingsScreen.hide();
+    this.howToScreen.hide();
+    this.pauseOverlay.hide();
+    if (screen === 'customize') this.customizeScreen.show(this.profile);
+    else if (screen === 'settings') this.settingsScreen.show(this.profile);
+    else if (screen === 'howto') this.howToScreen.show();
+  }
+
+  private closeScreen(): void {
+    if (this.screen === 'menu') return;
+    if (this.screen === 'settings' && this.settingsReturn === 'pause') {
+      this.settingsScreen.hide();
+      this.screen = 'menu';
+      this.root.dataset.screen = 'menu';
+      if (this.game.state === 'paused') {
+        this.pauseOverlay.show(this.game.isPractice ? 'RESTART PRACTICE' : 'RESTART SHOW');
+      }
+      return;
+    }
+    if (this.screen === 'customize') {
+      this.game.setIdentity(this.profile.name, this.profile.look);
+      this.startScreen.setProfile(this.profile);
+    }
+    this.screen = 'menu';
+    this.root.dataset.screen = 'menu';
+    this.customizeScreen.hide();
+    this.settingsScreen.hide();
+    this.howToScreen.hide();
+    if (this.game.state === 'menu') {
+      this.startScreen.show();
+      requestAnimationFrame(() => this.startScreen.focusPlay());
+    }
+  }
+
+  private closeScreens(silent = false): void {
+    if (this.screen !== 'menu') {
+      this.customizeScreen.hide();
+      this.settingsScreen.hide();
+      this.howToScreen.hide();
+      this.screen = 'menu';
+      this.root.dataset.screen = 'menu';
+    }
+    this.pauseOverlay.hide();
+    if (!silent) this.startScreen.hide();
   }
 
   private handleState(state: GameState): void {
     this.root.dataset.state = state;
     if (state === 'menu') {
-      this.startScreen.show();
+      if (this.screen === 'menu') this.startScreen.show();
+      else this.startScreen.hide();
       this.roundIntro.hide();
       this.hud.hide();
       this.resultsOverlay.hide();
@@ -243,6 +494,7 @@ export class App {
       this.lastHudPhase = '';
       window.clearTimeout(this.hintTimer);
     } else if (state === 'playing') {
+      this.closeScreens();
       this.startScreen.hide();
       this.pauseOverlay.hide();
       this.finishOverlay.hide();
@@ -252,7 +504,9 @@ export class App {
       window.clearTimeout(this.hintTimer);
       this.hintTimer = window.setTimeout(() => this.hud.setHintVisible(false), 20_000);
     } else if (state === 'paused') {
-      this.pauseOverlay.show(this.game.isPractice ? 'RESTART PRACTICE' : 'RESTART SHOW');
+      if (this.screen !== 'settings') {
+        this.pauseOverlay.show(this.game.isPractice ? 'RESTART PRACTICE' : 'RESTART SHOW');
+      }
     } else if (state === 'finished') {
       this.pauseOverlay.hide();
       this.roundIntro.hide();
@@ -327,14 +581,17 @@ export class App {
       const last = match.history[match.history.length - 1];
       if (!last) return;
       const key = `${match.history.length}:${last.definition.mode}`;
+      let reward = this.rewardedRounds.get(`${match.roundIndex}:${match.history.length}`) ?? null;
       if (key !== this.resultsKey || force) {
         this.resultsKey = key;
+        reward = this.awardRound(match, last);
         this.resultsOverlay.show(
           match.roundIndex + 1,
           last.definition,
           last.placements,
           match.seedLabel,
           match.resultsTimer,
+          reward ?? undefined,
         );
       } else {
         this.resultsOverlay.update(match.resultsTimer);
@@ -350,9 +607,21 @@ export class App {
       const key = `${match.phase}:${match.showResult.seedLabel}:${match.showResult.won}`;
       if (key !== this.endKey || force) {
         this.endKey = key;
-        this.showEndOverlay.show(match.showResult);
+        this.showEndOverlay.show(match.showResult, this.profile, {
+          kudos: this.showKudos,
+          crowns: this.showCrowns,
+          newBest: this.showNewBest,
+        });
       }
     }
+  }
+
+  private announce(message: string): void {
+    this.live.textContent = message;
+    this.toast.textContent = message;
+    this.toast.classList.add('is-visible');
+    window.clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => this.toast.classList.remove('is-visible'), 2600);
   }
 
   private bindKeyboard(): void {
@@ -362,6 +631,11 @@ export class App {
       (event) => {
         const match = this.game.match;
         if (event.key === 'Escape') {
+          if (this.screen !== 'menu') {
+            event.preventDefault();
+            this.closeScreen();
+            return;
+          }
           if (this.game.state === 'playing') {
             event.preventDefault();
             this.game.pause();
@@ -386,7 +660,11 @@ export class App {
             match.nextRound();
             return;
           }
-          if (this.game.state === 'menu' && !(event.target instanceof HTMLButtonElement)) {
+          if (
+            this.game.state === 'menu' &&
+            this.screen === 'menu' &&
+            !(event.target instanceof HTMLButtonElement)
+          ) {
             event.preventDefault();
             this.startScreen.playSelected();
             return;
@@ -405,6 +683,7 @@ export class App {
         if (
           event.key === ' ' &&
           this.game.state === 'menu' &&
+          this.screen === 'menu' &&
           !(event.target instanceof HTMLButtonElement)
         ) {
           event.preventDefault();
@@ -413,7 +692,7 @@ export class App {
         }
 
         if (event.key === 'Tab' && (this.game.state === 'paused' || this.game.state === 'finished')) {
-          this.trapFocus(event);
+          if (this.screen === 'menu') this.trapFocus(event);
         }
       },
       { signal },

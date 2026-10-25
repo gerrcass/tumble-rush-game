@@ -2,10 +2,12 @@ import { el } from '../dom';
 import type { LevelResult } from '../../game/levels/Level';
 import type { RoundDefinition, RoundPlacement } from '../../game/match/Director';
 import type { ShowResult } from '../../game/match/Match';
+import type { Profile } from '../../game/profile';
 
 export interface PauseOverlayOptions {
   onResume: () => void;
   onRestart: () => void;
+  onSettings: () => void;
   onQuit: () => void;
 }
 
@@ -31,8 +33,9 @@ export class PauseOverlay {
 
     this.resumeButton = this.addButton(card, 'btn btn--primary', 'RESUME', options.onResume);
     this.restartButton = this.addButton(card, 'btn btn--ghost', 'RESTART SHOW', options.onRestart);
+    this.addButton(card, 'btn btn--ghost', 'SETTINGS', options.onSettings);
     this.addButton(card, 'btn btn--ghost', 'QUIT TO MENU', options.onQuit);
-    card.appendChild(el('p', 'overlay-hint', 'Esc resumes · restarting replays the Show from Round 1'));
+    card.appendChild(el('p', 'overlay-hint', 'Esc resumes · settings returns here · restart replays the Show'));
   }
 
   show(restartLabel = 'RESTART SHOW'): void {
@@ -175,6 +178,15 @@ export interface ResultsOptions {
   onContinue: () => void;
 }
 
+export interface RoundReward {
+  qualified: boolean;
+  kudos: number;
+  bonus: number;
+  crown: number;
+  bestFinish: number | null;
+  newBest: boolean;
+}
+
 /** Round results table. Human row highlighted, auto-advance countdown. */
 export class ResultsOverlay {
   readonly element = el('section', 'results');
@@ -184,6 +196,7 @@ export class ResultsOverlay {
   private readonly seed: HTMLElement;
   private readonly continueButton: HTMLButtonElement;
   private readonly countdown: HTMLElement;
+  private readonly reward: HTMLElement;
   private lastSecond = -1;
 
   constructor(options: ResultsOptions) {
@@ -218,6 +231,10 @@ export class ResultsOverlay {
     this.tableBody.setAttribute('role', 'rowgroup');
     card.appendChild(this.tableBody);
 
+    this.reward = el('div', 'results__reward');
+    this.reward.setAttribute('role', 'status');
+    card.appendChild(this.reward);
+
     const foot = el('div', 'results__foot');
     this.seed = el('span', 'results__seed', '');
     foot.appendChild(this.seed);
@@ -237,11 +254,45 @@ export class ResultsOverlay {
     placements: readonly RoundPlacement[],
     seedLabel: string,
     secondsLeft: number,
+    reward?: RoundReward,
   ): void {
     this.element.hidden = false;
     this.title.textContent = definition.label;
     this.subtitle.textContent = `ROUND ${roundNumber} · TOP ${definition.qualifiers} QUALIFY`;
     this.seed.textContent = `SEED ${seedLabel}`;
+    this.reward.replaceChildren();
+    if (reward) {
+      this.reward.hidden = false;
+      if (reward.qualified) {
+        this.reward.appendChild(el('strong', 'results__reward-value', `+${reward.kudos} KUDOS`));
+        if (reward.bonus > 0) {
+          this.reward.appendChild(el('span', 'results__reward-bonus', `FIRST QUALIFY +${reward.bonus}`));
+        }
+        if (reward.crown > 0) {
+          this.reward.appendChild(
+            el(
+              'span',
+              'results__reward-crown',
+              `+${reward.crown} CROWN${reward.crown === 1 ? '' : 'S'}`,
+            ),
+          );
+        }
+        this.reward.appendChild(
+          el(
+            'span',
+            'results__reward-best',
+            reward.newBest ? 'NEW CAREER BEST!' : `CAREER BEST #${reward.bestFinish ?? '—'}`,
+          ),
+        );
+      } else {
+        this.reward.appendChild(el('strong', 'results__reward-value', 'NO KUDOS'));
+        this.reward.appendChild(
+          el('span', 'results__reward-best', 'You did not qualify — the Show ends here.'),
+        );
+      }
+    } else {
+      this.reward.hidden = true;
+    }
     this.tableBody.replaceChildren();
     for (const entry of placements) {
       const row = el('div', `results__row${entry.isPlayer ? ' is-player' : ''}`);
@@ -256,10 +307,10 @@ export class ResultsOverlay {
       row.appendChild(name);
       const status = el(
         'span',
-        `results__cell results__cell--status ${entry.qualified ? 'is-qualified' : 'is-eliminated'}`,
+        `results__cell results__cell--status ${entry.qualified ? 'is-qualified' : 'is-eliminated'}${entry.won ? ' is-crowned' : ''}`,
       );
       status.setAttribute('role', 'cell');
-      status.textContent = entry.qualified ? 'QUALIFIED' : 'ELIMINATED';
+      status.textContent = entry.won ? 'CROWNED' : entry.qualified ? 'QUALIFIED' : 'ELIMINATED';
       row.appendChild(status);
       const stat = el('span', 'results__cell results__cell--stat');
       stat.setAttribute('role', 'cell');
@@ -311,6 +362,7 @@ export class ShowEndOverlay {
   private readonly stats: HTMLElement;
   private readonly replayButton: HTMLButtonElement;
   private readonly menuButton: HTMLButtonElement;
+  private readonly career: HTMLElement;
 
   constructor(options: ShowEndOptions) {
     this.element.hidden = true;
@@ -344,6 +396,8 @@ export class ShowEndOverlay {
     this.card.appendChild(this.copy);
     this.stats = el('div', 'show-end__stats');
     this.card.appendChild(this.stats);
+    this.career = el('p', 'show-end__profile');
+    this.card.appendChild(this.career);
 
     const actions = el('div', 'show-end__actions');
     this.replayButton = el('button', 'btn btn--primary', 'PLAY AGAIN');
@@ -358,16 +412,19 @@ export class ShowEndOverlay {
     this.card.appendChild(el('p', 'overlay-hint', 'Enter replays · Esc returns to the menu'));
   }
 
-  show(result: ShowResult): void {
+  show(
+    result: ShowResult,
+    profile: Profile,
+    summary: { kudos: number; crowns: number; newBest: boolean },
+  ): void {
     const won = result.won;
     this.card.classList.toggle('is-victory', won);
     this.card.classList.toggle('is-defeat', !won);
     this.sticker.textContent = won ? 'CROWN CEREMONY' : 'SHOW OVER';
     this.sticker.className = `sticker sticker--${won ? 'mango' : 'coral'}`;
     this.title.textContent = won ? 'CROWNED!' : 'ELIMINATED';
-    const playerWon = won && result.winnerName === 'YOU';
-    this.winner.textContent = playerWon
-      ? 'You take the crown!'
+    this.winner.textContent = won
+      ? `${profile.name} takes the crown!`
       : `${result.winnerName} takes the crown.`;
     this.copy.textContent = won
       ? 'Sixteen Tumblers entered. You are the one with the crown and the confetti in your hair.'
@@ -378,13 +435,16 @@ export class ShowEndOverlay {
       ['PLACEMENT', `#${result.playerPlacement}`],
       ['ROUNDS QUALIFIED', `${result.roundsQualified} / 3`],
       ['SHOW TIME', formatTime(result.totalTime)],
-      ['SEED', result.seedLabel],
+      ['BEST FINISH', summary.newBest ? 'NEW #' + String(profile.bestFinish ?? result.playerPlacement) : `#${profile.bestFinish ?? '—'}`],
+      ['KUDOS EARNED', `+${summary.kudos}`],
+      ['CROWNS', `${profile.crowns}`],
     ] as const) {
       const stat = el('div', 'show-end__stat');
       stat.appendChild(el('span', 'show-end__stat-label', label));
       stat.appendChild(el('strong', 'show-end__stat-value', value));
       this.stats.appendChild(stat);
     }
+    this.career.textContent = `${profile.name} · ${profile.wins} wins · ${profile.qualifications} qualifications · ${profile.kudos} kudos · seed ${result.seedLabel}`;
     this.element.hidden = false;
     this.replayButton.focus({ preventScroll: true });
   }

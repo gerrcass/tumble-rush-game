@@ -22,11 +22,7 @@ import {
   type ShowPhase,
 } from './match/Director';
 import { Match, type MatchHud, type ShowResult, type StampTone } from './match/Match';
-import {
-  Contestant,
-  createBotProfiles,
-  playerLook,
-} from './match/Contestant';
+import { Contestant, createBotProfiles } from './match/Contestant';
 import { createBotBrain } from './bots/BotBrain';
 import {
   MODE_CATALOGUE,
@@ -40,6 +36,7 @@ import { createLevel } from './levels/factory';
 import { Rng, formatSeed } from './Rng';
 import type { TumbleDebugApi } from '../types/debug';
 import { clamp } from './util/math';
+import { DEFAULT_LOOK, type BeanLook } from './cosmetics';
 
 export type GameState = 'menu' | 'playing' | 'paused' | 'finished';
 
@@ -56,11 +53,17 @@ export interface GameCallbacks {
   onShowEnd?: (result: ShowResult) => void;
 }
 
+export interface PlayerIdentity {
+  name: string;
+  look: BeanLook;
+}
+
 export interface GameOptions {
   mount: HTMLElement;
   touchRoot: HTMLElement;
   seed: number;
   mode?: LevelMode;
+  identity?: PlayerIdentity;
   callbacks?: GameCallbacks;
 }
 
@@ -113,8 +116,13 @@ export class Game {
     grabHeld: false,
     emotePressed: false,
   };
-  private readonly reducedMotion: boolean;
+  private reducedMotion: boolean;
   private readonly practiceContestants: Contestant[] = [];
+  private identity: PlayerIdentity;
+  private nameTagsVisible = true;
+  private cameraSensitivity = 1;
+  private invertY = false;
+  private readonly peerBodies: BeanBody[] = [];
 
   private currentState: GameState = 'menu';
   private quality: Quality;
@@ -139,6 +147,9 @@ export class Game {
     this.currentSeed = options.seed;
     this.seedLabel = formatSeed(options.seed);
     this.mode = options.mode ?? 'course';
+    this.identity = options.identity
+      ? { name: options.identity.name, look: { ...options.identity.look } }
+      : { name: 'Pip', look: { ...DEFAULT_LOOK } };
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const high = !window.matchMedia('(pointer: coarse)').matches;
@@ -169,37 +180,18 @@ export class Game {
     for (const collider of this.level.colliders) this.world.addCollider(collider);
 
     const playerRng = new Rng(this.currentSeed ^ 0x5eed1234);
-    this.player = new Contestant({
-      id: 0,
-      name: 'YOU',
-      look: playerLook(),
-      isPlayer: true,
-      world: this.world,
-      scene: this.scene,
-      outline: high,
-      phase: playerRng.float(0, 10),
-    });
+    this.player = this.createPlayer(playerRng.float(0, 10), high);
     this.player.resetForRound(this.level.startPosition, 0, 'racing');
     this.player.bean.setMenuMode(true);
     this.contestants.push(this.player);
-
-    this.player.controller.onEvent = (event) => {
-      if (event.type === 'land') {
-        this.rig.addShake(clamp(event.strength * 0.012, 0.02, 0.16));
-      } else if (event.type === 'dive') {
-        this.rig.addShake(0.12);
-      } else if (event.type === 'stumble') {
-        this.rig.addShake(0.08);
-      } else if (event.type === 'shove') {
-        this.rig.addShake(0.06);
-      }
-    };
 
     this.rig = new CameraRig(this.camera, this.world);
     this.rig.setFloor(this.level.cameraFloor);
     this.input = new Input(canvas, options.touchRoot);
     this.level.setQuality(this.quality);
     this.player.bean.setOutlineEnabled(this.quality === 'high');
+    this.buildMenuCast();
+    this.refreshPeerBodies();
     this.rig.snapMenu(this.player.body);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -405,6 +397,7 @@ export class Game {
   startShow(options: StartShowOptions = {}): void {
     if (this.currentState === 'paused') return;
     this.blurControls();
+    this.ensureIdentity();
     this.disposeBots();
     this.match = null;
     this.practice = false;
@@ -424,6 +417,7 @@ export class Game {
         onPhase: (phase) => this.callbacks.onShowPhase?.(phase),
         onSpectate: (leader) => {
           this.spectateBody = leader?.body ?? null;
+          if (leader) this.rig.snapSpectate(leader.body);
         },
         onShowEnd: (result) => {
           this.currentState = 'finished';
@@ -449,6 +443,7 @@ export class Game {
   startPractice(mode: LevelMode = 'course'): void {
     if (this.currentState === 'paused') return;
     this.blurControls();
+    this.ensureIdentity();
     this.disposeBots();
     this.match = null;
     this.practice = true;
@@ -480,6 +475,7 @@ export class Game {
   startMode(mode: LevelMode): void {
     if (this.currentState === 'paused') return;
     this.blurControls();
+    this.ensureIdentity();
     this.disposeBots();
     this.match = null;
     this.practice = false;
@@ -546,21 +542,58 @@ export class Game {
     this.match = null;
     this.practice = false;
     this.spectateBody = null;
+    this.currentState = 'menu';
+    this.ensureIdentity();
     this.installLevel('course', this.currentSeed);
     this.resetWorldFor([this.player]);
     this.player.resetForRound(this.level.startPosition, 0, 'waiting');
     this.player.bean.setVisible(true);
     this.player.bean.setMenuMode(true);
     this.level.resetKinematics();
-    this.currentState = 'menu';
     this.menuMode = true;
     this.elapsed = 0;
     this.rig.clearLookAt();
     this.rig.setFloor(this.level.cameraFloor);
+    this.buildMenuCast();
+    this.refreshPeerBodies();
     this.rig.snapMenu(this.player.body);
     this.input.reset();
     this.accumulator = 0;
     this.callbacks.onStateChange?.(this.currentState);
+  }
+
+  /** Update the live player cosmetics from the profile between shows. */
+  setIdentity(name: string, look: BeanLook): void {
+    const changed = this.identity.name !== name || !sameLook(this.identity.look, look);
+    this.identity = { name, look: { ...look } };
+    if (!changed) return;
+    if (this.currentState === 'menu') {
+      this.replacePlayer();
+      this.player.resetForRound(this.level.startPosition, 0, 'waiting');
+      this.player.bean.setMenuMode(true);
+      this.resetWorldFor(this.contestants);
+      this.refreshPeerBodies();
+      this.rig.snapMenu(this.player.body);
+    }
+  }
+
+  setReducedMotion(enabled: boolean): void {
+    this.reducedMotion = enabled;
+  }
+
+  setNameTagsVisible(visible: boolean): void {
+    this.nameTagsVisible = visible;
+  }
+
+  setCameraPreferences(sensitivity: number, invertY: boolean): void {
+    this.cameraSensitivity = sensitivity;
+    this.invertY = invertY;
+    this.rig.setViewPreferences(sensitivity, invertY);
+  }
+
+  setQualitySetting(setting: 'auto' | 'high' | 'low'): void {
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    this.setQuality(setting === 'auto' ? (coarse ? 'low' : 'high') : setting);
   }
 
   /** Debug/test-only reposition. Never changes the checkpoint or show state. */
@@ -639,6 +672,98 @@ export class Game {
     this.renderer.domElement.remove();
   }
 
+  private createPlayer(phase: number, outline: boolean): Contestant {
+    const player = new Contestant({
+      id: 0,
+      name: this.identity.name,
+      look: { ...this.identity.look },
+      isPlayer: true,
+      world: this.world,
+      scene: this.scene,
+      outline,
+      phase,
+    });
+    player.controller.onEvent = (event) => {
+      if (event.type === 'land') {
+        this.rig.addShake(clamp(event.strength * 0.012, 0.02, 0.16));
+      } else if (event.type === 'dive') {
+        this.rig.addShake(0.12);
+      } else if (event.type === 'stumble') {
+        this.rig.addShake(0.08);
+      } else if (event.type === 'shove') {
+        this.rig.addShake(0.06);
+      }
+    };
+    return player;
+  }
+
+  private ensureIdentity(): void {
+    if (this.player.name === this.identity.name && sameLook(this.player.look, this.identity.look)) {
+      return;
+    }
+    this.replacePlayer();
+  }
+
+  private replacePlayer(): void {
+    const old = this.player;
+    const index = this.contestants.indexOf(old);
+    this.world.removeBody(old.body);
+    old.dispose();
+    const player = this.createPlayer(new Rng(this.currentSeed ^ 0x5eed1234).float(0, 10), this.quality === 'high');
+    this.player = player;
+    if (index >= 0) this.contestants[index] = player;
+    else this.contestants.unshift(player);
+    player.bean.setOutlineEnabled(this.quality === 'high');
+    if (this.spectateBody === old.body) this.spectateBody = null;
+  }
+
+  /**
+   * A lively menu needs a cast, not one lonely bean. These are ordinary
+   * Contestants on the Course start deck, removed before any real Show begins.
+   */
+  private buildMenuCast(): void {
+    const profiles = createBotProfiles(this.currentSeed).slice(0, 4);
+    const origin = this.level.startPosition;
+    const offsets: ReadonlyArray<readonly [number, number]> = [
+      [1.8, -1.8],
+      [3.6, -0.9],
+      [-1.7, -1.5],
+      [0.8, -2.9],
+    ];
+    const rng = new Rng((this.currentSeed ^ 0xca57) >>> 0);
+    for (let i = 0; i < profiles.length; i += 1) {
+      const profile = profiles[i]!;
+      const offset = offsets[i] ?? ([0, -1] as const);
+      const bot = new Contestant({
+        id: 100 + i,
+        name: profile.name,
+        look: profile.look,
+        isPlayer: false,
+        world: this.world,
+        scene: this.scene,
+        outline: false,
+        phase: rng.float(0, 10),
+        skill: profile.baseSkill,
+        reaction: profile.baseReaction,
+        aggression: profile.baseAggression,
+        mistakeChance: profile.baseMistakeChance,
+      });
+      bot.bean.setOutlineEnabled(false);
+      bot.resetForRound(
+        new Vector3(origin.x + offset[0], origin.y + 0.02, origin.z + offset[1]),
+        i % 3,
+        'waiting',
+      );
+      bot.bean.setMenuMode(true);
+      this.contestants.push(bot);
+    }
+  }
+
+  private refreshPeerBodies(): void {
+    this.peerBodies.length = 0;
+    for (const contestant of this.contestants) this.peerBodies.push(contestant.body);
+  }
+
   private buildBots(seed: number, practice = false): void {
     const profiles = createBotProfiles(seed).slice(0, practice ? PRACTICE_BOTS : undefined);
     const rng = new Rng((seed ^ 0xb07f00d) >>> 0);
@@ -661,6 +786,7 @@ export class Game {
       bot.bean.setOutlineEnabled(false);
       this.contestants.push(bot);
     }
+    this.refreshPeerBodies();
   }
 
   private disposeBots(): void {
@@ -672,6 +798,7 @@ export class Game {
       this.contestants.splice(i, 1);
     }
     this.practiceContestants.length = 0;
+    this.refreshPeerBodies();
   }
 
   private prepareRound(index: number, entrants: readonly Contestant[]): void {
@@ -711,40 +838,57 @@ export class Game {
 
   private startPositions(mode: LevelMode, entrants: readonly Contestant[]): Vector3[] {
     const count = Math.max(1, entrants.length);
-    const spawn = this.level.spawnPoints?.(count);
-    if (spawn && spawn.length >= count) {
-      return spawn.slice(0, count).map((position) => position.clone());
-    }
-    const rng = new Rng((this.currentSeed ^ (mode.length * 0x9e3779b1) ^ count) >>> 0);
     const origin = this.level.startPosition;
+    const y = origin.y + 0.02;
+    const rng = new Rng((this.currentSeed ^ (mode.length * 0x9e3779b1) ^ count) >>> 0);
+
+    // Arena rounds expose perches. Rotate them so the player takes the camera-
+    // side perch and every bot is ahead or beside the lens, never behind it.
+    if (this.level.spawnPoints) {
+      const perches = this.level.spawnPoints(count).map((point) => point.clone());
+      if (perches.length >= count) {
+        perches.sort((a, b) => b.z - a.z || b.x - a.x);
+        return perches.slice(0, count);
+      }
+    }
+
     const positions: Vector3[] = [];
     if (mode === 'course' || mode === 'training') {
-      const columns = Math.ceil(count / 2);
-      for (let i = 0; i < count; i += 1) {
-        const row = i % 2;
-        const column = Math.floor(i / 2);
-        const x = (column - (columns - 1) / 2) * 1.3 + rng.float(-0.18, 0.18);
-        const z = origin.z + (row === 0 ? 0.75 : -0.75) + rng.float(-0.15, 0.15);
-        positions.push(origin.clone().set(x, origin.y + 0.02, z));
+      // Player at the back-centre of the start deck; the pack forms three rows
+      // ahead. The follow camera starts behind the player and sees the show.
+      positions.push(new Vector3(origin.x, y, origin.z + 1.8));
+      const columns = 5;
+      for (let i = 1; i < count; i += 1) {
+        const index = i - 1;
+        const row = Math.floor(index / columns);
+        const column = index % columns;
+        const x = (column - (columns - 1) / 2) * 1.65 + rng.float(-0.12, 0.12);
+        const z = origin.z - 0.35 - row * 1.65 + rng.float(-0.12, 0.12);
+        positions.push(new Vector3(x, y, z));
       }
-    } else if (mode === 'crown-climb') {
-      // The start deck is centred on the arena, not on the authored single
-      // player spawn. Spread the finalists around the pad, inside its radius.
-      const offset = rng.float(0, Math.PI * 2);
-      for (let i = 0; i < count; i += 1) {
-        const angle = offset + (i / count) * Math.PI * 2;
+      return positions;
+    }
+
+    if (mode === 'crown-climb') {
+      // The authored start is on the deck edge. Keep the player there and fan
+      // the finalists toward the tower, all within the deck radius.
+      positions.push(origin.clone().setY(y));
+      const startAngle = Math.atan2(origin.z, origin.x);
+      for (let i = 1; i < count; i += 1) {
+        const angle = startAngle - (i / Math.max(1, count - 1)) * 1.35;
         positions.push(
-          new Vector3(Math.cos(angle) * 4.1, 0.04, Math.sin(angle) * 4.1),
+          new Vector3(Math.cos(angle) * 4.2, y, Math.sin(angle) * 4.2),
         );
       }
-    } else {
-      for (let i = 0; i < count; i += 1) {
-        const angle = (i / count) * Math.PI * 2;
-        const radius = i === 0 ? 0 : 2.2;
-        positions.push(
-          origin.clone().set(origin.x + Math.cos(angle) * radius, origin.y, origin.z + Math.sin(angle) * radius),
-        );
-      }
+      return positions;
+    }
+
+    for (let i = 0; i < count; i += 1) {
+      const angle = (i / count) * Math.PI * 2;
+      const radius = i === 0 ? 0 : 2.2;
+      positions.push(
+        new Vector3(origin.x + Math.cos(angle) * radius, y, origin.z + Math.sin(angle) * radius),
+      );
     }
     return positions;
   }
@@ -837,7 +981,17 @@ export class Game {
       this.input.clearPressed();
     }
 
+    if (this.peerBodies.length !== this.contestants.length) this.refreshPeerBodies();
+    this.rig.setPeers(this.peerBodies);
+    this.rig.setViewPreferences(this.cameraSensitivity, this.invertY);
     this.rig.setFloor(this.level.cameraFloor);
+    if (this.spectateBody?.eliminated) {
+      const next = this.match?.entrantsList.find(
+        (contestant) => !contestant.body.eliminated && contestant.eliminatedAt === null,
+      );
+      if (next) this.spectateBody = next.body;
+      else if (this.match?.phase === 'playing') this.match.finishRound();
+    }
     const focus = this.spectateBody ?? this.player.body;
     this.rig.update(
       dt,
@@ -847,6 +1001,7 @@ export class Game {
         menu: this.currentState === 'menu' || this.menuMode,
         celebrating: this.currentState === 'finished',
         reducedMotion: this.reducedMotion,
+        spectating: this.spectateBody !== null,
       },
       this.cosmeticTime,
     );
@@ -855,7 +1010,13 @@ export class Game {
       if (!contestant.body.eliminated || contestant.isPlayer) {
         contestant.bean.update(dt, contestant.body, contestant.controller, this.cosmeticTime);
         const tagDistance = this.camera.position.distanceTo(contestant.body.position);
-        contestant.bean.setNameTagVisible(tagDistance > 3.6);
+        const spectateOnly =
+          this.spectateBody !== null && !contestant.isPlayer && contestant.body !== this.spectateBody;
+        if (!this.nameTagsVisible || (this.menuMode && !contestant.isPlayer) || spectateOnly) {
+          contestant.bean.setNameTagVisible(false);
+        } else {
+          contestant.bean.setNameTagDistance(tagDistance, contestant.isPlayer);
+        }
       }
     }
 
@@ -1113,4 +1274,13 @@ export class Game {
     this.callbacks.onFinish?.(finalResult);
     this.callbacks.onStateChange?.(this.currentState);
   }
+}
+
+function sameLook(a: BeanLook, b: BeanLook): boolean {
+  return (
+    a.colorId === b.colorId &&
+    a.patternId === b.patternId &&
+    a.hatId === b.hatId &&
+    a.emoteId === b.emoteId
+  );
 }

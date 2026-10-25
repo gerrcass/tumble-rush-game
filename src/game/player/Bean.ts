@@ -19,7 +19,7 @@ import {
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { BeanBody } from '../physics/BeanBody';
 import type { BeanController } from './BeanController';
-import { createPatternTexture, colorFor, type BeanLook } from '../cosmetics';
+import { createPatternTexture, colorFor, type BeanLook, type EmoteId } from '../cosmetics';
 import {
   canvasTexture,
   getShadowTexture,
@@ -67,6 +67,8 @@ export class Bean {
   private readonly outlineMesh: Mesh | null;
   private readonly shadow: Mesh;
   private readonly nameTag: Sprite;
+  private readonly tagMaterial: SpriteMaterial;
+  private readonly emoteId: EmoteId;
 
   private readonly ownedTextures = new Set<Texture>();
 
@@ -79,6 +81,7 @@ export class Bean {
 
   constructor(options: BeanOptions) {
     this.look = options.look;
+    this.emoteId = options.look.emoteId;
     const palette = colorFor(options.look.colorId);
     this.outlineEnabled = options.outline ?? true;
     this.blinkTime = (options.phase ?? 0) * 3.7;
@@ -171,12 +174,13 @@ export class Bean {
 
     const nameTagTexture = makeNameTagTexture(options.name ?? 'YOU');
     this.ownedTextures.add(nameTagTexture);
-    const tagMaterial = new SpriteMaterial({
+    this.tagMaterial = new SpriteMaterial({
       map: nameTagTexture,
       transparent: true,
       depthWrite: false,
+      opacity: 1,
     });
-    this.nameTag = new Sprite(tagMaterial);
+    this.nameTag = new Sprite(this.tagMaterial);
     this.nameTag.position.set(0, 2.16, 0);
     this.nameTag.scale.set(1.08, 0.38, 1);
     this.nameTag.renderOrder = 5;
@@ -219,6 +223,23 @@ export class Bean {
   /** Hide a billboard that would fill the lens when a rival is on top of us. */
   setNameTagVisible(visible: boolean): void {
     this.nameTag.visible = visible;
+  }
+
+  /**
+   * Fade name tags near the lens and at the far edge of the play space. The
+   * player's own tag stays readable over a wider envelope than a bot's.
+   */
+  setNameTagDistance(distance: number, isPlayer: boolean): void {
+    const near = isPlayer ? 1.6 : 5.5;
+    const nearFadeStart = isPlayer ? 0.9 : 2.8;
+    const far = isPlayer ? 28 : 22;
+    let opacity = 1;
+    if (distance < near) {
+      opacity = Math.max(0, (distance - nearFadeStart) / (near - nearFadeStart));
+    }
+    else if (distance > far - 2.2) opacity = Math.max(0, (far - distance) / 2.2);
+    this.tagMaterial.opacity = opacity;
+    this.nameTag.visible = opacity > 0.03;
   }
 
   update(dt: number, body: BeanBody, controller: BeanController, elapsed: number): void {
@@ -311,11 +332,46 @@ export class Bean {
         break;
       }
       case 'emote': {
-        this.tiltRoot.rotation.z = Math.sin(elapsed * 8) * 0.05;
-        this.rightArm.pivot.rotation.z = 2.2 + Math.sin(elapsed * 12) * 0.32;
-        this.rightArm.pivot.rotation.x = -0.15;
-        this.leftArm.pivot.rotation.z = -0.35;
-        this.bodyRoot.position.y = Math.abs(Math.sin(elapsed * 8)) * 0.025;
+        switch (this.emoteId) {
+          case 'flex': {
+            this.tiltRoot.rotation.x = -0.08;
+            this.leftArm.pivot.rotation.z = -2.35;
+            this.rightArm.pivot.rotation.z = 2.35;
+            this.leftArm.pivot.rotation.x = -0.3;
+            this.rightArm.pivot.rotation.x = -0.3;
+            this.squashRoot.scale.set(1.06, 0.97, 1.03);
+            this.bodyRoot.position.y = Math.abs(Math.sin(elapsed * 14)) * 0.018;
+            break;
+          }
+          case 'facepalm': {
+            this.tiltRoot.rotation.x = 0.12;
+            this.tiltRoot.rotation.z = -0.18;
+            this.rightArm.pivot.rotation.z = 2.5;
+            this.rightArm.pivot.rotation.x = -0.9;
+            this.leftArm.pivot.rotation.z = -0.3;
+            this.bodyRoot.position.y = -0.02 + Math.sin(elapsed * 6) * 0.008;
+            break;
+          }
+          case 'dance': {
+            const beat = Math.sin(elapsed * 10);
+            this.tiltRoot.rotation.z = beat * 0.12;
+            this.bodyRoot.position.y = Math.abs(beat) * 0.06;
+            this.leftArm.pivot.rotation.z = -1.7 + beat * 0.9;
+            this.rightArm.pivot.rotation.z = 1.7 + beat * 0.9;
+            this.leftFoot.pivot.rotation.x = beat * 0.35;
+            this.rightFoot.pivot.rotation.x = -beat * 0.35;
+            break;
+          }
+          case 'wave':
+          default: {
+            this.tiltRoot.rotation.z = Math.sin(elapsed * 8) * 0.05;
+            this.rightArm.pivot.rotation.z = 2.2 + Math.sin(elapsed * 12) * 0.32;
+            this.rightArm.pivot.rotation.x = -0.15;
+            this.leftArm.pivot.rotation.z = -0.35;
+            this.bodyRoot.position.y = Math.abs(Math.sin(elapsed * 8)) * 0.025;
+            break;
+          }
+        }
         break;
       }
       case 'idle':

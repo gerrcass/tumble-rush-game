@@ -23,6 +23,9 @@ export type HatId =
   | 'halo'
   | 'flower';
 
+export type EmoteId = 'wave' | 'flex' | 'facepalm' | 'dance';
+export type CosmeticKind = 'color' | 'pattern' | 'hat' | 'emote';
+
 export interface ColorDefinition {
   id: ColorId;
   name: string;
@@ -46,13 +49,128 @@ export interface BeanLook {
   colorId: ColorId;
   patternId: PatternId;
   hatId: HatId;
+  emoteId: EmoteId;
 }
 
-export const PLAYER_LOOK: BeanLook = {
+export interface CosmeticDefinition<Id extends string = string> {
+  id: Id;
+  name: string;
+  cost: number;
+  starter: boolean;
+}
+
+/** Six patterns. Solid and Stripes are free; the rest are kudos unlocks. */
+export const PATTERN_CATALOGUE: readonly CosmeticDefinition<PatternId>[] = [
+  { id: 'solid', name: 'Solid', cost: 0, starter: true },
+  { id: 'stripes', name: 'Stripes', cost: 0, starter: true },
+  { id: 'dots', name: 'Dots', cost: 50, starter: false },
+  { id: 'zigzag', name: 'Zigzag', cost: 80, starter: false },
+  { id: 'stars', name: 'Stars', cost: 120, starter: false },
+  { id: 'checker', name: 'Checker', cost: 200, starter: false },
+];
+
+/** Eight hats. Every hat is built procedurally in Bean.createHat. */
+export const HAT_CATALOGUE: readonly CosmeticDefinition<HatId>[] = [
+  { id: 'none', name: 'None', cost: 0, starter: true },
+  { id: 'propeller', name: 'Propeller', cost: 0, starter: true },
+  { id: 'cone', name: 'Cone', cost: 100, starter: false },
+  { id: 'antenna', name: 'Antenna', cost: 120, starter: false },
+  { id: 'crown', name: 'Tiny Crown', cost: 150, starter: false },
+  { id: 'ducky', name: 'Ducky', cost: 180, starter: false },
+  { id: 'halo', name: 'Halo', cost: 250, starter: false },
+  { id: 'flower', name: 'Wildflower', cost: 400, starter: false },
+];
+
+/** Four emotes. The bean animation changes shape per selected emote. */
+export const EMOTE_CATALOGUE: readonly CosmeticDefinition<EmoteId>[] = [
+  { id: 'wave', name: 'Wave', cost: 0, starter: true },
+  { id: 'flex', name: 'Flex', cost: 50, starter: false },
+  { id: 'facepalm', name: 'Facepalm', cost: 80, starter: false },
+  { id: 'dance', name: 'Dance', cost: 150, starter: false },
+];
+
+export function colorCatalogue(): readonly CosmeticDefinition<ColorId>[] {
+  return BEAN_COLORS.map((color, index) => ({
+    id: color.id,
+    name: color.name,
+    cost: colorCost(index),
+    starter: index < 4,
+  }));
+}
+
+function colorCost(index: number): number {
+  return [0, 0, 0, 0, 60, 80, 120, 150][index] ?? 150;
+}
+
+export const DEFAULT_LOOK: BeanLook = {
   colorId: 'coral',
   patternId: 'stripes',
   hatId: 'propeller',
+  emoteId: 'wave',
 };
+
+export const PLAYER_LOOK: BeanLook = { ...DEFAULT_LOOK };
+
+export function cosmeticKey(kind: CosmeticKind, id: string): string {
+  return `${kind}:${id}`;
+}
+
+export function starterUnlocks(): string[] {
+  return [
+    ...colorCatalogue()
+      .filter((item) => item.starter)
+      .map((item) => cosmeticKey('color', item.id)),
+    ...PATTERN_CATALOGUE.filter((item) => item.starter).map((item) => cosmeticKey('pattern', item.id)),
+    ...HAT_CATALOGUE.filter((item) => item.starter).map((item) => cosmeticKey('hat', item.id)),
+    ...EMOTE_CATALOGUE.filter((item) => item.starter).map((item) => cosmeticKey('emote', item.id)),
+  ];
+}
+
+export function isColorId(value: unknown): value is ColorId {
+  return typeof value === 'string' && BEAN_COLORS.some((color) => color.id === value);
+}
+
+export function isPatternId(value: unknown): value is PatternId {
+  return typeof value === 'string' && PATTERN_CATALOGUE.some((item) => item.id === value);
+}
+
+export function isHatId(value: unknown): value is HatId {
+  return typeof value === 'string' && HAT_CATALOGUE.some((item) => item.id === value);
+}
+
+export function isEmoteId(value: unknown): value is EmoteId {
+  return typeof value === 'string' && EMOTE_CATALOGUE.some((item) => item.id === value);
+}
+
+export function emoteFor(id: EmoteId): CosmeticDefinition<EmoteId> {
+  return EMOTE_CATALOGUE.find((item) => item.id === id) ?? EMOTE_CATALOGUE[0]!;
+}
+
+export function cosmeticCatalogue(kind: CosmeticKind): readonly CosmeticDefinition[] {
+  switch (kind) {
+    case 'color':
+      return colorCatalogue();
+    case 'pattern':
+      return PATTERN_CATALOGUE;
+    case 'hat':
+      return HAT_CATALOGUE;
+    case 'emote':
+      return EMOTE_CATALOGUE;
+  }
+}
+
+export function cosmeticItem(kind: CosmeticKind, id: string): CosmeticDefinition | undefined {
+  return cosmeticCatalogue(kind).find((item) => item.id === id);
+}
+
+export function allCosmetics(): Array<{ kind: CosmeticKind; item: CosmeticDefinition }> {
+  const kinds: readonly CosmeticKind[] = ['color', 'pattern', 'hat', 'emote'];
+  return kinds.flatMap((kind) => cosmeticCatalogue(kind).map((item) => ({ kind, item })));
+}
+
+export function cosmeticName(kind: CosmeticKind, id: string): string {
+  return cosmeticItem(kind, id)?.name ?? id;
+}
 
 export function colorFor(id: ColorId): ColorDefinition {
   return BEAN_COLORS.find((color) => color.id === id) ?? BEAN_COLORS[0]!;

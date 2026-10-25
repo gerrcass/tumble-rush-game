@@ -327,7 +327,18 @@ export class Match {
       }
     }
 
-    if (this.spectating) {
+    // A follow-cam must never stay on a Tumbler that just fell. Switch on the
+    // same step; if nobody is left, resolve the Round instead of staring at slime.
+    if (this.spectating && this.spectating.body.eliminated) {
+      const leader = this.currentLeader();
+      if (!leader) {
+        this.resolveRound();
+        return;
+      }
+      this.spectating = leader;
+      this.spectateTimer = 0;
+      this.callbacks.onSpectate(leader);
+    } else if (this.spectating) {
       this.spectateTimer += 1 / 60;
       if (this.spectateTimer >= SPECTATE_SWITCH_SECONDS) {
         this.spectateTimer = 0;
@@ -337,6 +348,14 @@ export class Match {
           this.callbacks.onSpectate(leader);
         }
       }
+    }
+
+    const living = this.entrants.filter(
+      (contestant) => !contestant.body.eliminated && contestant.eliminatedAt === null,
+    ).length;
+    if (living === 0) {
+      this.resolveRound();
+      return;
     }
 
     if (definition.mode === 'course') {
@@ -476,11 +495,27 @@ export class Match {
       distanceToCrown: contestant.distanceToCrown,
     }));
     const placements = resolveRound(definition, performances);
+    // Crown Climb always has exactly one winner, even on a timeout or a total
+    // wipe. The Arena Director lifts the highest finalist into the win row so
+    // the ceremony can never name somebody the results still call eliminated.
+    if (definition.mode === 'crown-climb' && placements.length > 0) {
+      const champion = placements[0]!;
+      champion.won = true;
+      champion.qualified = true;
+      champion.status = 'QUALIFIED';
+      champion.eliminated = false;
+      champion.eliminatedAt = null;
+    }
     for (const placement of placements) {
       const contestant = this.entrants.find((entry) => String(entry.id) === placement.id);
       if (!contestant) continue;
       contestant.placement = placement.placement;
       contestant.status = placement.qualified ? 'qualified' : 'eliminated';
+      if (definition.mode === 'crown-climb' && placement.placement === 1) {
+        contestant.eliminatedAt = null;
+        contestant.body.eliminated = false;
+        contestant.body.velocity?.set(0, 0, 0);
+      }
       if (!placement.qualified) contestant.body.eliminated = true;
     }
     this.history.push({ definition, placements });

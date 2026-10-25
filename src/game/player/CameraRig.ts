@@ -13,6 +13,7 @@ export interface CameraContext {
   menu: boolean;
   celebrating: boolean;
   reducedMotion: boolean;
+  spectating?: boolean;
 }
 
 const BASE_FOV = 68;
@@ -20,7 +21,10 @@ const SPEED_FOV = 6;
 const MIN_PITCH = (-5 * Math.PI) / 180;
 const MAX_PITCH = (65 * Math.PI) / 180;
 const MIN_DISTANCE = 3.5;
-const MAX_DISTANCE = 8;
+const MAX_DISTANCE = 10;
+const SHOW_DISTANCE = 6.7;
+const SHOW_PITCH = (31 * Math.PI) / 180;
+const NEAR_TAG = 1.4;
 
 /**
  * Third-person follow camera.
@@ -36,8 +40,8 @@ export class CameraRig {
   private readonly world: PhysicsWorld;
 
   yaw = 0;
-  pitch = (26 * Math.PI) / 180;
-  distance = 5.2;
+  pitch = SHOW_PITCH;
+  distance = SHOW_DISTANCE;
 
   /** Lowest camera height for the current Round (set by Game from the Level). */
   floorY = 0.55;
@@ -53,6 +57,9 @@ export class CameraRig {
   private readonly shoulder = new Vector3();
   private debugLook: Vector3 | null = null;
   private debugLookActive = false;
+  private peers: readonly BeanBody[] = [];
+  private sensitivity = 1;
+  private invertY = false;
 
   private shake = 0;
   private elapsed = 0;
@@ -68,8 +75,8 @@ export class CameraRig {
   /** Establish the front-right menu view of the idle bean. */
   snapMenu(body: BeanBody): void {
     this.yaw = 0.38;
-    this.pitch = (21 * Math.PI) / 180;
-    this.distance = 6.4;
+    this.pitch = (22 * Math.PI) / 180;
+    this.distance = 7.5;
     this.menuOrbit = 0;
     this.pivotFor(body, this.smoothPivot);
     this.desiredFrom(this.smoothPivot, this.smoothPosition);
@@ -83,8 +90,22 @@ export class CameraRig {
   /** Snap behind the bean. Used when entering gameplay from the menu. */
   snapBehind(body: BeanBody): void {
     this.yaw = 0;
-    this.pitch = (26 * Math.PI) / 180;
-    this.distance = 5.2;
+    this.pitch = SHOW_PITCH;
+    this.distance = SHOW_DISTANCE;
+    this.timeSinceOrbit = 99;
+    this.pivotFor(body, this.smoothPivot);
+    this.desiredFrom(this.smoothPivot, this.smoothPosition);
+    this.smoothLook.copy(this.smoothPivot);
+    this.initialized = true;
+    this.camera.position.copy(this.smoothPosition);
+    this.camera.lookAt(this.smoothLook);
+  }
+
+  /** A wider establishing shot for the follow-cam after elimination. */
+  snapSpectate(body: BeanBody): void {
+    this.yaw = 0;
+    this.pitch = (37 * Math.PI) / 180;
+    this.distance = 8.4;
     this.timeSinceOrbit = 99;
     this.pivotFor(body, this.smoothPivot);
     this.desiredFrom(this.smoothPivot, this.smoothPosition);
@@ -96,6 +117,16 @@ export class CameraRig {
 
   addShake(amount: number): void {
     this.shake = Math.min(0.5, this.shake + amount);
+  }
+
+  /** Bean bodies the camera should not settle inside. Cleared on Round teardown. */
+  setPeers(peers: readonly BeanBody[]): void {
+    this.peers = peers;
+  }
+
+  setViewPreferences(sensitivity: number, invertY: boolean): void {
+    this.sensitivity = clamp(sensitivity, 0.4, 1.8);
+    this.invertY = invertY;
   }
 
   /** Kept above the Round's danger surface; Crown Climb moves this with slime. */
@@ -141,8 +172,12 @@ export class CameraRig {
     }
 
     if (view.orbitX !== 0 || view.orbitY !== 0) {
-      this.yaw -= view.orbitX * 0.0045;
-      this.pitch = clamp(this.pitch + view.orbitY * 0.0035, MIN_PITCH, MAX_PITCH);
+      this.yaw -= view.orbitX * 0.0045 * this.sensitivity;
+      this.pitch = clamp(
+        this.pitch + view.orbitY * 0.0035 * this.sensitivity * (this.invertY ? -1 : 1),
+        MIN_PITCH,
+        MAX_PITCH,
+      );
       this.timeSinceOrbit = 0;
     } else {
       this.timeSinceOrbit += dt;
@@ -162,14 +197,15 @@ export class CameraRig {
         2.2,
         dt,
       );
-      this.pitch = (21 * Math.PI) / 180;
-      this.distance = damp(this.distance, 6.4, 2.2, dt);
+      this.pitch = (22 * Math.PI) / 180;
+      this.distance = damp(this.distance, 7.5, 2.2, dt);
       this.pivotFor(body, this.target);
       this.smoothPivot.lerp(this.target, 1 - Math.exp(-7 * dt));
       this.smoothLook.lerp(this.target, 1 - Math.exp(-9 * dt));
       this.desiredFrom(this.smoothPivot, this.desired);
       this.applyCollision(this.smoothPivot, this.desired, this.desired);
       this.smoothPosition.lerp(this.desired, 1 - Math.exp(-8 * dt));
+      this.avoidPeers(this.smoothPosition, body);
       this.camera.position.copy(this.smoothPosition);
       this.camera.lookAt(this.lookPoint());
       this.camera.fov = damp(this.camera.fov, BASE_FOV, 5, dt);
@@ -179,8 +215,15 @@ export class CameraRig {
 
     if (context.celebrating) {
       this.yaw += dt * 0.32;
-      this.pitch = (22 * Math.PI) / 180;
-      this.distance = damp(this.distance, 6.8, 2.5, dt);
+      this.pitch = (24 * Math.PI) / 180;
+      this.distance = damp(this.distance, 7.8, 2.5, dt);
+    } else if (context.spectating) {
+      this.pitch = damp(this.pitch, (37 * Math.PI) / 180, 3, dt);
+      this.distance = damp(this.distance, 8.4, 2.5, dt);
+      if (speed > 1.2) {
+        const travelYaw = Math.atan2(-body.velocity.x, -body.velocity.z);
+        this.yaw = dampAngle(this.yaw, travelYaw, 1.4, dt);
+      }
     } else if (speed > 1.2 && this.timeSinceOrbit > 0.8) {
       const travelYaw = Math.atan2(-body.velocity.x, -body.velocity.z);
       this.yaw = dampAngle(this.yaw, travelYaw, 1.6, dt);
@@ -205,6 +248,7 @@ export class CameraRig {
       // Re-check the smoothed position so lag cannot place the camera inside a wall.
       this.applyCollision(this.smoothPivot, this.smoothPosition, this.smoothPosition);
     }
+    this.avoidPeers(this.smoothPosition, body);
 
     this.smoothLook.lerp(this.target, 1 - Math.exp(-13 * dt));
 
@@ -226,6 +270,40 @@ export class CameraRig {
 
   private pivotFor(body: BeanBody, out: Vector3): void {
     out.set(body.position.x, body.position.y + 1.12, body.position.z);
+  }
+
+  /**
+   * A pull-in can land the lens inside a rival capsule. Push the camera out
+   * sideways and slightly up; the player's own body is never an obstacle.
+   */
+  private avoidPeers(out: Vector3, focus: BeanBody): void {
+    for (let pass = 0; pass < 3; pass += 1) {
+      let moved = false;
+      for (const peer of this.peers) {
+        if (peer === focus || peer.eliminated) continue;
+        const centerY = peer.position.y + 0.75;
+        let dx = out.x - peer.position.x;
+        let dy = out.y - centerY;
+        let dz = out.z - peer.position.z;
+        let distance = Math.hypot(dx, dy, dz);
+        if (distance >= NEAR_TAG) continue;
+        if (distance < 0.001) {
+          dx = 0;
+          dz = 1;
+          dy = 0.35;
+          distance = 1;
+        }
+        const scale = NEAR_TAG / distance;
+        out.set(
+          peer.position.x + dx * scale,
+          Math.max(peer.position.y + 0.55, out.y, centerY + dy * scale * 0.55),
+          peer.position.z + dz * scale,
+        );
+        moved = true;
+      }
+      if (!moved) break;
+    }
+    if (out.y < this.floorY) out.y = this.floorY;
   }
 
   private desiredFrom(pivot: Vector3, out: Vector3): void {

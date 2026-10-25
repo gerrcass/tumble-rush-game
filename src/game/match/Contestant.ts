@@ -4,7 +4,7 @@ import { BeanController } from '../player/BeanController';
 import { BeanBody } from '../physics/BeanBody';
 import type { PhysicsWorld } from '../physics/PhysicsWorld';
 import type { Scene } from 'three';
-import type { BeanLook, ColorId, HatId, PatternId } from '../cosmetics';
+import type { BeanLook, ColorId, EmoteId, HatId, PatternId } from '../cosmetics';
 import { PLAYER_LOOK } from '../cosmetics';
 import { Rng } from '../Rng';
 import { clamp } from '../util/math';
@@ -159,6 +159,7 @@ interface RosterEntry {
   colorId: ColorId;
   patternId: PatternId;
   hatId: HatId;
+  emoteId: EmoteId;
 }
 
 /**
@@ -167,21 +168,21 @@ interface RosterEntry {
  * the pack reads at gameplay distance even with name tags off.
  */
 export const BOT_ROSTER: readonly RosterEntry[] = [
-  { name: 'Mochi Mayhem', colorId: 'bubblegum', patternId: 'dots', hatId: 'ducky' },
-  { name: 'Sir Flopsalot', colorId: 'sky', patternId: 'stripes', hatId: 'crown' },
-  { name: 'Tumbleweed', colorId: 'mango', patternId: 'zigzag', hatId: 'cone' },
-  { name: 'Wobble Watson', colorId: 'mint', patternId: 'checker', hatId: 'antenna' },
-  { name: 'Beanadette', colorId: 'grape', patternId: 'stars', hatId: 'flower' },
-  { name: 'Flip McChip', colorId: 'coral', patternId: 'solid', hatId: 'propeller' },
-  { name: 'Jelly Jolene', colorId: 'midnight', patternId: 'dots', hatId: 'halo' },
-  { name: 'Bounce Barry', colorId: 'cream', patternId: 'checker', hatId: 'ducky' },
-  { name: 'Dizzy Dottie', colorId: 'sky', patternId: 'zigzag', hatId: 'propeller' },
-  { name: 'Custard Cobra', colorId: 'mango', patternId: 'solid', hatId: 'antenna' },
-  { name: "Puddin' Pop", colorId: 'grape', patternId: 'dots', hatId: 'crown' },
-  { name: "Slip n' Slide", colorId: 'mint', patternId: 'stripes', hatId: 'cone' },
-  { name: 'Gummy Bearwin', colorId: 'bubblegum', patternId: 'stars', hatId: 'flower' },
-  { name: 'Jiggle Jim', colorId: 'midnight', patternId: 'stripes', hatId: 'halo' },
-  { name: 'Marshmallow Drop', colorId: 'cream', patternId: 'zigzag', hatId: 'ducky' },
+  { name: 'Mochi Mayhem', colorId: 'bubblegum', patternId: 'dots', hatId: 'ducky', emoteId: 'wave' },
+  { name: 'Sir Flopsalot', colorId: 'sky', patternId: 'stripes', hatId: 'crown', emoteId: 'flex' },
+  { name: 'Tumbleweed', colorId: 'mango', patternId: 'zigzag', hatId: 'cone', emoteId: 'dance' },
+  { name: 'Wobble Watson', colorId: 'mint', patternId: 'checker', hatId: 'antenna', emoteId: 'wave' },
+  { name: 'Beanadette', colorId: 'grape', patternId: 'stars', hatId: 'flower', emoteId: 'dance' },
+  { name: 'Flip McChip', colorId: 'coral', patternId: 'solid', hatId: 'propeller', emoteId: 'flex' },
+  { name: 'Jelly Jolene', colorId: 'midnight', patternId: 'dots', hatId: 'halo', emoteId: 'facepalm' },
+  { name: 'Bounce Barry', colorId: 'cream', patternId: 'checker', hatId: 'ducky', emoteId: 'wave' },
+  { name: 'Dizzy Dottie', colorId: 'sky', patternId: 'zigzag', hatId: 'propeller', emoteId: 'dance' },
+  { name: 'Custard Cobra', colorId: 'mango', patternId: 'solid', hatId: 'antenna', emoteId: 'flex' },
+  { name: "Puddin' Pop", colorId: 'grape', patternId: 'dots', hatId: 'crown', emoteId: 'wave' },
+  { name: "Slip n' Slide", colorId: 'mint', patternId: 'stripes', hatId: 'cone', emoteId: 'wave' },
+  { name: 'Gummy Bearwin', colorId: 'bubblegum', patternId: 'stars', hatId: 'flower', emoteId: 'flex' },
+  { name: 'Jiggle Jim', colorId: 'midnight', patternId: 'stripes', hatId: 'halo', emoteId: 'facepalm' },
+  { name: 'Marshmallow Drop', colorId: 'cream', patternId: 'zigzag', hatId: 'ducky', emoteId: 'wave' },
 ];
 
 /** Build the 15 bot personalities for one Show from the show seed. */
@@ -193,7 +194,12 @@ export function createBotProfiles(seed: number): BotProfile[] {
     const weight = (rng.next() + rng.next() + rng.next()) / 3;
     return {
       name: entry.name,
-      look: { colorId: entry.colorId, patternId: entry.patternId, hatId: entry.hatId },
+      look: {
+        colorId: entry.colorId,
+        patternId: entry.patternId,
+        hatId: entry.hatId,
+        emoteId: entry.emoteId,
+      },
       baseSkill: 0.45 + weight * 0.5,
       baseReaction: rng.float(0.12, 0.38),
       baseAggression: rng.float(0, 1),
@@ -202,8 +208,8 @@ export function createBotProfiles(seed: number): BotProfile[] {
   });
 }
 
-export function playerLook(): BeanLook {
-  return { ...PLAYER_LOOK };
+export function playerLook(look: BeanLook = PLAYER_LOOK): BeanLook {
+  return { ...look };
 }
 
 export function applyPresetToAll(
