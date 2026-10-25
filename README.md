@@ -12,7 +12,7 @@
   </p>
 </div>
 
-![Tumble Rush main menu](docs/evidence/phase4-menu.png)
+![Tumble Rush main menu, captured from the live GitHub Pages deployment](docs/readme-hero.png)
 
 Tumble Rush is an original, single-player 3D party battle royale. You are one of 16 jelly-bean **Tumblers** in a sunrise-carnival game show: race a seeded obstacle course, survive a collapsing honeycomb arena, then climb a rising-slime tower to take the crown. Every model, texture, particle, and note of music is generated in code.
 
