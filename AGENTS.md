@@ -48,7 +48,9 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 - Playwright must prove: menu renders with no console errors, a show starts and reaches gameplay, mobile touch controls exist, settings toggle persists.
 - `window.__tumble` is the test hook. Keep it available in dev/test builds; do not ship a debug overlay enabled in production.
 - Each PR needs visual evidence captured from the real build: menu, course, Hexapop, final, victory. Store them in `docs/evidence/` and attach them to the PR with `gh`.
-- Performance gate: ≥55 fps at 1080p high on the dev machine; low quality must preserve playability.
+- Performance gate: ≥55 fps at 1080p high on real hardware; low quality must preserve playability. **This host is SwiftShader-only (no `/dev/dri`), so FPS is not a hardware signal.** Use `window.__tumble.renderInfo` draw calls/triangles and report the hardware-FPS gap instead of optimizing for software FPS.
+- Release gate: `npm run check:release` runs the unit/build gate plus the focused review specs. `npm run verify:show` runs the real 16-bean Course and Hexapop spawn gate.
+- Real-Match probes beat isolated unit setups for show bugs. `docs/REVIEW-*.md` records the independent review rounds; add a new review file when a round finds blockers.
 
 ## Delivery workflow
 

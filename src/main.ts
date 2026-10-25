@@ -54,7 +54,7 @@ if (!root) {
   } catch (error) {
     showBootError(
       'THE SHOW DID NOT START',
-      'Something went wrong while building the Training Deck. Reload to try again.',
+      'Something went wrong while building the Sunrise Carnival. Reload to try again.',
     );
     if (import.meta.env.DEV) console.error(error);
   }
