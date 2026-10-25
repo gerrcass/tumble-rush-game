@@ -37,6 +37,7 @@ import type {
   LevelMode,
   LevelResult,
   LevelStatus,
+  LevelTile,
   Quality,
   Waypoint,
 } from './Level';
@@ -597,6 +598,56 @@ export class Hexapop implements Level {
   progress(position: Vector3): number {
     // Vertical survival progress: the lower the Tumbler, the more precarious.
     return Math.max(0, Math.min(1, (position.y - SLIME_Y) / (0 - SLIME_Y)));
+  }
+
+  /**
+   * Public tile snapshot for bot brains, tests and future spectator UI.
+   * Returned objects are copies: the arena remains the only owner of state.
+   */
+  queryTiles(): readonly LevelTile[] {
+    return this.tiles.map((tile) => ({
+      x: tile.base.x,
+      y: tile.base.y,
+      z: tile.base.z,
+      tier: tile.tier,
+      ring: tile.ring,
+      state: tile.state,
+      safe: tile.safe,
+    }));
+  }
+
+  nearestSafeTile(position: Vector3): LevelTile | null {
+    let best: LevelTile | null = null;
+    let bestScore = Infinity;
+    for (const tile of this.queryTiles()) {
+      if (tile.state !== 'idle') continue;
+      const vertical = tile.y - position.y;
+      if (vertical > 1.4 || vertical < -4.2) continue;
+      const distance = Math.hypot(tile.x - position.x, tile.z - position.z);
+      if (distance > 7) continue;
+      const score = distance + Math.abs(vertical) * 1.1 + tile.ring * 0.18;
+      if (score < bestScore) {
+        bestScore = score;
+        best = tile;
+      }
+    }
+    return best;
+  }
+
+  /** Centre tile first, then the inner rings: a spread start without a pile. */
+  spawnPoints(count: number): readonly Vector3[] {
+    const tierZero = this.tiles
+      .filter((tile) => tile.tier === 0)
+      .sort((a, b) => {
+        if (a.ring !== b.ring) return a.ring - b.ring;
+        return Math.atan2(a.base.z, a.base.x) - Math.atan2(b.base.z, b.base.x);
+      });
+    const points: Vector3[] = [];
+    for (const tile of tierZero) {
+      points.push(new Vector3(tile.base.x, tile.base.y, tile.base.z));
+      if (points.length >= count) break;
+    }
+    return points;
   }
 
   isAtFinish(_position: Vector3): boolean {

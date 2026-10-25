@@ -1,5 +1,7 @@
 import { el } from '../dom';
 import type { LevelResult } from '../../game/levels/Level';
+import type { RoundDefinition, RoundPlacement } from '../../game/match/Director';
+import type { ShowResult } from '../../game/match/Match';
 
 export interface PauseOverlayOptions {
   onResume: () => void;
@@ -10,6 +12,7 @@ export interface PauseOverlayOptions {
 export class PauseOverlay {
   readonly element = el('div', 'overlay');
   private readonly resumeButton: HTMLButtonElement;
+  private readonly restartButton: HTMLButtonElement;
 
   constructor(options: PauseOverlayOptions) {
     this.element.id = 'pause-overlay';
@@ -27,12 +30,13 @@ export class PauseOverlay {
     card.appendChild(el('p', 'overlay-copy', 'The show can wait. The beans are not going anywhere.'));
 
     this.resumeButton = this.addButton(card, 'btn btn--primary', 'RESUME', options.onResume);
-    this.addButton(card, 'btn btn--ghost', 'RESTART ROUND', options.onRestart);
+    this.restartButton = this.addButton(card, 'btn btn--ghost', 'RESTART SHOW', options.onRestart);
     this.addButton(card, 'btn btn--ghost', 'QUIT TO MENU', options.onQuit);
-    card.appendChild(el('p', 'overlay-hint', 'Esc resumes · restarting resets this Round'));
+    card.appendChild(el('p', 'overlay-hint', 'Esc resumes · restarting replays the Show from Round 1'));
   }
 
-  show(): void {
+  show(restartLabel = 'RESTART SHOW'): void {
+    this.restartButton.textContent = restartLabel;
     this.element.hidden = false;
     this.resumeButton.focus({ preventScroll: true });
   }
@@ -56,6 +60,341 @@ export class PauseOverlay {
     button.addEventListener('click', action);
     parent.appendChild(button);
     return button;
+  }
+}
+
+/**
+ * Full-screen Round card: number, name, objective, field size, qualifier count
+ * and the 3-2-1-TUMBLE countdown. Inputs are physically locked by Match during
+ * this phase; this overlay only reports it.
+ */
+export class RoundIntro {
+  readonly element = el('section', 'round-intro');
+  private readonly roundNumber: HTMLElement;
+  private readonly roundName: HTMLElement;
+  private readonly objective: HTMLElement;
+  private readonly starters: HTMLElement;
+  private readonly qualifiers: HTMLElement;
+  private readonly seed: HTMLElement;
+  private readonly countdown: HTMLElement;
+  private readonly countdownLabel: HTMLElement;
+  private lastCount = '';
+  private lastPhase = '';
+
+  constructor() {
+    this.element.hidden = true;
+    this.element.setAttribute('aria-labelledby', 'round-intro-title');
+
+    const card = el('div', 'round-intro__card');
+    this.element.appendChild(card);
+    card.appendChild(el('span', 'sticker sticker--mango', 'NEXT UP'));
+
+    const meta = el('div', 'round-intro__meta');
+    this.roundNumber = el('span', 'round-intro__number', 'ROUND 1');
+    meta.appendChild(this.roundNumber);
+    this.seed = el('span', 'chip chip--seed', '');
+    meta.appendChild(this.seed);
+    card.appendChild(meta);
+
+    this.roundName = el('h2', 'round-intro__title', 'SUNRISE SCRAMBLE');
+    this.roundName.id = 'round-intro-title';
+    card.appendChild(this.roundName);
+    this.objective = el('p', 'round-intro__objective', '');
+    card.appendChild(this.objective);
+
+    const facts = el('div', 'round-intro__facts');
+    const startersFact = el('div', 'round-intro__fact');
+    startersFact.appendChild(el('span', 'round-intro__fact-label', 'TUMBLERS'));
+    this.starters = el('strong', 'round-intro__fact-value', '16');
+    startersFact.appendChild(this.starters);
+    facts.appendChild(startersFact);
+    const qualifiersFact = el('div', 'round-intro__fact round-intro__fact--mint');
+    qualifiersFact.appendChild(el('span', 'round-intro__fact-label', 'QUALIFY'));
+    this.qualifiers = el('strong', 'round-intro__fact-value', 'TOP 8');
+    qualifiersFact.appendChild(this.qualifiers);
+    facts.appendChild(qualifiersFact);
+    card.appendChild(facts);
+
+    const countdownWrap = el('div', 'round-intro__countdown');
+    this.countdownLabel = el('span', 'round-intro__countdown-label', 'GET READY');
+    countdownWrap.appendChild(this.countdownLabel);
+    this.countdown = el('strong', 'round-intro__countdown-value', '3');
+    this.countdown.setAttribute('aria-live', 'assertive');
+    countdownWrap.appendChild(this.countdown);
+    card.appendChild(countdownWrap);
+
+    card.appendChild(el('p', 'round-intro__hint', 'Inputs unlock on TUMBLE!'));
+  }
+
+  show(
+    roundNumber: number,
+    definition: RoundDefinition,
+    seedLabel: string,
+    phase: 'intro' | 'countdown',
+    countdown: number,
+  ): void {
+    this.element.hidden = false;
+    this.roundNumber.textContent = `ROUND ${roundNumber}`;
+    this.roundName.textContent = definition.label;
+    this.objective.textContent = definition.objective;
+    this.starters.textContent = String(definition.starters);
+    this.qualifiers.textContent = `TOP ${definition.qualifiers}`;
+    this.seed.textContent = `SEED ${seedLabel}`;
+    this.update(phase, countdown);
+  }
+
+  update(phase: 'intro' | 'countdown', countdown: number): void {
+    const value =
+      phase === 'intro'
+        ? 'READY'
+        : countdown <= 0.55
+          ? 'TUMBLE!'
+          : String(Math.max(1, Math.ceil(countdown - 0.5)));
+    const label =
+      phase === 'intro' ? 'THE SHOW IS ABOUT TO START' : countdown <= 0.55 ? 'GO!' : 'STARTING IN';
+    const key = `${phase}:${value}`;
+    if (key === this.lastCount) return;
+    this.lastCount = key;
+    this.countdown.textContent = value;
+    this.countdown.classList.toggle('is-go', value === 'TUMBLE!');
+    this.countdownLabel.textContent = label;
+    this.lastPhase = phase;
+    this.element.dataset.phase = this.lastPhase;
+  }
+
+  hide(): void {
+    this.element.hidden = true;
+  }
+
+  dispose(): void {
+    this.element.remove();
+  }
+}
+
+export interface ResultsOptions {
+  onContinue: () => void;
+}
+
+/** Round results table. Human row highlighted, auto-advance countdown. */
+export class ResultsOverlay {
+  readonly element = el('section', 'results');
+  private readonly title: HTMLElement;
+  private readonly subtitle: HTMLElement;
+  private readonly tableBody: HTMLElement;
+  private readonly seed: HTMLElement;
+  private readonly continueButton: HTMLButtonElement;
+  private readonly countdown: HTMLElement;
+  private lastSecond = -1;
+
+  constructor(options: ResultsOptions) {
+    this.element.hidden = true;
+    this.element.setAttribute('aria-labelledby', 'results-title');
+
+    const card = el('div', 'results__card');
+    this.element.appendChild(card);
+    card.appendChild(el('span', 'sticker sticker--mint', 'ROUND RESULTS'));
+
+    this.title = el('h2', 'results__title', 'SUNRISE SCRAMBLE');
+    this.title.id = 'results-title';
+    card.appendChild(this.title);
+    this.subtitle = el('p', 'results__subtitle', '');
+    card.appendChild(this.subtitle);
+
+    const head = el('div', 'results__row results__row--head');
+    head.setAttribute('role', 'row');
+    for (const [label, className] of [
+      ['#', 'results__cell results__cell--place'],
+      ['TUMBLER', 'results__cell results__cell--name'],
+      ['STATUS', 'results__cell results__cell--status'],
+      ['TIME / PROGRESS', 'results__cell results__cell--stat'],
+    ] as const) {
+      const cell = el('span', className, label);
+      cell.setAttribute('role', 'columnheader');
+      head.appendChild(cell);
+    }
+    card.appendChild(head);
+
+    this.tableBody = el('div', 'results__body');
+    this.tableBody.setAttribute('role', 'rowgroup');
+    card.appendChild(this.tableBody);
+
+    const foot = el('div', 'results__foot');
+    this.seed = el('span', 'results__seed', '');
+    foot.appendChild(this.seed);
+    this.countdown = el('span', 'results__countdown', '');
+    foot.appendChild(this.countdown);
+    this.continueButton = el('button', 'btn btn--primary', 'CONTINUE');
+    this.continueButton.type = 'button';
+    this.continueButton.addEventListener('click', options.onContinue);
+    foot.appendChild(this.continueButton);
+    card.appendChild(foot);
+    card.appendChild(el('p', 'overlay-hint', 'Continues automatically, or press Enter'));
+  }
+
+  show(
+    roundNumber: number,
+    definition: RoundDefinition,
+    placements: readonly RoundPlacement[],
+    seedLabel: string,
+    secondsLeft: number,
+  ): void {
+    this.element.hidden = false;
+    this.title.textContent = definition.label;
+    this.subtitle.textContent = `ROUND ${roundNumber} · TOP ${definition.qualifiers} QUALIFY`;
+    this.seed.textContent = `SEED ${seedLabel}`;
+    this.tableBody.replaceChildren();
+    for (const entry of placements) {
+      const row = el('div', `results__row${entry.isPlayer ? ' is-player' : ''}`);
+      row.setAttribute('role', 'row');
+      const place = el('span', 'results__cell results__cell--place', String(entry.placement));
+      place.setAttribute('role', 'cell');
+      row.appendChild(place);
+      const name = el('span', 'results__cell results__cell--name');
+      name.setAttribute('role', 'cell');
+      name.appendChild(el('span', 'results__name', entry.name));
+      if (entry.isPlayer) name.appendChild(el('span', 'results__you', 'YOU'));
+      row.appendChild(name);
+      const status = el(
+        'span',
+        `results__cell results__cell--status ${entry.qualified ? 'is-qualified' : 'is-eliminated'}`,
+      );
+      status.setAttribute('role', 'cell');
+      status.textContent = entry.qualified ? 'QUALIFIED' : 'ELIMINATED';
+      row.appendChild(status);
+      const stat = el('span', 'results__cell results__cell--stat');
+      stat.setAttribute('role', 'cell');
+      stat.textContent = resultStat(definition, entry);
+      row.appendChild(stat);
+      this.tableBody.appendChild(row);
+    }
+    this.update(secondsLeft);
+    this.continueButton.focus({ preventScroll: true });
+  }
+
+  update(secondsLeft: number): void {
+    const second = Math.max(0, Math.ceil(secondsLeft));
+    if (second === this.lastSecond) return;
+    this.lastSecond = second;
+    this.countdown.textContent = `NEXT IN ${second}`;
+    if (second === 0) this.countdown.textContent = 'READY';
+  }
+
+  hide(): void {
+    this.element.hidden = true;
+  }
+
+  dispose(): void {
+    this.element.remove();
+  }
+}
+
+function resultStat(definition: RoundDefinition, entry: RoundPlacement): string {
+  if (entry.finishTime !== null) return formatTime(entry.finishTime);
+  if (definition.mode === 'hexapop') return `${entry.height.toFixed(1)} u high`;
+  if (definition.mode === 'crown-climb') return `${entry.height.toFixed(1)} u`;
+  return `${Math.round(entry.progress * 100)}% course`;
+}
+
+export interface ShowEndOptions {
+  onReplay: () => void;
+  onMenu: () => void;
+}
+
+/** Victory crown ceremony and the defeat screen share one accessible shell. */
+export class ShowEndOverlay {
+  readonly element = el('section', 'show-end');
+  private readonly card: HTMLElement;
+  private readonly sticker: HTMLElement;
+  private readonly title: HTMLElement;
+  private readonly winner: HTMLElement;
+  private readonly copy: HTMLElement;
+  private readonly stats: HTMLElement;
+  private readonly replayButton: HTMLButtonElement;
+  private readonly menuButton: HTMLButtonElement;
+
+  constructor(options: ShowEndOptions) {
+    this.element.hidden = true;
+    this.element.setAttribute('aria-labelledby', 'show-end-title');
+
+    this.card = el('div', 'show-end__card');
+    this.element.appendChild(this.card);
+
+    const rays = el('div', 'show-end__rays');
+    rays.setAttribute('aria-hidden', 'true');
+    this.card.appendChild(rays);
+
+    const crown = el('div', 'show-end__crown');
+    crown.setAttribute('aria-hidden', 'true');
+    crown.appendChild(el('span', 'show-end__crown-base'));
+    for (let i = 0; i < 5; i += 1) {
+      const spike = el('span', 'show-end__crown-spike');
+      spike.style.setProperty('--i', String(i));
+      crown.appendChild(spike);
+    }
+    this.card.appendChild(crown);
+
+    this.sticker = el('span', 'sticker sticker--mango', 'CROWN CEREMONY');
+    this.card.appendChild(this.sticker);
+    this.title = el('h2', 'show-end__title', 'CROWNED!');
+    this.title.id = 'show-end-title';
+    this.card.appendChild(this.title);
+    this.winner = el('p', 'show-end__winner', '');
+    this.card.appendChild(this.winner);
+    this.copy = el('p', 'show-end__copy', '');
+    this.card.appendChild(this.copy);
+    this.stats = el('div', 'show-end__stats');
+    this.card.appendChild(this.stats);
+
+    const actions = el('div', 'show-end__actions');
+    this.replayButton = el('button', 'btn btn--primary', 'PLAY AGAIN');
+    this.replayButton.type = 'button';
+    this.replayButton.addEventListener('click', options.onReplay);
+    actions.appendChild(this.replayButton);
+    this.menuButton = el('button', 'btn btn--ghost', 'MAIN MENU');
+    this.menuButton.type = 'button';
+    this.menuButton.addEventListener('click', options.onMenu);
+    actions.appendChild(this.menuButton);
+    this.card.appendChild(actions);
+    this.card.appendChild(el('p', 'overlay-hint', 'Enter replays · Esc returns to the menu'));
+  }
+
+  show(result: ShowResult): void {
+    const won = result.won;
+    this.card.classList.toggle('is-victory', won);
+    this.card.classList.toggle('is-defeat', !won);
+    this.sticker.textContent = won ? 'CROWN CEREMONY' : 'SHOW OVER';
+    this.sticker.className = `sticker sticker--${won ? 'mango' : 'coral'}`;
+    this.title.textContent = won ? 'CROWNED!' : 'ELIMINATED';
+    const playerWon = won && result.winnerName === 'YOU';
+    this.winner.textContent = playerWon
+      ? 'You take the crown!'
+      : `${result.winnerName} takes the crown.`;
+    this.copy.textContent = won
+      ? 'Sixteen Tumblers entered. You are the one with the crown and the confetti in your hair.'
+      : `You placed #${result.playerPlacement}. The beans will remember you. Probably.`;
+    this.replayButton.textContent = won ? 'PLAY AGAIN' : 'TRY AGAIN';
+    this.stats.replaceChildren();
+    for (const [label, value] of [
+      ['PLACEMENT', `#${result.playerPlacement}`],
+      ['ROUNDS QUALIFIED', `${result.roundsQualified} / 3`],
+      ['SHOW TIME', formatTime(result.totalTime)],
+      ['SEED', result.seedLabel],
+    ] as const) {
+      const stat = el('div', 'show-end__stat');
+      stat.appendChild(el('span', 'show-end__stat-label', label));
+      stat.appendChild(el('strong', 'show-end__stat-value', value));
+      this.stats.appendChild(stat);
+    }
+    this.element.hidden = false;
+    this.replayButton.focus({ preventScroll: true });
+  }
+
+  hide(): void {
+    this.element.hidden = true;
+  }
+
+  dispose(): void {
+    this.element.remove();
   }
 }
 
@@ -124,6 +463,7 @@ function endCopy(result: LevelResult): EndCopy {
   }
 }
 
+/** Small legacy overlay for Practice and debug free-play. */
 export class FinishOverlay {
   readonly element = el('div', 'overlay');
   private readonly replayButton: HTMLButtonElement;

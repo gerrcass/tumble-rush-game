@@ -38,6 +38,22 @@ export interface Waypoint {
   lane?: number;
 }
 
+export type LevelTileState = 'idle' | 'warning' | 'falling' | 'gone';
+
+/**
+ * A public, read-only snapshot of one Hexapop tile. Bots use the same query a
+ * future spectator UI would: no private state leaks, no mutation.
+ */
+export interface LevelTile {
+  x: number;
+  y: number;
+  z: number;
+  tier: number;
+  ring: number;
+  state: LevelTileState;
+  safe: boolean;
+}
+
 export type LevelResultKind = 'finish' | 'crown' | 'survived' | 'timeout' | 'eliminated';
 
 /** The one-shot outcome the Game turns into an end overlay. */
@@ -124,6 +140,18 @@ export interface Level {
   readonly slimeHeight?: number;
   readonly crownPosition?: Vector3;
   readonly winner?: string | null;
+
+  /** Hexapop's public tile query. Bots and tests read the same snapshot. */
+  queryTiles?(): readonly LevelTile[];
+  /** Nearest tile that is safe to land on, or null when the floor is gone. */
+  nearestSafeTile?(position: Vector3): LevelTile | null;
+  /** Seeded start perches inside the Round's start area, spread apart. */
+  spawnPoints?(count: number): readonly Vector3[];
+  /**
+   * Bot-friendly side lane (magnitude) around low hurdles. Zero elsewhere.
+   * Lets the AI take the authored run-around choice without seeing colliders.
+   */
+  hurdleLane?(z: number): number;
 }
 
 export interface ModeCatalogueEntry {

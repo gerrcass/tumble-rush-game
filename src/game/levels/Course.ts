@@ -208,7 +208,7 @@ export class Course implements Level {
     this.addBox(0, -0.5, 4, 4.75 * scale, 0.5, 6.5, 'solid');
 
     // Low hurdles: readable over-or-around choices, never traps.
-    for (const [index, z] of [8.2, 0.3].entries()) {
+    for (const [index, z] of [8.2].entries()) {
       const height = plan.hurdleHeight;
       const hurdleWidth = 6.2 * scale + index * 0.4;
       this.addHurdle(plan.platformOffset * 0.4, z, hurdleWidth, height);
@@ -282,38 +282,40 @@ export class Course implements Level {
     const scale = plan.laneScale;
     const phase = plan.sections[2]!.hazardPhase;
 
-    this.addPlatform(0, -58, 7.4 * scale, 4.5, CREAM, 0x59d9b0, 0xff6b6b);
-    this.addBox(0, -0.5, -58, 3.7 * scale, 0.5, 2.25, 'solid');
+    // The Jelly Jumps gaps are tuned generously: a full-speed jump at 8 u/s
+    // must clear them even for a bot with a slower takeoff.
+    this.addPlatform(0, -58, 7.4 * scale, 5, CREAM, 0x59d9b0, 0xff6b6b);
+    this.addBox(0, -0.5, -58, 3.7 * scale, 0.5, 2.5, 'solid');
 
     this.addMotion(
       0,
       -65,
-      3.4,
-      3.4,
+      4.4,
+      5,
       'x',
       2.5,
       0.72,
       phase,
     );
-    this.addPlatform(0, -72, 6.2 * scale, 4.2, CREAM, 0xffc145, 0x57c7ff);
-    this.addBox(0, -0.5, -72, 3.1 * scale, 0.5, 2.1, 'solid');
+    this.addPlatform(0, -72, 6.2 * scale, 5, CREAM, 0xffc145, 0x57c7ff);
+    this.addBox(0, -0.5, -72, 3.1 * scale, 0.5, 2.5, 'solid');
     this.addBouncePad(0, -72);
 
-    this.addPlatform(0, -80.5, 6 * scale, 4.4, CREAM, 0x57c7ff, 0x59d9b0);
-    this.addBox(0, -0.5, -80.5, 3 * scale, 0.5, 2.2, 'solid');
+    this.addPlatform(0, -80.5, 6 * scale, 5.2, CREAM, 0x57c7ff, 0x59d9b0);
+    this.addBox(0, -0.5, -80.5, 3 * scale, 0.5, 2.6, 'solid');
 
     this.addMotion(
       0,
       -88,
-      3.6,
-      3.2,
+      4.4,
+      5,
       'x',
       2.9,
       0.92,
       phase + 2.4,
     );
-    this.addPlatform(0, -94.5, 7.2 * scale, 5, CREAM, 0x59d9b0, 0xffc145);
-    this.addBox(0, -0.5, -94.5, 3.6 * scale, 0.5, 2.5, 'solid');
+    this.addPlatform(0, -94.5, 7.2 * scale, 5.6, CREAM, 0x59d9b0, 0xffc145);
+    this.addBox(0, -0.5, -94.5, 3.6 * scale, 0.5, 2.8, 'solid');
 
     this.addSign('JELLY JUMPS', 'commit to the gap · use the pad', 0, 2.6, -72, 3.1, 1.1);
   }
@@ -342,9 +344,10 @@ export class Course implements Level {
       }),
     );
 
-    // Narrow bridge at the bottom of the slide.
-    this.addPlatform(0, -118.5, 2.6 * scale, 12, CREAM, 0xa78bfa, 0xffc145, null, -1.6);
-    this.addBox(0, -2.1, -118.5, 1.3 * scale, 0.5, 6, 'solid');
+    // Narrow-ish bridge at the bottom of the slide. It has to leave a bean a
+    // lane to recover after a pusher, especially for the AI pack.
+    this.addPlatform(0, -118.5, 4.4 * scale, 12, CREAM, 0xa78bfa, 0xffc145, null, -1.6);
+    this.addBox(0, -2.1, -118.5, 2.2 * scale, 0.5, 6, 'solid');
 
     // Moving pusher walls: solid, with surface velocity, so they can sweep.
     this.addPusher(0, -112.8, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.7, phase, 2.1);
@@ -358,8 +361,8 @@ export class Course implements Level {
       this.addSign('RISKY', 'narrow · one wobble', x, -0.5, plan.shortcut.z, 2.1, 0.8);
     }
 
-    this.addPlatform(0, -129.5, 7.4 * scale, 5, CREAM, 0xffc145, 0x59d9b0, null, -1.6);
-    this.addBox(0, -2.1, -129.5, 3.7 * scale, 0.5, 2.5, 'solid');
+    this.addPlatform(0, -129.5, 7.4 * scale, 6.4, CREAM, 0xffc145, 0x59d9b0, null, -1.6);
+    this.addBox(0, -2.1, -129.5, 3.7 * scale, 0.5, 3.2, 'solid');
     this.addSign('SLIME SLIDE', 'lean into the pushers · trust the bridge', 0, 2.5, -118, 3.4, 1.2);
   }
 
@@ -927,7 +930,7 @@ export class Course implements Level {
       );
     }
 
-    if (bodies.some((candidate) => this.isAtFinish(candidate.position))) {
+    if (bodies[0] && this.isAtFinish(bodies[0].position)) {
       this.finishNow();
     }
   }
@@ -1014,6 +1017,11 @@ export class Course implements Level {
     this.confetti.setDensity(high);
   }
 
+  /** The single low hurdle is jumped; no side-lane detour is needed. */
+  hurdleLane(_z: number): number {
+    return 0;
+  }
+
   progress(position: Vector3): number {
     return clamp(
       (this.plan.startZ - position.z) / (this.plan.startZ - this.plan.finishZ),
@@ -1078,6 +1086,7 @@ export class Course implements Level {
     const actions: ReadonlyArray<readonly [number, number, number, Waypoint['action']]> = [
       [0, 16, 0.02, 'run'],
       [0, 10, 0.02, 'jump'],
+      [0, 8.2, 0.02, 'jump'],
       [0, 4, 0.02, 'run'],
       [0, -3.5, 0.02, 'jump'],
       [0, -10, 0.02, 'run'],

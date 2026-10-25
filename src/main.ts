@@ -5,6 +5,16 @@ import { dailySeed, resolveSeed } from './game/Rng';
 
 const root = document.getElementById('app');
 
+function randomSeed(): number {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.getRandomValues) {
+    const value = new Uint32Array(1);
+    cryptoApi.getRandomValues(value);
+    return (value[0] ?? Date.now()) >>> 0;
+  }
+  return (Date.now() ^ 0x5eed1234) >>> 0;
+}
+
 function showBootError(title: string, message: string): void {
   if (!root) return;
   root.innerHTML = `
@@ -37,7 +47,7 @@ if (!root) {
   );
 } else {
   const { seed: daySeed } = dailySeed();
-  const seed = resolveSeed(window.location.search, daySeed);
+  const seed = resolveSeed(window.location.search, randomSeed() || daySeed);
   let app: App | null = null;
   try {
     app = new App(root, seed);

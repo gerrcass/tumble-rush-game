@@ -216,6 +216,11 @@ export class Bean {
     if (this.outlineMesh) this.outlineMesh.visible = enabled;
   }
 
+  /** Hide a billboard that would fill the lens when a rival is on top of us. */
+  setNameTagVisible(visible: boolean): void {
+    this.nameTag.visible = visible;
+  }
+
   update(dt: number, body: BeanBody, controller: BeanController, elapsed: number): void {
     this.group.position.copy(body.position);
     const motion = controller.motionState;
