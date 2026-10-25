@@ -218,6 +218,27 @@ export function landingCenterX(
   return best;
 }
 
+/** Top surface of the nearest solid platform under/near a waypoint, if any. */
+export function platformTopAt(level: Level, target: Vector3, tolerance = 2.6): number | null {
+  let best: number | null = null;
+  for (const collider of level.colliders) {
+    if (!collider.enabled || collider.kind !== 'solid') continue;
+    const dx = Math.abs(collider.position.x - target.x);
+    const dz = Math.abs(collider.position.z - target.z);
+    if (collider.shape === 'box') {
+      const reach = Math.max(collider.halfExtents.x, collider.halfExtents.z) + 0.4;
+      if (dx > reach || dz > reach) continue;
+      const top = collider.position.y + collider.halfExtents.y;
+      if (Math.abs(top - target.y) <= tolerance) best = Math.max(best ?? top, top);
+    } else {
+      if (Math.hypot(dx, dz) > collider.radius + 0.4) continue;
+      const top = collider.position.y + collider.height / 2;
+      if (Math.abs(top - target.y) <= tolerance) best = Math.max(best ?? top, top);
+    }
+  }
+  return best;
+}
+
 /** True when a posted hazard collider is close enough to warrant a hop. */
 export function hazardWithin(level: Level, body: BeanBody, radius: number): boolean {
   for (const collider of level.colliders) {
@@ -509,11 +530,15 @@ export class CrownBrain extends BotBrain {
       const waypoint = waypoints[this.waypointIndex];
       if (!waypoint) break;
       const dx = waypoint.position.x - body.position.x;
-      const dy = waypoint.position.y - body.position.y;
       const dz = waypoint.position.z - body.position.z;
       const distance = Math.hypot(dx, dz);
-      const landedAbove = dy < 0.35 && dy > -1.9 && distance < waypoint.radius + 1.5;
-      if ((distance < waypoint.radius + 0.7 && Math.abs(dy) < 1.8) || landedAbove) {
+      const surface = platformTopAt(level, waypoint.position) ?? waypoint.position.y;
+      // Only advance when actually standing on the platform. The old check
+      // accepted a fly-by within 1.8 u, so bots stepped off a bobbing donut and
+      // ran at the next one without a take-off.
+      const onPlatform =
+        body.grounded && distance < waypoint.radius + 1.2 && Math.abs(body.position.y - surface) < 0.55;
+      if (onPlatform) {
         this.waypointIndex += 1;
         continue;
       }
@@ -532,6 +557,7 @@ export class CrownBrain extends BotBrain {
     }
 
     this.owner.targetLabel = `${this.waypointIndex}`;
+    const waypoint = waypoints[Math.min(this.waypointIndex, waypoints.length - 1)];
     const target =
       this.waypointIndex >= waypoints.length
         ? level.crownPosition ?? level.finishPosition
@@ -540,15 +566,38 @@ export class CrownBrain extends BotBrain {
     const dz = target.z - body.position.z;
     const horizontal = Math.hypot(dx, dz);
     const baseSpeed = 0.9 + this.owner.skill * 0.1;
+
+    // Donuts rise and fall under the authored waypoint. Wait at the lip for a
+    // low pass instead of jumping into the side of a platform that is 2 u up.
+    const surfaceY =
+      waypoint?.action === 'ride' ? platformTopAt(level, target) ?? target.y : target.y;
+    const rise = surfaceY - body.position.y;
+    if (waypoint?.action === 'ride' && rise > 1.22 && horizontal < 3.8 && body.grounded) {
+      this.steer(dx, dz, 0);
+      this.owner.targetLabel = `${this.waypointIndex} WAIT`;
+      return frame;
+    }
+
     this.steer(dx, dz, this.courseSpeed(baseSpeed, context));
 
     if (this.maybeShoveNeighbour(context)) return frame;
 
-    const rise = target.y - body.position.y;
+    if (body.grounded && hazardWithin(level, body, 3.7)) {
+      // A sweeping beam at ankle height is the final's biggest filter. A hop
+      // clears it and costs less than a stumble off the spiral.
+      frame.jumpPressed = true;
+      frame.jumpHeld = true;
+      this.staleTimer = 0;
+      return frame;
+    }
     if (body.grounded && this.hesitation <= 0) {
-      const waypoint = waypoints[Math.min(this.waypointIndex, waypoints.length - 1)];
-      const wantsJump = waypoint?.action === 'jump' || rise > 0.35;
-      if (wantsJump && horizontal < 2.7) {
+      const wantsJump = waypoint?.action === 'jump' || waypoint?.action === 'ride' || rise > 0.3;
+      // A 1.1 u riser needs the jump to start while the bean is still ~1.5 u
+      // from the lip. Starting at 2.7 u (the old value) arrived at the side of
+      // the step below its top, so every finalist face-planted into the first
+      // stair. Scale the take-off window with the step height instead.
+      const trigger = clamp(1.9 + Math.max(0, rise) * 1.45, 2.2, 3.9);
+      if (wantsJump && horizontal < trigger) {
         frame.jumpPressed = true;
         frame.jumpHeld = true;
       }

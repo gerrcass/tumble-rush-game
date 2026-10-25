@@ -24,7 +24,11 @@ const MIN_DISTANCE = 3.5;
 const MAX_DISTANCE = 10;
 const SHOW_DISTANCE = 6.7;
 const SHOW_PITCH = (31 * Math.PI) / 180;
+const SPECTATE_DISTANCE = 9.2;
+const SPECTATE_PITCH = (42 * Math.PI) / 180;
 const NEAR_TAG = 1.4;
+const SPECTATE_CLEARANCE = 1.9;
+const OCCLUDER_RADIUS = 0.95;
 
 /**
  * Third-person follow camera.
@@ -62,6 +66,7 @@ export class CameraRig {
   private invertY = false;
 
   private shake = 0;
+  private spectateLift = 0;
   private elapsed = 0;
   private timeSinceOrbit = 99;
   private initialized = false;
@@ -104,8 +109,9 @@ export class CameraRig {
   /** A wider establishing shot for the follow-cam after elimination. */
   snapSpectate(body: BeanBody): void {
     this.yaw = 0;
-    this.pitch = (37 * Math.PI) / 180;
-    this.distance = 8.4;
+    this.pitch = SPECTATE_PITCH;
+    this.distance = SPECTATE_DISTANCE;
+    this.spectateLift = 0;
     this.timeSinceOrbit = 99;
     this.pivotFor(body, this.smoothPivot);
     this.desiredFrom(this.smoothPivot, this.smoothPosition);
@@ -218,11 +224,11 @@ export class CameraRig {
       this.pitch = (24 * Math.PI) / 180;
       this.distance = damp(this.distance, 7.8, 2.5, dt);
     } else if (context.spectating) {
-      this.pitch = damp(this.pitch, (37 * Math.PI) / 180, 3, dt);
-      this.distance = damp(this.distance, 8.4, 2.5, dt);
+      this.pitch = damp(this.pitch, SPECTATE_PITCH, 3, dt);
+      this.distance = damp(this.distance, SPECTATE_DISTANCE, 2.5, dt);
       if (speed > 1.2) {
         const travelYaw = Math.atan2(-body.velocity.x, -body.velocity.z);
-        this.yaw = dampAngle(this.yaw, travelYaw, 1.4, dt);
+        this.yaw = dampAngle(this.yaw, travelYaw, 1.9, dt);
       }
     } else if (speed > 1.2 && this.timeSinceOrbit > 0.8) {
       const travelYaw = Math.atan2(-body.velocity.x, -body.velocity.z);
@@ -248,7 +254,8 @@ export class CameraRig {
       // Re-check the smoothed position so lag cannot place the camera inside a wall.
       this.applyCollision(this.smoothPivot, this.smoothPosition, this.smoothPosition);
     }
-    this.avoidPeers(this.smoothPosition, body);
+    this.avoidPeers(this.smoothPosition, body, context.spectating ? SPECTATE_CLEARANCE : NEAR_TAG);
+    if (context.spectating) this.clearSightline(this.smoothPosition, this.smoothPivot, body, dt);
 
     this.smoothLook.lerp(this.target, 1 - Math.exp(-13 * dt));
 
@@ -276,7 +283,7 @@ export class CameraRig {
    * A pull-in can land the lens inside a rival capsule. Push the camera out
    * sideways and slightly up; the player's own body is never an obstacle.
    */
-  private avoidPeers(out: Vector3, focus: BeanBody): void {
+  private avoidPeers(out: Vector3, focus: BeanBody, clearance = NEAR_TAG): void {
     for (let pass = 0; pass < 3; pass += 1) {
       let moved = false;
       for (const peer of this.peers) {
@@ -286,14 +293,14 @@ export class CameraRig {
         let dy = out.y - centerY;
         let dz = out.z - peer.position.z;
         let distance = Math.hypot(dx, dy, dz);
-        if (distance >= NEAR_TAG) continue;
+        if (distance >= clearance) continue;
         if (distance < 0.001) {
           dx = 0;
           dz = 1;
           dy = 0.35;
           distance = 1;
         }
-        const scale = NEAR_TAG / distance;
+        const scale = clearance / distance;
         out.set(
           peer.position.x + dx * scale,
           Math.max(peer.position.y + 0.55, out.y, centerY + dy * scale * 0.55),
@@ -305,6 +312,44 @@ export class CameraRig {
     }
     if (out.y < this.floorY) out.y = this.floorY;
   }
+
+  /**
+   * The follow-cam should watch the leader, not a scrum of backs. If another
+   * Tumbler sits on the camera-to-leader line, lift the lens until the shot is
+   * clear. The lift is damped so it reads as a camera move, never a snap.
+   */
+  private clearSightline(out: Vector3, target: Vector3, focus: BeanBody, dt: number): void {
+    const eye = this.cameraTarget(target);
+    let needed = 0;
+    for (const peer of this.peers) {
+      if (peer === focus || peer.eliminated) continue;
+      const centerY = peer.position.y + 0.72;
+      const dx = eye.x - out.x;
+      const dy = eye.y - out.y;
+      const dz = eye.z - out.z;
+      const lengthSq = dx * dx + dy * dy + dz * dz;
+      if (lengthSq < 0.0001) continue;
+      const t = ((peer.position.x - out.x) * dx + (centerY - out.y) * dy + (peer.position.z - out.z) * dz) / lengthSq;
+      if (t <= 0.08 || t >= 0.9) continue;
+      const cx = out.x + dx * t;
+      const cy = out.y + dy * t;
+      const cz = out.z + dz * t;
+      const separation = Math.hypot(peer.position.x - cx, centerY - cy, peer.position.z - cz);
+      if (separation < OCCLUDER_RADIUS) needed = Math.max(needed, OCCLUDER_RADIUS - separation);
+    }
+    const targetLift = needed > 0 ? Math.min(3.4, needed * 3.2 + 0.55) : 0;
+    this.spectateLift = damp(this.spectateLift, targetLift, 5.5, dt);
+    if (this.spectateLift > 0.01) out.y += this.spectateLift;
+    // Lifting must not push the lens into a ceiling or the slime.
+    for (let i = 0; i < 6 && this.world.pointBlocked(out, 0.3); i += 1) out.y -= 0.28;
+    if (out.y < this.floorY) out.y = this.floorY;
+  }
+
+  private cameraTarget(target: Vector3): Vector3 {
+    return this.scratchTarget.set(target.x, target.y + 0.42, target.z);
+  }
+
+  private readonly scratchTarget = new Vector3();
 
   private desiredFrom(pivot: Vector3, out: Vector3): void {
     const cosPitch = Math.cos(this.pitch);

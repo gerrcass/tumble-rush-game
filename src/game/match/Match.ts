@@ -33,6 +33,18 @@ export interface RoundHistory {
   placements: RoundPlacement[];
 }
 
+export type ShowFxKind = 'qualify' | 'finish' | 'crown' | 'splat';
+
+/** Presentation event: Game turns it into a particle burst and/or an SFX. */
+export interface ShowFxEvent {
+  kind: ShowFxKind;
+  name: string;
+  player: boolean;
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface MatchCallbacks {
   /** Install the Level, place the entrants and reset the physics bodies. */
   prepareRound: (roundIndex: number, entrants: readonly Contestant[]) => void;
@@ -40,6 +52,10 @@ export interface MatchCallbacks {
   onPhase: (phase: ShowPhase) => void;
   onSpectate: (leader: Contestant | null) => void;
   onShowEnd: (result: ShowResult) => void;
+  /** Optional presentation hooks; audio/FX are not required to run the Show. */
+  onFx?: (event: ShowFxEvent) => void;
+  /** 3, 2, 1 during the countdown, then 0 for TUMBLE!. */
+  onCountdown?: (value: number) => void;
 }
 
 export interface MatchOptions {
@@ -107,6 +123,7 @@ export class Match {
   private sugarRushStamp = false;
   private spectateTimer = 0;
   private totalTime = 0;
+  private countdownStep = -1;
 
   constructor(options: MatchOptions) {
     this.seed = options.seed;
@@ -145,6 +162,7 @@ export class Match {
     this.roundTime = 0;
     this.introTime = INTRO_SECONDS;
     this.countdown = COUNTDOWN_SECONDS;
+    this.countdownStep = -1;
     this.resultsTimer = RESULTS_SECONDS;
     this.totalTime = 0;
     this.sugarRushStamp = false;
@@ -193,6 +211,7 @@ export class Match {
     this.roundTime = 0;
     this.introTime = INTRO_SECONDS;
     this.countdown = COUNTDOWN_SECONDS;
+    this.countdownStep = -1;
     this.winnerId = null;
     this.finishers.clear();
     this.sugarRushStamp = false;
@@ -249,12 +268,19 @@ export class Match {
       if (this.introTime <= 0) {
         this.phase = 'countdown';
         this.countdown = COUNTDOWN_SECONDS;
+        this.countdownStep = 3;
+        this.callbacks.onCountdown?.(3);
         this.callbacks.onPhase(this.phase);
       }
       return;
     }
     if (this.phase === 'countdown') {
       this.countdown -= dt;
+      const step = Math.max(0, Math.ceil(this.countdown - 0.5));
+      if (step !== this.countdownStep) {
+        this.countdownStep = step;
+        this.callbacks.onCountdown?.(step);
+      }
       if (this.countdown <= 0) this.startPlaying();
       return;
     }
@@ -288,6 +314,7 @@ export class Match {
           contestant.eliminatedAt = this.roundTime;
           contestant.status = 'eliminated';
           contestant.bean.setVisible(false);
+          this.emitFx('splat', contestant);
           if (contestant.isPlayer) {
             this.callbacks.onStamp({ text: 'ELIMINATED!', tone: 'bad' });
             this.startSpectating();
@@ -308,6 +335,7 @@ export class Match {
         if (contestant.finishTime === null && level.isAtFinish(contestant.body.position)) {
           contestant.finishTime = this.roundTime;
           this.finishers.add(String(contestant.id));
+          this.emitFx(contestant.isPlayer ? 'finish' : 'qualify', contestant);
           if (contestant.isPlayer) {
             this.callbacks.onStamp({ text: 'QUALIFIED!', tone: 'good' });
           }
@@ -316,6 +344,7 @@ export class Match {
         if (contestant.finishTime === null && level.isAtFinish(contestant.body.position)) {
           contestant.finishTime = this.roundTime;
           this.winnerId = String(contestant.id);
+          this.emitFx('crown', contestant);
           this.callbacks.onStamp(
             contestant.isPlayer
               ? { text: 'CROWNED!', tone: 'good' }
@@ -448,6 +477,10 @@ export class Match {
     this.roundTime = 0;
     this.winnerId = null;
     this.spectateTimer = 0;
+    if (this.countdownStep !== 0) {
+      this.countdownStep = 0;
+      this.callbacks.onCountdown?.(0);
+    }
     this.callbacks.onPhase(this.phase);
   }
 
@@ -541,6 +574,7 @@ export class Match {
     this.phase = 'intro';
     this.introTime = INTRO_SECONDS;
     this.countdown = COUNTDOWN_SECONDS;
+    this.countdownStep = -1;
     this.roundTime = 0;
     this.winnerId = null;
     this.sugarRushStamp = false;
@@ -604,6 +638,19 @@ export class Match {
       }
     }
     return leader;
+  }
+
+  private emitFx(kind: ShowFxEvent['kind'], contestant: Contestant): void {
+    if (!this.callbacks.onFx) return;
+    const position = contestant.body.position;
+    this.callbacks.onFx({
+      kind,
+      name: contestant.name,
+      player: contestant.isPlayer,
+      x: position.x,
+      y: position.y,
+      z: position.z,
+    });
   }
 
   private applyDifficulty(): void {

@@ -75,12 +75,15 @@ export class App {
   private readonly touchDevice: boolean;
   private readonly live: HTMLElement;
   private readonly toast: HTMLElement;
+  private readonly ceremony: HTMLElement;
+  private readonly ceremonyName: HTMLElement;
   private readonly storage = browserStorage();
   private profile: Profile;
   private screen: ScreenName = 'menu';
   private settingsReturn: 'menu' | 'pause' = 'menu';
   private hintTimer = 0;
   private toastTimer = 0;
+  private ceremonyTimer = 0;
   private finishResult: LevelResult | null = null;
   private lastShowChoice: ShowChoice = { difficulty: 'show', daily: false };
   private introKey = '';
@@ -112,6 +115,11 @@ export class App {
       <div id="touch-controls" class="touch-controls" aria-label="Touch controls">${TOUCH_CONTROLS}</div>
       <div id="app-toast" class="app-toast" role="status" aria-live="polite"></div>
       <div id="app-live" class="sr-only" role="status" aria-live="polite"></div>
+      <div id="show-ceremony" class="show-ceremony" role="status" aria-live="polite" hidden>
+        <span class="show-ceremony__kicker">CROWN CEREMONY</span>
+        <strong class="show-ceremony__name"></strong>
+        <span class="show-ceremony__sub">THE SHOW HAS ITS WINNER</span>
+      </div>
     `;
 
     const sceneMount = byId<HTMLElement>(root, 'scene');
@@ -119,6 +127,8 @@ export class App {
     const ui = byId<HTMLElement>(root, 'ui');
     this.live = byId<HTMLElement>(root, 'app-live');
     this.toast = byId<HTMLElement>(root, 'app-toast');
+    this.ceremony = byId<HTMLElement>(root, 'show-ceremony');
+    this.ceremonyName = this.ceremony.querySelector<HTMLElement>('.show-ceremony__name')!;
 
     this.hud = new Hud({
       onPause: () => this.game.pause(),
@@ -215,8 +225,21 @@ export class App {
         onContextLost: () => {
           this.hud.showToast('Graphics context lost — reload the page.', 'bad');
         },
+        onQualityStepDown: () => {
+          this.hud.showToast('Performance mode on — keeping the show smooth.', 'normal');
+          this.announce('Performance mode enabled to keep the frame rate smooth.');
+        },
       },
     });
+
+    ui.addEventListener(
+      'click',
+      (event) => {
+        const target = event.target;
+        if (target instanceof Element && target.closest('button')) this.game.audio.play('ui');
+      },
+      { signal: this.abort.signal },
+    );
 
     this.applySettings();
     this.handleState('menu');
@@ -241,6 +264,7 @@ export class App {
     this.abort.abort();
     window.clearTimeout(this.hintTimer);
     window.clearTimeout(this.toastTimer);
+    window.clearTimeout(this.ceremonyTimer);
     this.game.dispose();
     this.hud.dispose();
     this.startScreen.dispose();
@@ -259,6 +283,7 @@ export class App {
 
   private startShow(choice: ShowChoice): void {
     if (this.game.state !== 'menu' && this.game.state !== 'finished') return;
+    this.clearCeremony();
     this.closeScreens(true);
     this.lastShowChoice = choice;
     this.firstQualificationAwarded = false;
@@ -290,6 +315,7 @@ export class App {
 
   private startPractice(mode: LevelMode): void {
     if (this.game.state !== 'menu' && this.game.state !== 'finished') return;
+    this.clearCeremony();
     this.closeScreens(true);
     this.finishResult = null;
     this.blurActive();
@@ -298,6 +324,7 @@ export class App {
   }
 
   private startDebugRound(mode: LevelMode): void {
+    this.clearCeremony();
     this.closeScreens(true);
     this.finishResult = null;
     this.blurActive();
@@ -305,6 +332,7 @@ export class App {
   }
 
   private quitToMenu(): void {
+    this.clearCeremony();
     this.closeScreens(true);
     this.finishResult = null;
     this.game.quitToMenu();
@@ -334,7 +362,21 @@ export class App {
     this.showNewBest = finish.newBest;
     this.persistProfile();
     this.startScreen.setProfile(this.profile);
-    this.syncMatch(true);
+    if (result.won) {
+      this.ceremonyName.textContent = `${result.winnerName} takes the crown!`;
+      this.ceremony.hidden = false;
+      this.ceremony.classList.add('is-visible');
+      this.announce(`Crown ceremony. ${result.winnerName} wins the show.`);
+      window.clearTimeout(this.ceremonyTimer);
+      this.ceremonyTimer = window.setTimeout(() => {
+        this.ceremonyTimer = 0;
+        this.ceremony.classList.remove('is-visible');
+        this.ceremony.hidden = true;
+        this.syncMatch(true);
+      }, 3200);
+    } else {
+      this.syncMatch(true);
+    }
   }
 
   /** Earn kudos the moment a Round result is shown, and the crown on a final win. */
@@ -388,6 +430,7 @@ export class App {
   private toggleSound(): void {
     this.profile.settings.muted = !this.profile.settings.muted;
     this.persistProfile();
+    this.applySettings();
     this.startScreen.setProfile(this.profile);
     this.settingsScreen.setProfile(this.profile);
     this.announce(this.profile.settings.muted ? 'Sound muted.' : 'Sound on.');
@@ -409,6 +452,12 @@ export class App {
 
   private applySettings(): void {
     const settings = this.profile.settings;
+    this.game.setAudioSettings({
+      musicVolume: settings.musicVolume,
+      sfxVolume: settings.sfxVolume,
+      muted: settings.muted,
+    });
+    this.settingsScreen.setAudioLive(this.game.audio.isStarted);
     this.game.setQualitySetting(settings.quality);
     this.game.setReducedMotion(
       settings.reducedMotion ||
@@ -435,7 +484,10 @@ export class App {
     this.howToScreen.hide();
     this.pauseOverlay.hide();
     if (screen === 'customize') this.customizeScreen.show(this.profile);
-    else if (screen === 'settings') this.settingsScreen.show(this.profile);
+    else if (screen === 'settings') {
+      this.settingsScreen.show(this.profile);
+      this.settingsScreen.setAudioLive(this.game.audio.isStarted);
+    }
     else if (screen === 'howto') this.howToScreen.show();
   }
 
@@ -512,6 +564,10 @@ export class App {
       this.roundIntro.hide();
       this.resultsOverlay.hide();
       if (this.game.match?.showResult) {
+        if (this.ceremonyTimer !== 0) {
+          this.hud.hide();
+          return;
+        }
         this.syncMatch(true);
       } else if (this.finishResult) {
         this.hud.hide();
@@ -604,6 +660,7 @@ export class App {
     this.roundIntro.hide();
     this.resultsOverlay.hide();
     if (match.showResult) {
+      if (this.ceremonyTimer !== 0) return;
       const key = `${match.phase}:${match.showResult.seedLabel}:${match.showResult.won}`;
       if (key !== this.endKey || force) {
         this.endKey = key;
@@ -718,6 +775,13 @@ export class App {
       event.preventDefault();
       first.focus();
     }
+  }
+
+  private clearCeremony(): void {
+    window.clearTimeout(this.ceremonyTimer);
+    this.ceremonyTimer = 0;
+    this.ceremony.hidden = true;
+    this.ceremony.classList.remove('is-visible');
   }
 
   private blurActive(): void {

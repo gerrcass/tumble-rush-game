@@ -323,8 +323,8 @@ export class CrownClimb implements Level {
       collider,
       visual,
       base: new Vector3(x, y - 0.25, z),
-      amplitude: rng.float(0.65, 0.95),
-      speed: rng.float(0.5, 0.72),
+      amplitude: rng.float(0.32, 0.48),
+      speed: rng.float(0.4, 0.55),
       phase: index * 0.77,
     });
   }

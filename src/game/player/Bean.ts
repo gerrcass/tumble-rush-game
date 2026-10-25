@@ -1,5 +1,6 @@
 import {
   BackSide,
+  BufferGeometry,
   CapsuleGeometry,
   ConeGeometry,
   CylinderGeometry,
@@ -17,6 +18,7 @@ import {
   TorusGeometry,
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { BeanBody } from '../physics/BeanBody';
 import type { BeanController } from './BeanController';
 import { createPatternTexture, colorFor, type BeanLook, type EmoteId } from '../cosmetics';
@@ -70,8 +72,6 @@ export class Bean {
   private readonly tagMaterial: SpriteMaterial;
   private readonly emoteId: EmoteId;
 
-  private readonly ownedTextures = new Set<Texture>();
-
   private facing = 0;
   private diveRotation = 0;
   private blinkTime = 0;
@@ -86,38 +86,27 @@ export class Bean {
     this.outlineEnabled = options.outline ?? true;
     this.blinkTime = (options.phase ?? 0) * 3.7;
 
-    const patternTexture = createPatternTexture(options.look);
-    this.ownedTextures.add(patternTexture);
+    const assets = beanAssets();
+    const patternTexture = patternTextureFor(options.look);
+    const bodyMaterial = bodyMaterialFor(options.look, patternTexture);
+    const skinMaterial = toonMaterialFor(palette.hex);
+    const accentMaterial = toonMaterialFor(palette.accent);
+    const inkMaterial = assets.inkMaterial;
+    const blushMaterial = assets.blushMaterial;
 
     this.group.add(this.bodyRoot);
     this.bodyRoot.add(this.spinRoot);
     this.spinRoot.add(this.tiltRoot);
     this.tiltRoot.add(this.squashRoot);
 
-    const bodyMaterial = makeToonMaterial({ color: 0xffffff, map: patternTexture });
-    const skinMaterial = makeToonMaterial({ color: palette.hex });
-    const accentMaterial = makeToonMaterial({ color: palette.accent });
-    const inkMaterial = new MeshBasicMaterial({ color: 0x24324a });
-    const blushMaterial = new MeshBasicMaterial({
-      color: 0xff8fa3,
-      transparent: true,
-      opacity: 0.55,
-      side: DoubleSide,
-    });
-
-    const bodyGeometry = new CapsuleGeometry(0.4, 0.7, 8, 20);
-    const body = new Mesh(bodyGeometry, bodyMaterial);
+    const body = new Mesh(assets.bodyGeometry, bodyMaterial);
     body.position.y = 0.75;
     body.castShadow = true;
     body.receiveShadow = false;
     this.squashRoot.add(body);
 
     if (this.outlineEnabled) {
-      const outlineMaterial = new MeshBasicMaterial({
-        color: 0x24324a,
-        side: BackSide,
-      });
-      const outline = new Mesh(bodyGeometry, outlineMaterial);
+      const outline = new Mesh(assets.bodyGeometry, assets.outlineMaterial);
       outline.position.copy(body.position);
       outline.scale.setScalar(1.038);
       outline.renderOrder = -1;
@@ -127,43 +116,28 @@ export class Bean {
       this.outlineMesh = null;
     }
 
-    // Face — pointed toward local -Z, the character's forward direction.
-    const eyeGeometry = new SphereGeometry(0.098, 14, 10);
-    const pupilGeometry = new SphereGeometry(0.048, 10, 8);
-    const eyeWhiteMaterial = new MeshBasicMaterial({ color: 0xfffdf6 });
+    // Face — pointed toward local -Z, the character's forward direction. Whites,
+    // pupils and cheeks are merged pairs so the whole cast stays inside the
+    // draw-call budget without losing the blink or the blush.
     this.eyeGroup.position.set(0, 0.99, 0);
     this.squashRoot.add(this.eyeGroup);
-    for (const side of [-1, 1]) {
-      const white = new Mesh(eyeGeometry, eyeWhiteMaterial);
-      white.position.set(side * 0.15, 0, -0.35);
-      this.eyeGroup.add(white);
-      const pupil = new Mesh(pupilGeometry, inkMaterial);
-      pupil.position.set(side * 0.15, 0.003, -0.432);
-      this.eyeGroup.add(pupil);
-    }
+    this.eyeGroup.add(new Mesh(assets.eyeWhiteGeometry, assets.eyeWhiteMaterial));
+    this.eyeGroup.add(new Mesh(assets.pupilGeometry, inkMaterial));
 
-    const mouthGeometry = new TorusGeometry(0.088, 0.017, 6, 16, Math.PI);
-    const mouth = new Mesh(mouthGeometry, inkMaterial);
+    const mouth = new Mesh(assets.mouthGeometry, inkMaterial);
     mouth.position.set(0, 0.72, -0.39);
     mouth.rotation.z = Math.PI;
     this.squashRoot.add(mouth);
 
-    for (const side of [-1, 1]) {
-      const cheek = new Mesh(new SphereGeometry(0.052, 10, 8), blushMaterial);
-      cheek.scale.set(1.1, 0.62, 0.28);
-      cheek.position.set(side * 0.255, 0.8, -0.348);
-      this.squashRoot.add(cheek);
-    }
+    const cheeks = new Mesh(assets.cheekGeometry, blushMaterial);
+    this.squashRoot.add(cheeks);
 
-    const armGeometry = new CapsuleGeometry(0.072, 0.23, 4, 10);
-    const handGeometry = new SphereGeometry(0.1, 10, 8);
-    this.leftArm = this.createLimb(-1, armGeometry, handGeometry, skinMaterial, 1.02);
-    this.rightArm = this.createLimb(1, armGeometry, handGeometry, skinMaterial, 1.02);
+    this.leftArm = this.createLimb(-1, assets.armGeometry, skinMaterial, 1.02);
+    this.rightArm = this.createLimb(1, assets.armGeometry, skinMaterial, 1.02);
     this.squashRoot.add(this.leftArm.pivot, this.rightArm.pivot);
 
-    const shoeGeometry = new RoundedBoxGeometry(0.27, 0.16, 0.42, 2, 0.07);
-    this.leftFoot = this.createFoot(-1, shoeGeometry, accentMaterial, skinMaterial);
-    this.rightFoot = this.createFoot(1, shoeGeometry, accentMaterial, skinMaterial);
+    this.leftFoot = this.createFoot(-1, assets.shoeGeometry, accentMaterial);
+    this.rightFoot = this.createFoot(1, assets.shoeGeometry, accentMaterial);
     this.squashRoot.add(this.leftFoot.pivot, this.rightFoot.pivot);
 
     const hat = this.createHat(options.look.hatId);
@@ -172,8 +146,7 @@ export class Bean {
     this.propeller = hat.propeller;
     this.halo = hat.halo;
 
-    const nameTagTexture = makeNameTagTexture(options.name ?? 'YOU');
-    this.ownedTextures.add(nameTagTexture);
+    const nameTagTexture = nameTagTextureFor(options.name ?? 'YOU');
     this.tagMaterial = new SpriteMaterial({
       map: nameTagTexture,
       transparent: true,
@@ -186,13 +159,7 @@ export class Bean {
     this.nameTag.renderOrder = 5;
     this.group.add(this.nameTag);
 
-    const shadowMaterial = new MeshBasicMaterial({
-      map: getShadowTexture(),
-      transparent: true,
-      opacity: 0.4,
-      depthWrite: false,
-    });
-    this.shadow = new Mesh(new PlaneGeometry(1.25, 1.05), shadowMaterial);
+    this.shadow = new Mesh(assets.shadowGeometry, assets.shadowMaterial);
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.012;
     this.shadow.renderOrder = 1;
@@ -409,63 +376,37 @@ export class Bean {
     if (this.propeller) this.propeller.rotation.y += dt * (motion === 'idle' ? 3.2 : 9);
     if (this.halo) this.halo.position.y = 0.31 + Math.sin(elapsed * 2.1) * 0.035;
 
-    const shadowMaterial = this.shadow.material as MeshBasicMaterial;
-    shadowMaterial.opacity = body.grounded ? 0.4 : 0.08;
     this.shadow.visible = body.grounded;
   }
 
   dispose(): void {
-    this.group.traverse((object) => {
-      if (object instanceof Mesh || object instanceof Sprite) {
-        object.geometry?.dispose();
-        const material = object.material;
-        if (Array.isArray(material)) {
-          for (const item of material) item.dispose();
-        } else if (material) {
-          material.dispose();
-        }
-      }
-    });
-    for (const texture of this.ownedTextures) texture.dispose();
+    // Shared bean geometry/materials are cached for the session and bounded by
+    // the cosmetic catalogue. Only the per-bean name-tag material is unique.
+    this.tagMaterial.dispose();
     this.group.removeFromParent();
   }
 
   private createLimb(
     side: number,
-    armGeometry: CapsuleGeometry,
-    handGeometry: SphereGeometry,
+    armGeometry: BufferGeometry,
     material: MeshToonMaterial,
     shoulderY: number,
   ): Limb {
     const pivot = new Group();
     pivot.position.set(side * 0.37, shoulderY, 0);
     const mesh = new Mesh(armGeometry, material);
-    mesh.position.y = -0.16;
     mesh.castShadow = true;
     pivot.add(mesh);
-    const hand = new Mesh(handGeometry, material);
-    hand.position.y = -0.37;
-    hand.castShadow = true;
-    pivot.add(hand);
     return { pivot, mesh };
   }
 
-  private createFoot(
-    side: number,
-    shoeGeometry: RoundedBoxGeometry,
-    shoeMaterial: MeshToonMaterial,
-    legMaterial: MeshToonMaterial,
-  ): Limb {
+  private createFoot(side: number, shoeGeometry: BufferGeometry, shoeMaterial: MeshToonMaterial): Limb {
     const pivot = new Group();
     pivot.position.set(side * 0.19, 0.14, -0.02);
     const mesh = new Mesh(shoeGeometry, shoeMaterial);
     mesh.position.set(0, -0.07, -0.06);
     mesh.castShadow = true;
     pivot.add(mesh);
-    const ankle = new Mesh(new SphereGeometry(0.09, 8, 6), legMaterial);
-    ankle.position.set(0, 0.02, 0);
-    ankle.scale.set(1, 0.8, 1);
-    pivot.add(ankle);
     return { pivot, mesh };
   }
 
@@ -609,6 +550,130 @@ export class Bean {
     }
     return { group, propeller, halo };
   }
+}
+
+
+interface BeanAssets {
+  bodyGeometry: CapsuleGeometry;
+  eyeWhiteGeometry: BufferGeometry;
+  pupilGeometry: BufferGeometry;
+  cheekGeometry: BufferGeometry;
+  mouthGeometry: TorusGeometry;
+  armGeometry: BufferGeometry;
+  shoeGeometry: RoundedBoxGeometry;
+  shadowGeometry: PlaneGeometry;
+  inkMaterial: MeshBasicMaterial;
+  eyeWhiteMaterial: MeshBasicMaterial;
+  blushMaterial: MeshBasicMaterial;
+  outlineMaterial: MeshBasicMaterial;
+  shadowMaterial: MeshBasicMaterial;
+}
+
+let beanAssetSet: BeanAssets | null = null;
+
+function mergeParts(parts: BufferGeometry[]): BufferGeometry {
+  const merged = mergeGeometries(parts, false);
+  for (const part of parts) part.dispose();
+  if (!merged) throw new Error('Bean geometry merge failed');
+  return merged;
+}
+
+/**
+ * Shared bean geometry and materials. Sixteen contestants used to build ~500
+ * geometries and a fresh material set per Tumbler; caching here keeps the GC and
+ * GPU uploads flat for the whole Show.
+ */
+function beanAssets(): BeanAssets {
+  if (beanAssetSet) return beanAssetSet;
+  const eyeBase = new SphereGeometry(0.098, 14, 10);
+  const pupilBase = new SphereGeometry(0.048, 10, 8);
+  const cheekBase = new SphereGeometry(0.052, 10, 8);
+  const whiteParts = [-1, 1].map((side) => eyeBase.clone().translate(side * 0.15, 0, -0.35));
+  const pupilParts = [-1, 1].map((side) => pupilBase.clone().translate(side * 0.15, 0.003, -0.432));
+  const cheekParts = [-1, 1].map((side) =>
+    cheekBase.clone().scale(1.1, 0.62, 0.28).translate(side * 0.255, 0.8, -0.348),
+  );
+  eyeBase.dispose();
+  pupilBase.dispose();
+  cheekBase.dispose();
+
+  const armBase = new CapsuleGeometry(0.072, 0.23, 4, 10);
+  const handBase = new SphereGeometry(0.1, 10, 8);
+  const armParts = [
+    armBase.clone().translate(0, -0.16, 0),
+    handBase.clone().translate(0, -0.37, 0),
+  ];
+  armBase.dispose();
+  handBase.dispose();
+
+  beanAssetSet = {
+    bodyGeometry: new CapsuleGeometry(0.4, 0.7, 8, 20),
+    eyeWhiteGeometry: mergeParts(whiteParts),
+    pupilGeometry: mergeParts(pupilParts),
+    cheekGeometry: mergeParts(cheekParts),
+    mouthGeometry: new TorusGeometry(0.088, 0.017, 6, 16, Math.PI),
+    armGeometry: mergeParts(armParts),
+    shoeGeometry: new RoundedBoxGeometry(0.27, 0.16, 0.42, 2, 0.07),
+    shadowGeometry: new PlaneGeometry(1.25, 1.05),
+    inkMaterial: new MeshBasicMaterial({ color: 0x24324a }),
+    eyeWhiteMaterial: new MeshBasicMaterial({ color: 0xfffdf6 }),
+    blushMaterial: new MeshBasicMaterial({
+      color: 0xff8fa3,
+      transparent: true,
+      opacity: 0.55,
+      side: DoubleSide,
+    }),
+    outlineMaterial: new MeshBasicMaterial({ color: 0x24324a, side: BackSide }),
+    shadowMaterial: new MeshBasicMaterial({
+      map: getShadowTexture(),
+      transparent: true,
+      opacity: 0.4,
+      depthWrite: false,
+    }),
+  };
+  return beanAssetSet;
+}
+
+const toonMaterialCache = new Map<string | number, MeshToonMaterial>();
+function toonMaterialFor(color: string | number): MeshToonMaterial {
+  let material = toonMaterialCache.get(color);
+  if (!material) {
+    material = makeToonMaterial({ color });
+    toonMaterialCache.set(color, material);
+  }
+  return material;
+}
+
+const bodyMaterialCache = new Map<string, MeshToonMaterial>();
+function bodyMaterialFor(look: BeanLook, texture: Texture): MeshToonMaterial {
+  const key = `${look.colorId}:${look.patternId}`;
+  let material = bodyMaterialCache.get(key);
+  if (!material) {
+    material = makeToonMaterial({ color: 0xffffff, map: texture });
+    bodyMaterialCache.set(key, material);
+  }
+  return material;
+}
+
+const patternTextureCache = new Map<string, Texture>();
+function patternTextureFor(look: BeanLook): Texture {
+  const key = `${look.colorId}:${look.patternId}`;
+  let texture = patternTextureCache.get(key);
+  if (!texture) {
+    texture = createPatternTexture(look);
+    patternTextureCache.set(key, texture);
+  }
+  return texture;
+}
+
+const nameTagTextureCache = new Map<string, Texture>();
+function nameTagTextureFor(name: string): Texture {
+  let texture = nameTagTextureCache.get(name);
+  if (!texture) {
+    texture = makeNameTagTexture(name);
+    nameTagTextureCache.set(name, texture);
+  }
+  return texture;
 }
 
 function makeNameTagTexture(name: string): Texture {

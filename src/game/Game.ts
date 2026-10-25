@@ -21,7 +21,13 @@ import {
   type RoundPlacement,
   type ShowPhase,
 } from './match/Director';
-import { Match, type MatchHud, type ShowResult, type StampTone } from './match/Match';
+import {
+  Match,
+  type MatchHud,
+  type ShowFxEvent,
+  type ShowResult,
+  type StampTone,
+} from './match/Match';
 import { Contestant, createBotProfiles } from './match/Contestant';
 import { createBotBrain } from './bots/BotBrain';
 import {
@@ -34,6 +40,8 @@ import {
 } from './levels/Level';
 import { createLevel } from './levels/factory';
 import { Rng, formatSeed } from './Rng';
+import { AudioEngine, type SfxName } from './audio/AudioEngine';
+import { Bursts, particleBudget } from './fx/Bursts';
 import type { TumbleDebugApi } from '../types/debug';
 import { clamp } from './util/math';
 import { DEFAULT_LOOK, type BeanLook } from './cosmetics';
@@ -51,6 +59,8 @@ export interface GameCallbacks {
   onStamp?: (text: string, tone: StampTone) => void;
   onShowPhase?: (phase: ShowPhase) => void;
   onShowEnd?: (result: ShowResult) => void;
+  /** Auto quality stepped itself down after sustained low frame rate. */
+  onQualityStepDown?: () => void;
 }
 
 export interface PlayerIdentity {
@@ -92,6 +102,8 @@ export class Game {
   readonly world = new PhysicsWorld({ killY: -14 });
   readonly rig: CameraRig;
   readonly input: Input;
+  readonly audio: AudioEngine;
+  readonly bursts: Bursts;
   readonly contestants: Contestant[] = [];
   readonly debug: TumbleDebugApi;
   player: Contestant;
@@ -126,6 +138,10 @@ export class Game {
 
   private currentState: GameState = 'menu';
   private quality: Quality;
+  private autoQuality = true;
+  private autoDropped = false;
+  private qualitySampleTime = 0;
+  private qualitySampleFrames = 0;
   private running = false;
   private raf = 0;
   private lastNow = 0;
@@ -174,6 +190,12 @@ export class Game {
     this.camera = new PerspectiveCamera(68, 1, 0.1, 320);
     this.scene.background = new Color(0xffb9a6);
     this.scene.fog = new Fog(0xffc4b5, 105, 245);
+
+    this.audio = new AudioEngine();
+    this.audio.bindGesture(window);
+    this.bursts = new Bursts(180);
+    this.bursts.setBudget(particleBudget(this.quality, this.reducedMotion));
+    this.scene.add(this.bursts.mesh);
 
     this.level = createLevel(this.mode, this.currentSeed);
     this.scene.add(this.level.group);
@@ -245,6 +267,19 @@ export class Game {
       },
       get fps() {
         return game.fpsEstimate;
+      },
+      get audio() {
+        return game.audio.getState();
+      },
+      get renderInfo() {
+        const render = game.renderer.info.render;
+        return {
+          calls: render.calls,
+          triangles: render.triangles,
+          geometries: game.renderer.info.memory.geometries,
+          textures: game.renderer.info.memory.textures,
+          particles: game.bursts.activeCount,
+        };
       },
       get tileCount() {
         return game.level.tileCount ?? 0;
@@ -359,6 +394,8 @@ export class Game {
         this.rig.setCamera(yaw, pitch, distance),
       lookAt: (x: number, y: number, z: number) => this.rig.lookAt(x, y, z),
       clearLookAt: () => this.rig.clearLookAt(),
+      playSfx: (name: SfxName) => this.audio.play(name),
+      unlockAudio: () => this.audio.unlock(),
     };
   }
 
@@ -405,6 +442,7 @@ export class Game {
     this.currentSeed = options.seed ?? this.currentSeed;
     this.seedLabel = options.seedLabel ?? formatSeed(this.currentSeed);
     this.buildBots(this.currentSeed);
+    this.audio.setMusicMode('round');
     this.match = new Match({
       seed: this.currentSeed,
       seedLabel: this.seedLabel,
@@ -419,11 +457,31 @@ export class Game {
           this.spectateBody = leader?.body ?? null;
           if (leader) this.rig.snapSpectate(leader.body);
         },
+        onFx: (event) => this.handleShowFx(event),
+        onCountdown: (value) => this.handleCountdown(value),
         onShowEnd: (result) => {
           this.currentState = 'finished';
           this.accumulator = 0;
           this.player.controller.reset();
           this.input.reset();
+          this.audio.setMusicMode('menu');
+          this.audio.play(result.won ? 'crown' : 'eliminate');
+          if (result.won) {
+            const crown = this.level.crownPosition;
+            const winner = result.winnerLook;
+            if (crown) {
+              this.rig.lookAt(crown.x, crown.y + 0.2, crown.z);
+              this.rig.setCamera(this.rig.yaw, (18 * Math.PI) / 180, 10.5);
+            }
+            this.bursts.spawn(
+              'crown',
+              crown?.x ?? winner?.body.position.x ?? this.player.body.position.x,
+              crown?.y ?? (winner?.body.position.y ?? this.player.body.position.y) + 1,
+              crown?.z ?? winner?.body.position.z ?? this.player.body.position.z,
+              1.15,
+            );
+            this.rig.addShake(0.16);
+          }
           this.callbacks.onShowEnd?.(result);
           this.callbacks.onStateChange?.(this.currentState);
         },
@@ -449,6 +507,7 @@ export class Game {
     this.practice = true;
     this.menuMode = false;
     this.installLevel(mode, this.currentSeed);
+    this.audio.setMusicMode(mode === 'crown-climb' ? 'final' : 'round');
     this.buildBots(this.currentSeed, true);
     this.practiceContestants.length = 0;
     this.practiceContestants.push(this.player, ...this.contestants.filter((c) => !c.isPlayer));
@@ -481,6 +540,7 @@ export class Game {
     this.practice = false;
     this.menuMode = false;
     this.installLevel(mode, this.currentSeed);
+    this.audio.setMusicMode(mode === 'crown-climb' ? 'final' : 'round');
     this.match = null;
     this.resetWorldFor([this.player]);
     this.player.resetForRound(this.level.startPosition, 0, 'racing');
@@ -510,6 +570,7 @@ export class Game {
     if (this.match && this.match.phase !== 'playing') return;
     this.currentState = 'paused';
     this.accumulator = 0;
+    this.audio.setPaused(true);
     this.input.reset();
     this.callbacks.onStateChange?.(this.currentState);
   }
@@ -518,6 +579,7 @@ export class Game {
     if (this.currentState !== 'paused') return;
     this.currentState = 'playing';
     this.accumulator = 0;
+    this.audio.setPaused(false);
     this.input.reset();
     this.callbacks.onStateChange?.(this.currentState);
   }
@@ -552,6 +614,8 @@ export class Game {
     this.level.resetKinematics();
     this.menuMode = true;
     this.elapsed = 0;
+    this.audio.setMusicMode('menu');
+    this.audio.setPaused(false);
     this.rig.clearLookAt();
     this.rig.setFloor(this.level.cameraFloor);
     this.buildMenuCast();
@@ -579,6 +643,12 @@ export class Game {
 
   setReducedMotion(enabled: boolean): void {
     this.reducedMotion = enabled;
+    this.bursts.setBudget(particleBudget(this.quality, enabled));
+  }
+
+  /** Live mix from the profile. Applied immediately, including while paused. */
+  setAudioSettings(settings: { musicVolume: number; sfxVolume: number; muted: boolean }): void {
+    this.audio.setSettings(settings);
   }
 
   setNameTagsVisible(visible: boolean): void {
@@ -593,7 +663,14 @@ export class Game {
 
   setQualitySetting(setting: 'auto' | 'high' | 'low'): void {
     const coarse = window.matchMedia('(pointer: coarse)').matches;
-    this.setQuality(setting === 'auto' ? (coarse ? 'low' : 'high') : setting);
+    if (setting === 'auto') {
+      this.autoQuality = true;
+      this.applyQuality(coarse || this.autoDropped ? 'low' : 'high');
+      return;
+    }
+    this.autoQuality = false;
+    this.autoDropped = false;
+    this.applyQuality(setting);
   }
 
   /** Debug/test-only reposition. Never changes the checkpoint or show state. */
@@ -645,12 +722,19 @@ export class Game {
     };
   }
 
+  /** Explicit quality choice (settings/debug) turns automatic stepping off. */
   setQuality(quality: Quality): void {
+    this.autoQuality = false;
+    this.applyQuality(quality);
+  }
+
+  private applyQuality(quality: Quality): void {
     this.quality = quality;
     const high = quality === 'high';
     this.renderer.shadowMap.enabled = high;
     this.renderer.setPixelRatio(high ? Math.min(window.devicePixelRatio || 1, 2) : 1);
     this.level.setQuality(quality);
+    this.bursts.setBudget(particleBudget(quality, this.reducedMotion));
     this.player.bean.setOutlineEnabled(high);
     for (const contestant of this.contestants) {
       if (!contestant.isPlayer) contestant.bean.setOutlineEnabled(false);
@@ -664,6 +748,8 @@ export class Game {
     this.abort.abort();
     this.resizeObserver.disconnect();
     this.input.dispose();
+    this.audio.dispose();
+    this.bursts.dispose();
     this.disposeBots();
     this.player.dispose();
     this.level.dispose();
@@ -684,6 +770,16 @@ export class Game {
       phase,
     });
     player.controller.onEvent = (event) => {
+      const sfx: Partial<Record<typeof event.type, SfxName>> = {
+        jump: 'jump',
+        land: 'land',
+        dive: 'dive',
+        grab: 'grab',
+        shove: 'shove',
+        stumble: 'hit',
+      };
+      const cue = sfx[event.type];
+      if (cue) this.audio.play(cue);
       if (event.type === 'land') {
         this.rig.addShake(clamp(event.strength * 0.012, 0.02, 0.16));
       } else if (event.type === 'dive') {
@@ -803,6 +899,7 @@ export class Game {
 
   private prepareRound(index: number, entrants: readonly Contestant[]): void {
     const definition = SHOW_ROUNDS[index] ?? SHOW_ROUNDS[0]!;
+    this.audio.setMusicMode(index >= SHOW_ROUNDS.length - 1 ? 'final' : 'round');
     this.installLevel(definition.mode, this.currentSeed);
     this.level.resetKinematics();
     this.resetWorldFor(entrants);
@@ -957,6 +1054,24 @@ export class Game {
     if (rawDelta > 0) {
       this.fpsEstimate += (1 / rawDelta - this.fpsEstimate) * 0.05;
     }
+    if (this.autoQuality && this.quality === 'high' && this.currentState === 'playing') {
+      this.qualitySampleTime += rawDelta;
+      this.qualitySampleFrames += 1;
+      if (this.qualitySampleTime >= 4) {
+        const average = this.qualitySampleFrames / this.qualitySampleTime;
+        this.qualitySampleTime = 0;
+        this.qualitySampleFrames = 0;
+        if (average < 46) {
+          this.autoDropped = true;
+          this.autoQuality = false;
+          this.applyQuality('low');
+          this.callbacks.onQualityStepDown?.();
+        }
+      }
+    } else {
+      this.qualitySampleTime = 0;
+      this.qualitySampleFrames = 0;
+    }
     this.cosmeticTime += dt;
 
     this.input.poll(dt);
@@ -1020,9 +1135,54 @@ export class Game {
       }
     }
 
+    this.bursts.update(dt);
     this.renderer.render(this.scene, this.camera);
     this.callbacks.onTick?.(this.elapsed, this.level.status());
   };
+
+  private handleShowFx(event: ShowFxEvent): void {
+    const fallY = this.level.killY + 0.5;
+    const y = Math.max(event.y, fallY);
+    const distance = Math.hypot(
+      this.camera.position.x - event.x,
+      this.camera.position.y - y,
+      this.camera.position.z - event.z,
+    );
+    const near = event.player || distance <= 26;
+    switch (event.kind) {
+      case 'splat':
+        if (near) this.bursts.spawn('splat', event.x, y, event.z, event.player ? 1.2 : 0.8);
+        if (event.player) {
+          this.audio.play('eliminate');
+          this.rig.addShake(0.16);
+        } else if (distance < 17) {
+          this.audio.play('splat');
+        }
+        break;
+      case 'qualify':
+        if (near) this.bursts.spawn('qualify', event.x, event.y, event.z, 0.7);
+        break;
+      case 'finish':
+        this.bursts.spawn('finish', event.x, event.y, event.z, 1);
+        this.audio.play('qualify');
+        this.rig.addShake(0.1);
+        break;
+      case 'crown':
+        this.bursts.spawn('crown', event.x, event.y, event.z, 1);
+        this.audio.play('crown');
+        this.rig.addShake(0.14);
+        break;
+    }
+  }
+
+  private handleCountdown(value: number): void {
+    if (value === 0) {
+      this.audio.play('go');
+      this.callbacks.onStamp?.('TUMBLE!', 'good');
+    } else {
+      this.audio.play('countdown');
+    }
+  }
 
   private stepFixed(dt: number, first: boolean): void {
     if (this.currentState !== 'playing') return;

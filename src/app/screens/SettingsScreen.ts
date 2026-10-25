@@ -39,6 +39,7 @@ export class SettingsScreen {
   private readonly confirmReset: HTMLButtonElement;
   private readonly cancelReset: HTMLButtonElement;
   private readonly backButton: HTMLButtonElement;
+  private readonly audioBadge: HTMLElement;
   private readonly optionsRef: SettingsScreenOptions;
   private profile: Profile;
   private confirming = false;
@@ -73,9 +74,11 @@ export class SettingsScreen {
     const sound = this.card(
       body,
       'SOUND',
-      'Music and effects arrive in phase 4B. Your mix is saved now.',
+      'Live procedural music and effects, generated in your browser. No files, no downloads.',
       'music',
     );
+    this.audioBadge = el('span', 'settings-audio-badge', 'AUDIO STARTS ON YOUR FIRST TAP');
+    sound.appendChild(this.audioBadge);
     const soundGrid = el('div', 'settings-sliders');
     this.music = this.slider(
       soundGrid,
@@ -240,6 +243,12 @@ export class SettingsScreen {
   setProfile(profile: Profile): void {
     this.profile = profile;
     this.sync();
+  }
+
+  /** Reflect whether the Web Audio context has been unlocked by a gesture. */
+  setAudioLive(started: boolean): void {
+    this.audioBadge.textContent = started ? 'AUDIO LIVE · GENERATED IN YOUR BROWSER' : 'AUDIO STARTS ON YOUR FIRST TAP';
+    this.audioBadge.classList.toggle('is-live', started);
   }
 
   show(profile: Profile): void {

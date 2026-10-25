@@ -253,6 +253,14 @@ export class Hud {
       this.spectateBar.hidden = !hud.spectating;
     }
     if (hud.spectating) this.spectateName.textContent = hud.spectateName;
+
+    // Cinematic last stretch: the finish sign and crown are dead centre in the
+    // evidence framing. Collapse the round panel instead of covering them.
+    const finale =
+      hud.spectating ||
+      (hud.roundTitle === 'SUNRISE SCRAMBLE' && hud.progress > 0.9) ||
+      (hud.roundTitle === 'CROWN CLIMB' && hud.progress > 0.82);
+    this.element.classList.toggle('hud--compact', finale);
   }
 
   /** Practice/free-play fallback: no Show record, just the Level numbers. */

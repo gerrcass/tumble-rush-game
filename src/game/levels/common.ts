@@ -13,6 +13,7 @@ import {
   LineBasicMaterial,
   Material,
   Mesh,
+  Matrix4,
   MeshBasicMaterial,
   Object3D,
   PlaneGeometry,
@@ -29,8 +30,63 @@ import {
   getSunTexture,
 } from '../util/toon';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Rng } from '../Rng';
 import { clamp } from '../util/math';
+
+/**
+ * Collapse a flat group of static meshes into one mesh per material. Distant
+ * scenery (clouds, islands, balloons) was previously 5–8 draw calls each; this
+ * keeps the art but drops the call count by roughly an order of magnitude.
+ * Only call this on groups with no per-mesh animation and no InstancedMesh.
+ */
+export function mergeStaticMeshes(group: Group): void {
+  group.updateMatrixWorld(true);
+  const inverse = new Matrix4().copy(group.matrixWorld).invert();
+  const matrix = new Matrix4();
+  interface Bucket {
+    material: Material;
+    geometries: BufferGeometry[];
+    castShadow: boolean;
+    receiveShadow: boolean;
+  }
+  const buckets = new Map<Material, Bucket>();
+  const sources: Mesh[] = [];
+  group.traverse((object) => {
+    if (object instanceof Mesh && !(object instanceof InstancedMesh)) sources.push(object);
+  });
+  for (const mesh of sources) {
+    const sourceMaterial = Array.isArray(mesh.material) ? null : mesh.material;
+    if (!sourceMaterial) continue;
+    const geometry = mesh.geometry.clone();
+    matrix.multiplyMatrices(inverse, mesh.matrixWorld);
+    geometry.applyMatrix4(matrix);
+    let bucket = buckets.get(sourceMaterial);
+    if (!bucket) {
+      bucket = {
+        material: sourceMaterial,
+        geometries: [],
+        castShadow: false,
+        receiveShadow: false,
+      };
+      buckets.set(sourceMaterial, bucket);
+    }
+    bucket.geometries.push(geometry);
+    bucket.castShadow ||= mesh.castShadow;
+    bucket.receiveShadow ||= mesh.receiveShadow;
+  }
+  if (buckets.size === 0) return;
+  for (const mesh of sources) mesh.removeFromParent();
+  for (const bucket of buckets.values()) {
+    const merged = mergeGeometries(bucket.geometries, false);
+    for (const geometry of bucket.geometries) geometry.dispose();
+    if (!merged) continue;
+    const mesh = new Mesh(merged, bucket.material);
+    mesh.castShadow = bucket.castShadow;
+    mesh.receiveShadow = bucket.receiveShadow;
+    group.add(mesh);
+  }
+}
 
 export function makePlatform(
   width: number,
@@ -135,6 +191,7 @@ export function makeCloud(scale: number, rng: Rng): Group {
     puff.position.set(rng.float(-1.8, 1.8), rng.float(-0.15, 0.5), rng.float(-0.7, 0.7));
     group.add(puff);
   }
+  mergeStaticMeshes(group);
   group.scale.setScalar(scale);
   return group;
 }
@@ -180,6 +237,7 @@ export function makeIsland(radius: number, rng: Rng): Group {
   );
   rocks.position.set(-radius * 0.45, 0.06, radius * 0.2);
   group.add(rocks);
+  mergeStaticMeshes(group);
   return group;
 }
 

@@ -1,6 +1,15 @@
 import type { GameState } from '../game/Game';
 import type { LevelMode, LevelStatus, Quality, WaypointAction } from '../game/levels/Level';
 import type { DifficultyId, RoundPlacement, ShowPhase } from '../game/match/Director';
+import type { AudioDebugState, SfxName } from '../game/audio/AudioEngine';
+
+export interface DebugRenderInfo {
+  calls: number;
+  triangles: number;
+  geometries: number;
+  textures: number;
+  particles: number;
+}
 
 export interface DebugWaypoint {
   x: number;
@@ -80,6 +89,8 @@ export interface TumbleDebugApi {
   readonly quality: Quality;
   readonly elapsed: number;
   readonly fps: number;
+  readonly audio: AudioDebugState;
+  readonly renderInfo: DebugRenderInfo;
   readonly tileCount: number;
   readonly slimeHeight: number;
   readonly crownPosition: { x: number; y: number; z: number };
@@ -107,4 +118,6 @@ export interface TumbleDebugApi {
   setCamera: (yaw: number, pitch: number, distance: number) => void;
   lookAt: (x: number, y: number, z: number) => void;
   clearLookAt: () => void;
+  playSfx: (name: SfxName) => boolean;
+  unlockAudio: () => void;
 }
