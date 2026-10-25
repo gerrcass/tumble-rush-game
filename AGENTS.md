@@ -1,6 +1,6 @@
 # AGENTS.md — Tumble Rush
 
-Tumble Rush is a complete single-player 3D battle-royale party game for the browser. Use [`GLOSSARY.md`](GLOSSARY.md) for domain language. Read [`docs/SPEC.md`](docs/SPEC.md) before changing gameplay or UX, and [`docs/TICKETS.md`](docs/TICKETS.md) for the current milestone. The decisions behind the design are in [`docs/GRILL.md`](docs/GRILL.md) and [`docs/adr/`](docs/adr/). The issue-label policy is in [`docs/LABELS.md`](docs/LABELS.md).
+Tumble Rush is a complete single-player 3D battle-royale party game for the browser. Use [`GLOSSARY.md`](GLOSSARY.md) for domain language. The current milestone is **M2 — Show Pacing & Fairness**; read [`docs/m2/SPEC.md`](docs/m2/SPEC.md), [`docs/m2/TICKETS.md`](docs/m2/TICKETS.md), and [`docs/METRICS.md`](docs/METRICS.md). The v1 product spec remains [`docs/SPEC.md`](docs/SPEC.md) for architecture and UX invariants. The decisions behind the design are in [`docs/GRILL.md`](docs/GRILL.md) and [`docs/adr/`](docs/adr/). The issue-label policy is in [`docs/LABELS.md`](docs/LABELS.md).
 
 ## First run
 
@@ -10,6 +10,7 @@ npm run dev          # http://localhost:5173
 npm run check        # typecheck + unit tests + production build
 npm run verify:show  # real 16-bean Course + real Hexapop spawn
 npm run measure:show # pacing baseline; see docs/METRICS.md
+npm run verify:pacing # 10-seed pacing gate (M2)
 npm run test:e2e     # Playwright smoke + screenshots
 npm run evidence     # canonical screenshot set
 npm run ci:local     # clean install with workspace-local npm cache + check
