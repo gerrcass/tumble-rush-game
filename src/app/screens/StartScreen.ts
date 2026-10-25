@@ -193,7 +193,7 @@ export class StartScreen {
     const hint = el('span', 'menu-footer__hint');
     hint.textContent = options.touch
       ? 'Touch controls ready · left stick to move'
-      : 'Press PLAY SHOW · 16 Tumblers · about six minutes';
+      : 'Press PLAY SHOW · 16 Tumblers · a quick show';
     footer.appendChild(hint);
     panel.appendChild(footer);
 
