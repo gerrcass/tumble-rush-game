@@ -69,9 +69,9 @@ Coyote time and jump buffering make the platforming forgiving; dives are committ
 
 ## Screens
 
-| Menu | Sunrise Scramble |
+| Menu (live deployment) | Sunrise Scramble |
 | --- | --- |
-| ![Menu](docs/evidence/phase4-menu.png) | ![Sunrise Scramble](docs/evidence/phase3-show-course.png) |
+| ![Menu](docs/readme-hero.png) | ![Sunrise Scramble](docs/evidence/phase3-show-course.png) |
 
 | Hexapop | Crown ceremony |
 | --- | --- |
