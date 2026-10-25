@@ -39,7 +39,7 @@ export class StartScreen {
   private readonly kindChip: HTMLElement;
   private readonly soundButton: HTMLButtonElement;
   private readonly dailyChip: HTMLElement;
-  private readonly seedLabel: string;
+  private seedLabel: string;
   private readonly dailyLabel: string;
   private readonly difficultyButtons = new Map<DifficultyId, HTMLButtonElement>();
   private difficulty: DifficultyId;
@@ -259,6 +259,12 @@ export class StartScreen {
 
   playSelected(): void {
     this.options.onShow(this.difficulty, this.daily);
+  }
+
+  /** A fresh Quick Show seed gets a fresh menu chip, including after a replay. */
+  setSeedLabel(label: string): void {
+    this.seedLabel = label;
+    if (!this.daily) this.seedChip.textContent = `SEED ${label}`;
   }
 
   setProfile(profile: Profile): void {

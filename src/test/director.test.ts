@@ -45,7 +45,7 @@ describe('Show Director', () => {
     expect(placements[8]?.qualified).toBe(false);
   });
 
-  it('fills empty qualifier slots from the best eliminated contestants', () => {
+  it('advances every survivor when a mass wipe leaves fewer than the slots', () => {
     const field = Array.from({ length: 16 }, (_, index) =>
       performance(index, {
         eliminated: index !== 0,
@@ -54,11 +54,39 @@ describe('Show Director', () => {
       }),
     );
     const placements = resolveRound(SHOW_ROUNDS[0]!, field);
-    expect(placements.filter((entry) => entry.qualified)).toHaveLength(8);
+    // SPEC §4: all remaining Tumblers advance; the eliminated do not fill.
+    expect(placements.filter((entry) => entry.qualified)).toHaveLength(1);
     expect(placements[0]?.id).toBe('0');
-    // Last out ranks as the best eliminated fallback.
-    expect(placements[1]?.id).toBe('15');
-    expect(placements[1]?.qualified).toBe(true);
+    expect(placements[1]?.qualified).toBe(false);
+  });
+
+  it('only fills qualifier slots from eliminated rows when zero remain', () => {
+    const field = Array.from({ length: 16 }, (_, index) =>
+      performance(index, {
+        eliminated: true,
+        eliminatedAt: index,
+        progress: index / 20,
+      }),
+    );
+    const placements = resolveRound(SHOW_ROUNDS[0]!, field);
+    expect(placements.filter((entry) => entry.qualified)).toHaveLength(8);
+    // Last out is the best fallback, so #15 leads the mass-wipe advance.
+    expect(placements[0]?.id).toBe('15');
+    expect(placements[0]?.qualified).toBe(true);
+  });
+
+  it('ranks every living runner above a fallen bean with higher progress', () => {
+    const field = Array.from({ length: 16 }, (_, index) =>
+      performance(index, {
+        eliminated: index === 15,
+        eliminatedAt: index === 15 ? 12 : null,
+        progress: index === 15 ? 0.99 : 0.2 + index * 0.01,
+      }),
+    );
+    const placements = resolveRound(SHOW_ROUNDS[0]!, field);
+    expect(placements[15]?.id).toBe('15');
+    expect(placements[15]?.qualified).toBe(false);
+    expect(placements.slice(0, 8).every((entry) => entry.qualified)).toBe(true);
   });
 
   it('qualifies survivors by height, then distance to centre, then id', () => {

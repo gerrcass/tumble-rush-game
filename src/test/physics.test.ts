@@ -177,4 +177,26 @@ describe('PhysicsWorld — capsules vs the world', () => {
     for (let i = 0; i < 30; i += 1) world.step(step);
     expect(b.position.x).toBeGreaterThan(1.4);
   });
+
+  it('keeps shoulder-to-shoulder bean collisions horizontal', () => {
+    const world = new PhysicsWorld({ killY: -14 });
+    world.addCollider(
+      createBoxCollider({
+        position: new Vector3(0, -0.5, 0),
+        halfExtents: new Vector3(20, 0.5, 20),
+      }),
+    );
+    const a = new BeanBody({ position: new Vector3(0, 0, 0) });
+    const b = new BeanBody({ position: new Vector3(0.78, 0, 0) });
+    world.addBody(a);
+    world.addBody(b);
+    simulate(world, 8);
+    // Overlapping capsules must shove apart sideways; the old two-sphere
+    // approximation could launch one bean over the other's head.
+    expect(a.position.y).toBeLessThan(0.06);
+    expect(b.position.y).toBeLessThan(0.06);
+    expect(Math.abs(b.position.x - a.position.x)).toBeGreaterThan(0.8);
+    expect(Math.abs(a.velocity.y)).toBeLessThan(1);
+    expect(Math.abs(b.velocity.y)).toBeLessThan(1);
+  });
 });

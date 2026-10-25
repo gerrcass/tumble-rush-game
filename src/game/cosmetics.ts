@@ -126,6 +126,10 @@ export function starterUnlocks(): string[] {
   ];
 }
 
+export function isCosmeticKind(value: unknown): value is CosmeticKind {
+  return value === 'color' || value === 'pattern' || value === 'hat' || value === 'emote';
+}
+
 export function isColorId(value: unknown): value is ColorId {
   return typeof value === 'string' && BEAN_COLORS.some((color) => color.id === value);
 }

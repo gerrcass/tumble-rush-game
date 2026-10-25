@@ -51,6 +51,7 @@ export class Hud {
   private lastMetric = '';
   private lastMetricLabel = '';
   private lastProgress = -1;
+  private lastProgressLabel = '';
   private lastQualified = -1;
   private lastRemaining = -1;
   private lastPlayerState = '';
@@ -237,8 +238,9 @@ export class Hud {
     }
 
     const percent = Math.round(hud.progress * 100);
-    if (percent !== this.lastProgress) {
+    if (percent !== this.lastProgress || hud.progressLabel !== this.lastProgressLabel) {
       this.lastProgress = percent;
+      this.lastProgressLabel = hud.progressLabel;
       this.progressFill.style.width = `${percent}%`;
       this.progressText.textContent = hud.progressLabel;
       this.progressTrack.setAttribute('aria-valuenow', String(percent));

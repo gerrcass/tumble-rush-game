@@ -26,6 +26,9 @@ export interface ShowResult {
   roundsQualified: number;
   totalTime: number;
   seedLabel: string;
+  /** The Round that actually ended the Show (Crown Climb means a crown). */
+  finalRoundMode: LevelMode;
+  finalRoundLabel: string;
 }
 
 export interface RoundHistory {
@@ -241,6 +244,10 @@ export class Match {
     this.player.status = 'racing';
     if (this.definition.mode === 'course') {
       this.player.finishTime = Math.max(0.001, this.roundTime);
+      this.player.status = 'qualified';
+      this.player.progress = 1;
+      this.player.body.frozen = true;
+      this.player.bean.setCelebrating(true);
       this.finishers.add(String(this.player.id));
       this.callbacks.onStamp({ text: 'QUALIFIED!', tone: 'good' });
     } else if (this.definition.mode === 'hexapop') {
@@ -309,6 +316,22 @@ export class Match {
     const definition = this.definition;
 
     for (const contestant of this.entrants) {
+      if (contestant.finishTime !== null) {
+        // A finish is final. A later shove off the finish pad must never turn
+        // a QUALIFIED row into ELIMINATED or switch the human to spectate.
+        // Pin the body and leave the bean cheering on the gate.
+        contestant.body.eliminated = false;
+        contestant.body.frozen = true;
+        contestant.body.velocity.set(0, 0, 0);
+        if (contestant.status !== 'qualified' || contestant.eliminatedAt !== null) {
+          contestant.status = 'qualified';
+          contestant.eliminatedAt = null;
+          contestant.bean.setVisible(true);
+          contestant.bean.setCelebrating(true);
+        }
+        contestant.progress = 1;
+        continue;
+      }
       if (contestant.body.eliminated) {
         if (!contestant.eliminatedAt && contestant.status !== 'eliminated') {
           contestant.eliminatedAt = this.roundTime;
@@ -334,6 +357,12 @@ export class Match {
       if (definition.mode === 'course') {
         if (contestant.finishTime === null && level.isAtFinish(contestant.body.position)) {
           contestant.finishTime = this.roundTime;
+          contestant.status = 'qualified';
+          contestant.eliminatedAt = null;
+          contestant.progress = 1;
+          contestant.body.velocity.set(0, 0, 0);
+          contestant.body.frozen = true;
+          contestant.bean.setCelebrating(true);
           this.finishers.add(String(contestant.id));
           this.emitFx(contestant.isPlayer ? 'finish' : 'qualify', contestant);
           if (contestant.isPlayer) {
@@ -411,6 +440,15 @@ export class Match {
         ? this.finalPlacements.filter((placement) => placement.qualified).length
         : finished;
     const spectating = this.spectating !== null;
+    const followed = this.spectating ?? this.player;
+    // Arena progress is floor collapse, not one bean's height, so Hexapop
+    // keeps its level label even while spectating. Course/final progress is
+    // avatar-relative and must follow the leader, not the dead player.
+    const useLeaderProgress = spectating && definition.mode !== 'hexapop';
+    const progress = useLeaderProgress ? followed.progress : status.progress;
+    const progressLabel = useLeaderProgress
+      ? `${Math.round(progress * 100)}%`
+      : status.progressLabel;
     const playerStatus =
       this.player.eliminatedAt !== null
         ? 'ELIMINATED'
@@ -431,8 +469,8 @@ export class Match {
       metricLabel: status.metricLabel,
       metricValue: status.metricValue,
       phaseLabel: spectating ? `SPECTATING · ${this.spectating?.name ?? ''}` : status.phase,
-      progress: this.player.progress,
-      progressLabel: status.progressLabel,
+      progress,
+      progressLabel,
       spectating,
       spectateName: this.spectating?.name ?? '',
       playerStatus,
@@ -611,6 +649,8 @@ export class Match {
       roundsQualified,
       totalTime: this.totalTime,
       seedLabel: this.seedLabel,
+      finalRoundMode: lastRound.definition.mode,
+      finalRoundLabel: lastRound.definition.label,
     };
     this.showResult = result;
     this.phase = won ? 'victory' : 'defeat';

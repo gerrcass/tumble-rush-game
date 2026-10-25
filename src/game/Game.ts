@@ -432,7 +432,7 @@ export class Game {
 
   /** Start a complete three-Round Show. */
   startShow(options: StartShowOptions = {}): void {
-    if (this.currentState === 'paused') return;
+    this.leavePause();
     this.blurControls();
     this.ensureIdentity();
     this.disposeBots();
@@ -499,7 +499,7 @@ export class Game {
 
   /** Course or Training Deck with respawns and no elimination. */
   startPractice(mode: LevelMode = 'course'): void {
-    if (this.currentState === 'paused') return;
+    this.leavePause();
     this.blurControls();
     this.ensureIdentity();
     this.disposeBots();
@@ -532,7 +532,7 @@ export class Game {
 
   /** Debug free-play: one player, one Level, no show progression. */
   startMode(mode: LevelMode): void {
-    if (this.currentState === 'paused') return;
+    this.leavePause();
     this.blurControls();
     this.ensureIdentity();
     this.disposeBots();
@@ -589,7 +589,19 @@ export class Game {
     else if (this.currentState === 'paused') this.resume();
   }
 
+  /**
+   * A restart from pause must leave the paused state before installing the new
+   * Round. Otherwise startShow/startPractice early-return on `paused`, the
+   * pause overlay has already closed, and the show soft-locks on touch.
+   */
+  private leavePause(): void {
+    if (this.currentState === 'paused') this.currentState = 'playing';
+    this.audio.setPaused(false);
+    this.input.reset();
+  }
+
   restart(): void {
+    this.leavePause();
     if (this.match) {
       this.startShow({ seed: this.currentSeed, seedLabel: this.seedLabel, difficulty: this.difficulty });
     } else if (this.practice) {
@@ -845,6 +857,7 @@ export class Game {
         mistakeChance: profile.baseMistakeChance,
       });
       bot.bean.setOutlineEnabled(false);
+      bot.bean.setContactShadowVisible(false);
       bot.resetForRound(
         new Vector3(origin.x + offset[0], origin.y + 0.02, origin.z + offset[1]),
         i % 3,
@@ -880,6 +893,7 @@ export class Game {
         mistakeChance: profile.baseMistakeChance,
       });
       bot.bean.setOutlineEnabled(false);
+      bot.bean.setContactShadowVisible(false);
       this.contestants.push(bot);
     }
     this.refreshPeerBodies();
@@ -1074,6 +1088,9 @@ export class Game {
     }
     this.cosmeticTime += dt;
 
+    this.input.setGameplayActive(
+      this.currentState === 'playing' && (!this.match || this.match.phase === 'playing'),
+    );
     this.input.poll(dt);
     const view = this.input.takeViewDelta();
 
@@ -1212,7 +1229,7 @@ export class Game {
       0,
     );
     for (const contestant of active) {
-      if (contestant.body.eliminated) continue;
+      if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
         this.controllerFrame.cameraYaw = this.rig.yaw;
         const input = this.input.readFrame();
@@ -1260,7 +1277,7 @@ export class Game {
       0,
     );
     for (const contestant of active) {
-      if (contestant.body.eliminated) continue;
+      if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
         this.controllerFrame.cameraYaw = this.rig.yaw;
         const input = this.input.readFrame();

@@ -90,6 +90,8 @@ const TILE_SIZE = 1.15;
 const TILE_WARNING = 0.45;
 const SLIME_Y = -9.5;
 const ROUND_LIMIT = 75;
+/** The starting perch holds for this long, then drops away with the floor. */
+const PERCH_GRACE = 3.4;
 const TOTAL_TILES = 61 + 37 + 19;
 
 /**
@@ -133,6 +135,14 @@ export class Hexapop implements Level {
   private readonly directional: DirectionalLight;
   private slimeMesh!: Mesh;
   private readonly rims: Mesh[] = [];
+  private readonly podium = new Group();
+  private podiumCollider: Collider | null = null;
+  private readonly safeTileIndices = new Set<number>();
+  private perchOpen = false;
+  private perchTimer = PERCH_GRACE;
+  private tileSnapshot: LevelTile[] = [];
+  private snapshotVersion = -1;
+  private tileVersion = 0;
   private elapsed = 0;
   private nextWaveAt = 45;
   private result: LevelResult | null = null;
@@ -269,6 +279,7 @@ export class Hexapop implements Level {
           safe: tier === 0 && coord.q === 0 && coord.r === 0,
         };
         tile.color.lerp(new Color(tierTint[tier]!), 0.18);
+        if (tile.safe) this.safeTileIndices.add(this.tiles.length);
         this.colliders.push(tile.collider);
         this.tiles.push(tile);
       }
@@ -320,7 +331,7 @@ export class Hexapop implements Level {
   }
 
   private buildPodium(): void {
-    const podium = new Group();
+    const podium = this.podium;
     podium.position.set(0, 0.2, 0);
     const base = new Mesh(
       new CylinderGeometry(1.5, 1.7, 0.4, 24),
@@ -343,14 +354,13 @@ export class Hexapop implements Level {
     ring.position.y = 0.22;
     podium.add(ring);
     this.group.add(podium);
-    this.colliders.push(
-      createCylinderCollider({
-        kind: 'solid',
-        position: new Vector3(0, 0.2, 0),
-        radius: 1.55,
-        height: 0.4,
-      }),
-    );
+    this.podiumCollider = createCylinderCollider({
+      kind: 'solid',
+      position: new Vector3(0, 0.2, 0),
+      radius: 1.55,
+      height: 0.4,
+    });
+    this.colliders.push(this.podiumCollider);
     const sign = makeSign('HEXAPOP', 'do not trust the floor', 4.2, 1.5, this.ownedTextures);
     sign.position.set(0, 3.1, -3.6);
     this.group.add(sign);
@@ -376,7 +386,7 @@ export class Hexapop implements Level {
       this.group.add(island);
     }
 
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 8; i += 1) {
       const cloud = makeCloud(rng.float(1.6, 3.4), rng);
       const x = rng.float(-38, 38);
       const y = rng.float(7, 24);
@@ -458,15 +468,21 @@ export class Hexapop implements Level {
 
   step(dt: number, bodies: readonly BeanBody[]): void {
     this.elapsed += dt;
-    const body = bodies[0];
-    if (body) {
-      if (body.position.y <= SLIME_Y + 0.3) {
-        body.eliminated = true;
-      }
+
+    // The safe start perch is temporary: a short grace, then the podium
+    // collider disables and the centre tile is just another collapsing hex.
+    // An idle player therefore cannot survive by standing still.
+    if (!this.perchOpen) {
+      this.perchTimer -= dt;
+      if (this.perchTimer <= 0) this.openPerch();
     }
 
-    // Touch-to-collapse. The safe podium tile never triggers so the Round has
-    // a readable starting perch; Sugar Rush later removes it with its ring.
+    // One slime plane for every body, player and bot alike.
+    for (const body of bodies) {
+      if (body.position.y < this.killY) body.eliminated = true;
+    }
+
+    // Touch-to-collapse. The safe centre tile is only safe during the grace.
     for (const bodyToCheck of bodies) {
       if (bodyToCheck.eliminated) continue;
       for (const tile of this.tiles) {
@@ -532,6 +548,7 @@ export class Hexapop implements Level {
         winner: null,
       };
     }
+    this.tileVersion += 1;
   }
 
   animate(elapsed: number, dt: number): void {
@@ -570,12 +587,17 @@ export class Hexapop implements Level {
     this.nextWaveAt = 45;
     this.result = null;
     this.tileCountValue = TOTAL_TILES;
+    this.perchOpen = false;
+    this.perchTimer = PERCH_GRACE;
+    this.podium.visible = true;
+    if (this.podiumCollider) this.podiumCollider.enabled = true;
     for (const tile of this.tiles) {
       tile.state = 'idle';
       tile.warning = 0;
       tile.fallSpeed = 0;
       tile.fallY = 0;
       tile.collider.enabled = true;
+      tile.safe = false;
       this.dummy.position.set(tile.base.x, tile.base.y - 0.13, tile.base.z);
       this.dummy.rotation.set(0, Math.PI / 6, 0);
       this.dummy.scale.set(1, 1, 1);
@@ -583,8 +605,13 @@ export class Hexapop implements Level {
       this.tileMesh.setMatrixAt(tile.instanceIndex, this.dummy.matrix);
       this.tileMesh.setColorAt(tile.instanceIndex, tile.color);
     }
+    for (const index of this.safeTileIndices) {
+      const tile = this.tiles[index];
+      if (tile) tile.safe = true;
+    }
     this.tileMesh.instanceMatrix.needsUpdate = true;
     if (this.tileMesh.instanceColor) this.tileMesh.instanceColor.needsUpdate = true;
+    this.tileVersion += 1;
   }
 
   checkpointFor(_position: Vector3, current: number): number {
@@ -605,15 +632,21 @@ export class Hexapop implements Level {
    * Returned objects are copies: the arena remains the only owner of state.
    */
   queryTiles(): readonly LevelTile[] {
-    return this.tiles.map((tile) => ({
-      x: tile.base.x,
-      y: tile.base.y,
-      z: tile.base.z,
-      tier: tile.tier,
-      ring: tile.ring,
-      state: tile.state,
-      safe: tile.safe,
-    }));
+    // Bots all ask the same question in the same fixed step. Build the array
+    // once per step instead of allocating ~117 objects per bot per step.
+    if (this.snapshotVersion !== this.tileVersion) {
+      this.snapshotVersion = this.tileVersion;
+      this.tileSnapshot = this.tiles.map((tile) => ({
+        x: tile.base.x,
+        y: tile.base.y,
+        z: tile.base.z,
+        tier: tile.tier,
+        ring: tile.ring,
+        state: tile.state,
+        safe: tile.safe,
+      }));
+    }
+    return this.tileSnapshot;
   }
 
   nearestSafeTile(position: Vector3): LevelTile | null {
@@ -696,6 +729,17 @@ export class Hexapop implements Level {
 
   dispose(): void {
     disposeObject(this.group, this.ownedTextures);
+  }
+
+  private openPerch(): void {
+    this.perchOpen = true;
+    this.podium.visible = false;
+    if (this.podiumCollider) this.podiumCollider.enabled = false;
+    for (const index of this.safeTileIndices) {
+      const tile = this.tiles[index];
+      if (tile) tile.safe = false;
+    }
+    this.tileVersion += 1;
   }
 
   private warnTile(tile: Tile): void {

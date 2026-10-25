@@ -120,20 +120,22 @@ export interface RoundPlacement extends RoundPerformance {
 }
 
 /**
- * Resolve one Round into a full placement table with exactly
- * `definition.qualifiers` QUALIFIED rows.
+ * Resolve one Round into a full placement table.
  *
- * Tie-break order is explicit per Round:
- * - Course: finish time, then progress, then last-eliminated, then id. A
- *   fallen human never takes a fallback qualifier slot.
- * - Hexapop: survivor height, then distance to the arena centre, then id;
- *   fallen Tumblers rank by elimination time (last out is best).
- * - Crown Climb: crown winner, then height, then horizontal distance to the
- *   crown, then id.
+ * Ranking rules (SPEC §4):
+ * - Finishers always rank above non-finishers, ordered by finish time.
+ * - Every living entrant ranks above every eliminated entrant, then by the
+ *   Round's progress metric. A fallen Tumbler can no longer outrank a runner.
+ * - If fewer living entrants remain than qualifier slots, all of them advance.
+ *   The field gets smaller; the show continues with whoever is left.
+ * - Only when zero living entrants remain do the best eliminated rows fill the
+ *   remaining slots (last out first). That is the mass-wipe fallback and is the
+ *   only path that can label an eliminated performance QUALIFIED.
  *
- * If fewer Tumblers meet the advancement condition than there are slots (a
- * mass wipe), the best eliminated entrants fill the remaining qualifier slots.
- * A Show therefore always continues with the correct field size.
+ * Tie-break order per mode:
+ * - Course: finish time; then progress; eliminated rows by last out, progress, id.
+ * - Hexapop: survivor height, distance to centre, id; eliminated by last out.
+ * - Crown Climb: crown winner, living height, horizontal distance, id.
  */
 export function resolveRound(
   definition: RoundDefinition,
@@ -141,13 +143,27 @@ export function resolveRound(
 ): RoundPlacement[] {
   const ordered = [...performances].sort((a, b) => compareForRound(definition, a, b));
   const slots = Math.min(definition.qualifiers, ordered.length);
+  const living = ordered.filter((entry) => !entry.eliminated || entry.finishTime !== null);
+  const qualified = new Set<string>();
+
+  if (living.length >= slots) {
+    for (const entry of living.slice(0, slots)) qualified.add(entry.id);
+  } else if (living.length > 0) {
+    // Mass elimination: everyone still standing advances, even if that leaves
+    // fewer qualifiers than the authored slot count.
+    for (const entry of living) qualified.add(entry.id);
+  } else {
+    // A total wipe: the last eliminated Tumblers fill the show so it can end.
+    for (const entry of ordered.slice(0, slots)) qualified.add(entry.id);
+  }
+
   return ordered.map((entry, index) => {
-    const qualified = index < slots;
+    const isQualified = qualified.has(entry.id);
     return {
       ...entry,
       placement: index + 1,
-      qualified,
-      status: qualified ? 'QUALIFIED' : 'ELIMINATED',
+      qualified: isQualified,
+      status: isQualified ? 'QUALIFIED' : 'ELIMINATED',
     };
   });
 }
@@ -171,44 +187,43 @@ function compareForRound(
 }
 
 function compareCourse(a: RoundPerformance, b: RoundPerformance): number {
-  if (a.finishTime !== null && b.finishTime !== null) {
-    return a.finishTime - b.finishTime || a.id.localeCompare(b.id);
+  const aFinished = a.finishTime !== null;
+  const bFinished = b.finishTime !== null;
+  if (aFinished || bFinished) {
+    if (aFinished && bFinished) {
+      return (a.finishTime as number) - (b.finishTime as number) || a.id.localeCompare(b.id);
+    }
+    return aFinished ? -1 : 1;
   }
-  if (a.finishTime !== null) return -1;
-  if (b.finishTime !== null) return 1;
 
-  // A fallen human is out of the Show even if their last progress number is
-  // high; 15 bots always leave enough fallback rows to fill qualifier slots.
-  if (a.isPlayer && a.eliminated) return 1;
-  if (b.isPlayer && b.eliminated) return -1;
-
-  // Progress decides first. An idle Tumbler at the start must never outrank a
-  // bot that actually ran further just because the idle one is still standing.
-  if (a.progress !== b.progress) return b.progress - a.progress;
+  // Living runners rank above every fallen Tumbler, regardless of how far the
+  // fallen one got before they left the course.
   if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
-  if (a.eliminated) {
-    // The human never rides a mass-wipe fallback into a later Round.
-    if (a.isPlayer !== b.isPlayer) return a.isPlayer ? 1 : -1;
-    const eliminationOrder = (b.eliminatedAt ?? 0) - (a.eliminatedAt ?? 0);
-    if (eliminationOrder !== 0) return eliminationOrder;
+  if (!a.eliminated) {
+    return b.progress - a.progress || a.id.localeCompare(b.id);
   }
-  return a.id.localeCompare(b.id);
+  // Fallback order: last out is the best eliminated row, then progress and a
+  // stable reverse id so a simultaneous wipe is deterministic (the human id 0
+  // is last, never silently promoted by a tie).
+  const eliminationOrder = (b.eliminatedAt ?? 0) - (a.eliminatedAt ?? 0);
+  if (eliminationOrder !== 0) return eliminationOrder;
+  if (a.progress !== b.progress) return b.progress - a.progress;
+  return b.id.localeCompare(a.id);
 }
 
 function compareHexapop(a: RoundPerformance, b: RoundPerformance): number {
-  if (a.isPlayer && a.eliminated) return 1;
-  if (b.isPlayer && b.eliminated) return -1;
   if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
   if (!a.eliminated) {
     return b.height - a.height || a.distanceToCrown - b.distanceToCrown || a.id.localeCompare(b.id);
   }
   const eliminationOrder = (b.eliminatedAt ?? 0) - (a.eliminatedAt ?? 0);
   if (eliminationOrder !== 0) return eliminationOrder;
-  return b.height - a.height || a.id.localeCompare(b.id);
+  return b.height - a.height || b.id.localeCompare(a.id);
 }
 
 function compareCrown(a: RoundPerformance, b: RoundPerformance): number {
   if (a.won !== b.won) return a.won ? -1 : 1;
+  if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1;
   return b.height - a.height || a.distanceToCrown - b.distanceToCrown || a.id.localeCompare(b.id);
 }
 

@@ -1,5 +1,5 @@
 import { Game, type GameState } from '../game/Game';
-import { dailySeed, formatSeed } from '../game/Rng';
+import { dailySeed, formatSeed, freshSeed } from '../game/Rng';
 import type { LevelMode, LevelResult } from '../game/levels/Level';
 import type { DifficultyId } from '../game/match/Director';
 import type { RoundHistory, ShowResult, StampTone } from '../game/match/Match';
@@ -70,7 +70,8 @@ export class App {
   private readonly showEndOverlay: ShowEndOverlay;
   private readonly finishOverlay: FinishOverlay;
   private readonly abort = new AbortController();
-  private readonly quickSeed: number;
+  private quickSeed: number;
+  private readonly seedOverride: boolean;
   private readonly daily: { label: string; seed: number };
   private readonly touchDevice: boolean;
   private readonly live: HTMLElement;
@@ -100,6 +101,7 @@ export class App {
   constructor(root: HTMLElement, seed: number) {
     this.root = root;
     this.quickSeed = seed;
+    this.seedOverride = new URLSearchParams(window.location.search).has('seed');
     this.daily = dailySeed();
     const loaded = readProfile(this.storage);
     this.profile = loaded.profile;
@@ -176,15 +178,12 @@ export class App {
     });
     this.pauseOverlay = new PauseOverlay({
       onResume: () => this.game.resume(),
-      onRestart: () => {
-        this.closeScreens();
-        this.game.restart();
-      },
+      onRestart: () => this.restartCurrent(),
       onSettings: () => this.openScreen('settings', 'pause'),
       onQuit: () => this.quitToMenu(),
     });
     this.finishOverlay = new FinishOverlay({
-      onReplay: () => this.game.restart(),
+      onReplay: () => this.restartCurrent(),
       onQuit: () => this.quitToMenu(),
     });
 
@@ -283,9 +282,51 @@ export class App {
 
   private startShow(choice: ShowChoice): void {
     if (this.game.state !== 'menu' && this.game.state !== 'finished') return;
+    this.beginShow(choice);
+  }
+
+  private beginShow(choice: ShowChoice): void {
+    this.resetShowUi();
+    this.lastShowChoice = choice;
+    if (!choice.daily) this.quickSeed = this.nextQuickSeed();
+    const seed = choice.daily ? this.daily.seed : this.quickSeed;
+    const seedLabel = choice.daily ? this.daily.label : formatSeed(this.quickSeed);
+    this.startScreen.setSeedLabel(seedLabel);
+    this.blurActive();
+    this.game.setIdentity(this.profile.name, this.profile.look);
+    this.game.startShow({ seed, seedLabel, difficulty: choice.difficulty });
+  }
+
+  private playAgain(): void {
+    this.beginShow(this.lastShowChoice);
+  }
+
+  /** Restart from pause or an end card through the App's full per-show reset. */
+  private restartCurrent(): void {
+    if (this.game.match) {
+      this.beginShow(this.lastShowChoice);
+      return;
+    }
+    if (this.game.isPractice) this.beginPractice(this.game.mode);
+    else this.startDebugRound(this.game.mode);
+  }
+
+  private startPractice(mode: LevelMode): void {
+    if (this.game.state !== 'menu' && this.game.state !== 'finished') return;
+    this.beginPractice(mode);
+  }
+
+  private beginPractice(mode: LevelMode): void {
+    this.resetShowUi();
+    this.blurActive();
+    this.game.setIdentity(this.profile.name, this.profile.look);
+    this.game.startPractice(mode);
+  }
+
+  /** Reset every per-show App value so a restart cannot inherit a stale card. */
+  private resetShowUi(): void {
     this.clearCeremony();
     this.closeScreens(true);
-    this.lastShowChoice = choice;
     this.firstQualificationAwarded = false;
     this.winAwarded = false;
     this.introKey = '';
@@ -296,45 +337,23 @@ export class App {
     this.showCrowns = 0;
     this.showNewBest = false;
     this.rewardedRounds.clear();
-    const seed = choice.daily ? this.daily.seed : this.quickSeed;
-    const seedLabel = choice.daily ? this.daily.label : formatSeed(this.quickSeed);
     this.finishResult = null;
-    this.blurActive();
-    this.game.setIdentity(this.profile.name, this.profile.look);
-    this.game.startShow({ seed, seedLabel, difficulty: choice.difficulty });
   }
 
-  private playAgain(): void {
-    if (this.game.match) {
-      this.startShow(this.lastShowChoice);
-    } else {
-      this.finishResult = null;
-      this.game.restart();
-    }
-  }
-
-  private startPractice(mode: LevelMode): void {
-    if (this.game.state !== 'menu' && this.game.state !== 'finished') return;
-    this.clearCeremony();
-    this.closeScreens(true);
-    this.finishResult = null;
-    this.blurActive();
-    this.game.setIdentity(this.profile.name, this.profile.look);
-    this.game.startPractice(mode);
+  /** Quick Shows get a fresh seed; ?seed= stays a deterministic override. */
+  private nextQuickSeed(): number {
+    if (this.seedOverride) return this.quickSeed;
+    return freshSeed();
   }
 
   private startDebugRound(mode: LevelMode): void {
-    this.clearCeremony();
-    this.closeScreens(true);
-    this.finishResult = null;
+    this.resetShowUi();
     this.blurActive();
     this.game.startMode(mode);
   }
 
   private quitToMenu(): void {
-    this.clearCeremony();
-    this.closeScreens(true);
-    this.finishResult = null;
+    this.resetShowUi();
     this.game.quitToMenu();
     this.startScreen.setProfile(this.profile);
     this.startScreen.show();
@@ -712,7 +731,7 @@ export class App {
         }
 
         if (event.key === 'Enter') {
-          if (match?.phase === 'results') {
+          if (match?.phase === 'results' && !isInteractive(event.target)) {
             event.preventDefault();
             match.nextRound();
             return;
@@ -787,6 +806,15 @@ export class App {
   private blurActive(): void {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   }
+}
+
+function isInteractive(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest(
+      'button, input, textarea, select, a[href], [contenteditable="true"], [role="button"], [role="slider"], [role="textbox"]',
+    ),
+  );
 }
 
 function detectTouch(): boolean {

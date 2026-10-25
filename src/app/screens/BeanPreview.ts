@@ -33,6 +33,8 @@ export class BeanPreview {
   private readonly turntable = new Group();
   private readonly abort = new AbortController();
   private readonly resizeObserver: ResizeObserver;
+  private readonly podium: Mesh;
+  private readonly trim: Mesh;
   private bean: Bean | null = null;
   private raf = 0;
   private last = 0;
@@ -60,18 +62,18 @@ export class BeanPreview {
     rim.position.set(-5, 2, -3);
     this.scene.add(rim);
 
-    const podium = new Mesh(
+    this.podium = new Mesh(
       new CylinderGeometry(1.05, 1.2, 0.22, 36),
       makeToonMaterial({ color: 0xffe2ad }),
     );
-    podium.position.y = -0.04;
-    this.scene.add(podium);
-    const trim = new Mesh(
+    this.podium.position.y = -0.04;
+    this.scene.add(this.podium);
+    this.trim = new Mesh(
       new CylinderGeometry(1.23, 1.23, 0.08, 36),
       makeToonMaterial({ color: 0xff6b6b }),
     );
-    trim.position.y = 0.02;
-    this.scene.add(trim);
+    this.trim.position.y = 0.02;
+    this.scene.add(this.trim);
 
     this.scene.add(this.turntable);
     this.controller = new BeanController(this.body, this.world);
@@ -107,14 +109,12 @@ export class BeanPreview {
       this.bean.dispose();
       this.bean = null;
     }
-    this.scene.traverse((object) => {
-      if (object instanceof Mesh) {
-        object.geometry.dispose();
-        const material = object.material;
-        if (Array.isArray(material)) for (const item of material) item.dispose();
-        else material.dispose();
-      }
-    });
+    // Only the preview-owned podium is disposed. Bean geometry/materials are
+    // session caches shared with the live show and must stay alive.
+    this.podium.geometry.dispose();
+    (this.podium.material as { dispose(): void }).dispose();
+    this.trim.geometry.dispose();
+    (this.trim.material as { dispose(): void }).dispose();
     this.renderer.dispose();
     const extension = this.renderer.getContext().getExtension('WEBGL_lose_context');
     extension?.loseContext();

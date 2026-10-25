@@ -11,7 +11,7 @@ function fakeContestant(id: number, isPlayer = false): Contestant {
     velocity: new Vector3(),
     eliminated: false,
   };
-  return {
+  const contestant = {
     id,
     name: isPlayer ? 'YOU' : `Bot ${id}`,
     isPlayer,
@@ -32,9 +32,13 @@ function fakeContestant(id: number, isPlayer = false): Contestant {
     reaction: 0.2,
     aggression: 0.3,
     mistakeChance: 0.05,
+    updateProgress: (value: number) => {
+      (contestant as unknown as { progress: number }).progress = value;
+    },
     applyDifficulty: () => undefined,
     hide: () => undefined,
-  } as unknown as Contestant;
+  };
+  return contestant as unknown as Contestant;
 }
 
 
@@ -240,5 +244,80 @@ describe('Match show progression', () => {
     match.nextRound();
     expect(match.phase).toBe('victory');
     expect(match.showResult?.winnerName).toBe('YOU');
+  });
+
+  it('keeps a qualified finisher qualified and celebrating after a post-finish fall', () => {
+    const contestants = Array.from({ length: 16 }, (_, index) =>
+      fakeContestant(index, index === 0),
+    );
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.beginRound();
+    const finisher = contestants[3]!;
+    finisher.finishTime = 30;
+    finisher.status = 'qualified';
+    finisher.progress = 1;
+    // Simulate a shove off the finish pad after the gate credited the finish.
+    finisher.body.eliminated = true;
+    let hidden = false;
+    finisher.bean.setVisible = (visible: boolean) => {
+      if (!visible) hidden = true;
+    };
+    finisher.bean.setCelebrating = () => undefined;
+    match.afterPhysics(fakeLevel());
+    expect(finisher.status).toBe('qualified');
+    expect(finisher.eliminatedAt).toBeNull();
+    expect(hidden).toBe(false);
+    expect(finisher.body.frozen).toBe(true);
+    match.finishRound();
+    expect(match.finalPlacements.find((entry) => entry.id === '3')?.qualified).toBe(true);
+  });
+
+  it('drives the HUD from level status and the followed leader, not the dead player', () => {
+    const contestants = Array.from({ length: 16 }, (_, index) =>
+      fakeContestant(index, index === 0),
+    );
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.jumpToRound(1);
+    match.beginRound();
+    const level = {
+      progress: () => 0,
+      isAtFinish: () => false,
+      crownPosition: undefined,
+      status: () => ({
+        mode: 'hexapop',
+        title: 'HEXAPOP',
+        objective: 'Survive the Sugar Rush',
+        elapsed: 12,
+        timeLimit: 75,
+        progress: 0.42,
+        progressLabel: '42%',
+        metricLabel: 'TILES LEFT',
+        metricValue: '68 / 117',
+        phase: 'STEADY',
+        result: null,
+      }),
+    } as unknown as Level;
+
+    const hud = match.hud(level);
+    expect(hud.progress).toBeCloseTo(0.42, 5);
+    expect(hud.progressLabel).toBe('42%');
+
+    const leader = contestants[2]!;
+    leader.progress = 0.66;
+    (match as unknown as { spectating: Contestant | null }).spectating = leader;
+    // Hexapop progress is floor collapse, so it must not switch to a bean height.
+    const spectated = match.hud(level);
+    expect(spectated.spectating).toBe(true);
+    expect(spectated.progress).toBeCloseTo(0.42, 5);
+    expect(spectated.progressLabel).toBe('42%');
+
+    // Course progress is avatar-relative: the spectator bar follows the leader.
+    match.jumpToRound(0);
+    (match as unknown as { spectating: Contestant | null }).spectating = leader;
+    const courseHud = match.hud(level);
+    expect(courseHud.progress).toBeCloseTo(0.66, 5);
+    expect(courseHud.progressLabel).toBe('66%');
   });
 });

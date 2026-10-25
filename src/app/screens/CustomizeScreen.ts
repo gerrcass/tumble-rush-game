@@ -205,6 +205,13 @@ export class CustomizeScreen {
   }
 
   private renderGrid(): void {
+    // Equipping rebuilds the swatches; remember which cosmetic owned focus so
+    // keyboard players do not get dumped at the top of the page after Enter.
+    const active = document.activeElement;
+    const focusedCosmetic =
+      active instanceof HTMLElement && this.grid.contains(active)
+        ? active.dataset.cosmetic
+        : undefined;
     this.grid.replaceChildren();
     const look = this.profile.look;
     for (const item of cosmeticCatalogue(this.tab)) {
@@ -245,6 +252,11 @@ export class CustomizeScreen {
       if (!owned) button.appendChild(el('span', 'swatch__lock', 'LOCKED'));
       button.addEventListener('click', () => this.choose(item.id));
       this.grid.appendChild(button);
+    }
+    if (focusedCosmetic) {
+      this.grid
+        .querySelector<HTMLButtonElement>(`[data-cosmetic="${focusedCosmetic}"]`)
+        ?.focus({ preventScroll: true });
     }
   }
 

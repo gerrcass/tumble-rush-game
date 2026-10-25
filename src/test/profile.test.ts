@@ -113,6 +113,20 @@ describe('profile persistence and safety', () => {
     expect(profile.unlocks).not.toContain('hat:not-real');
   });
 
+  it('ignores malformed unlock kinds instead of throwing the profile away', () => {
+    const profile = normalizeProfile({
+      version: 1,
+      name: 'Nova',
+      kudos: 250,
+      unlocks: ['bogus:thing', 'color', '::', 'color:grape', 'hat:not-real'],
+    });
+    expect(profile.name).toBe('Nova');
+    expect(profile.kudos).toBe(250);
+    expect(profile.unlocks).toContain('color:grape');
+    expect(profile.unlocks).not.toContain('bogus:thing');
+    expect(profile.look.colorId).toBe('coral');
+  });
+
   it('reset restores the safe default and clears storage', () => {
     const storage = new MemoryStorage();
     const profile = createDefaultProfile();
@@ -172,6 +186,15 @@ describe('profile economy and unlocks', () => {
     expect(profile.crowns).toBe(1);
     expect(profile.kudos).toBe(300);
     expect(profile.wins).toBe(0);
+  });
+
+  it('keeps the best daily placement instead of overwriting it with a worse run', () => {
+    const profile = createDefaultProfile('2026-04-18');
+    recordShowFinish(profile, { won: false, placement: 3, daily: true, date: '2026-04-18' });
+    recordShowFinish(profile, { won: false, placement: 9, daily: true, date: '2026-04-18' });
+    expect(profile.daily.bestFinish).toBe(3);
+    recordShowFinish(profile, { won: true, placement: 1, daily: true, date: '2026-04-18' });
+    expect(profile.daily.bestFinish).toBe(1);
   });
 
   it('updates career best, show count and the daily result', () => {

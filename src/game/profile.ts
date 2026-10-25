@@ -8,6 +8,7 @@ import {
   cosmeticItem,
   cosmeticKey,
   isColorId,
+  isCosmeticKind,
   isEmoteId,
   isHatId,
   isPatternId,
@@ -194,7 +195,11 @@ export function normalizeProfile(raw: unknown, date = dailySeed().label): Profil
   if (Array.isArray(source.unlocks)) {
     for (const value of source.unlocks) {
       if (typeof value !== 'string') continue;
-      const [kind, id] = value.split(':') as [CosmeticKind, string];
+      const separator = value.indexOf(':');
+      if (separator <= 0) continue;
+      const kind = value.slice(0, separator);
+      const id = value.slice(separator + 1);
+      if (!isCosmeticKind(kind) || id.length === 0) continue;
       if (cosmeticItem(kind, id)) unlocks.add(value);
     }
   }
@@ -396,9 +401,11 @@ export function recordShowFinish(profile: Profile, finish: ShowFinish): ShowFini
   profile.bestFinish = previousBest === null ? placement : Math.min(previousBest, placement);
   const newBest = previousBest === null || placement < previousBest;
   if (finish.daily) {
+    const date = finish.date ?? todayLabel();
+    const previousDaily = profile.daily.date === date ? profile.daily.bestFinish : null;
     profile.daily = {
-      date: finish.date ?? todayLabel(),
-      bestFinish: placement,
+      date,
+      bestFinish: previousDaily === null ? placement : Math.min(previousDaily, placement),
       completed: true,
     };
   }

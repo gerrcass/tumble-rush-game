@@ -72,6 +72,7 @@ describe('Level factory', () => {
     const course = createLevel('course', 9);
     expect(course.waypoints.length).toBeGreaterThanOrEqual(20);
     expect(course.isAtFinish(course.finishPosition)).toBe(true);
+    expect(course.progress(course.finishPosition)).toBeCloseTo(1, 5);
     course.dispose();
   });
 

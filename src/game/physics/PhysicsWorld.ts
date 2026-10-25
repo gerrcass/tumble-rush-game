@@ -99,7 +99,7 @@ export class PhysicsWorld {
     if (dt <= 0) return;
 
     for (const body of this.bodies) {
-      if (body.eliminated) continue;
+      if (body.eliminated || body.frozen) continue;
       this.stepBody(body, dt);
     }
 
@@ -107,7 +107,7 @@ export class PhysicsWorld {
     this.resolveBeanPairs();
 
     for (const body of this.bodies) {
-      if (body.eliminated) continue;
+      if (body.eliminated || body.frozen) continue;
       if (body.position.y < this.killY) body.eliminated = true;
     }
   }
@@ -438,87 +438,80 @@ export class PhysicsWorld {
   }
 
   /**
-   * Two-sphere-pair bean collision. Positional correction is split evenly and
-   * the impulse is equal-mass; a shove adds an extra impulse through
-   * applyShove(). Bots use this exact path.
+   * Vertical-capsule vs vertical-capsule bean collision.
+   *
+   * The old two-sphere-pair approximation tested each cap against every other
+   * cap. Two beans running shoulder to shoulder could be resolved along the
+   * diagonal between one bean's foot sphere and the other's head sphere, which
+   * launched the pack upward. Both physics capsules are upright with parallel
+   * axes, so the closest points live on those two vertical segments; solving
+   * that once gives a horizontal normal for side-by-side beans and a vertical
+   * normal only when one is genuinely above the other.
    */
   private resolveBeanPairs(): void {
     const bodies = this.bodies;
     for (let i = 0; i < bodies.length; i += 1) {
       const a = bodies[i];
-      if (!a || a.eliminated) continue;
+      if (!a || a.eliminated || a.frozen) continue;
       for (let j = i + 1; j < bodies.length; j += 1) {
         const b = bodies[j];
-        if (!b || b.eliminated) continue;
+        if (!b || b.eliminated || b.frozen) continue;
 
-        const aBottom = a.position.y + a.radius;
-        const aTop = a.position.y + a.height - a.radius;
-        const bBottom = b.position.y + b.radius;
-        const bTop = b.position.y + b.height - b.radius;
+        const aMin = a.position.y + a.radius;
+        const aMax = a.position.y + a.height - a.radius;
+        const bMin = b.position.y + b.radius;
+        const bMax = b.position.y + b.height - b.radius;
 
-        let deepest = 0;
-        let nx = 0;
-        let ny = 0;
-        let nz = 0;
-        let bestNx = 0;
-        let bestNy = 0;
-        let bestNz = 1;
+        const dx = b.position.x - a.position.x;
+        const dz = b.position.z - a.position.z;
+        let dy = 0;
+        if (bMin > aMax) dy = bMin - aMax;
+        else if (bMax < aMin) dy = bMax - aMin;
+
         const minDistance = a.radius + b.radius;
+        const distanceSq = dx * dx + dy * dy + dz * dz;
+        if (distanceSq >= minDistance * minDistance) continue;
 
-        for (let sa = 0; sa < 2; sa += 1) {
-          const ay = sa === 0 ? aBottom : aTop;
-          for (let sb = 0; sb < 2; sb += 1) {
-            const by = sb === 0 ? bBottom : bTop;
-            const dx = b.position.x - a.position.x;
-            const dy = by - ay;
-            const dz = b.position.z - a.position.z;
-            const distanceSq = dx * dx + dy * dy + dz * dz;
-            if (distanceSq >= minDistance * minDistance) continue;
-
-            const distance = Math.sqrt(distanceSq);
-            let overlap: number;
-            if (distance > 1e-8) {
-              overlap = minDistance - distance;
-              nx = dx / distance;
-              ny = dy / distance;
-              nz = dz / distance;
-            } else {
-              overlap = minDistance;
-              nx = 0;
-              ny = 0;
-              nz = 1;
-            }
-            if (overlap > deepest) {
-              deepest = overlap;
-              bestNx = nx;
-              bestNy = ny;
-              bestNz = nz;
-            }
-          }
+        let nx: number;
+        let ny: number;
+        let nz: number;
+        let overlap: number;
+        if (distanceSq > 1e-8) {
+          const distance = Math.sqrt(distanceSq);
+          overlap = minDistance - distance;
+          nx = dx / distance;
+          ny = dy / distance;
+          nz = dz / distance;
+        } else {
+          overlap = minDistance;
+          nx = 0;
+          ny = 0;
+          nz = 1;
         }
+        if (overlap <= CONTACT_EPSILON) continue;
 
-        if (deepest <= CONTACT_EPSILON) continue;
-
-        const half = deepest * 0.5;
-        a.position.x -= bestNx * half;
-        a.position.y -= bestNy * half;
-        a.position.z -= bestNz * half;
-        b.position.x += bestNx * half;
-        b.position.y += bestNy * half;
-        b.position.z += bestNz * half;
+        // Positional correction is split evenly; vertical separation is kept
+        // small so a crowded pack reads as shoving, not as a trampoline.
+        const half = overlap * 0.5;
+        a.position.x -= nx * half;
+        a.position.y -= ny * half * 0.35;
+        a.position.z -= nz * half;
+        b.position.x += nx * half;
+        b.position.y += ny * half * 0.35;
+        b.position.z += nz * half;
 
         const relative =
-          (b.velocity.x - a.velocity.x) * bestNx +
-          (b.velocity.y - a.velocity.y) * bestNy +
-          (b.velocity.z - a.velocity.z) * bestNz;
+          (b.velocity.x - a.velocity.x) * nx +
+          (b.velocity.y - a.velocity.y) * ny +
+          (b.velocity.z - a.velocity.z) * nz;
         if (relative < 0) {
           const impulse = (-(1 + BEAN_BOUNCE) * relative) / 2;
-          a.velocity.x -= bestNx * impulse;
-          a.velocity.y -= bestNy * impulse;
-          a.velocity.z -= bestNz * impulse;
-          b.velocity.x += bestNx * impulse;
-          b.velocity.y += bestNy * impulse;
-          b.velocity.z += bestNz * impulse;
+          a.velocity.x -= nx * impulse;
+          a.velocity.y -= ny * impulse * 0.35;
+          a.velocity.z -= nz * impulse;
+          b.velocity.x += nx * impulse;
+          b.velocity.y += ny * impulse * 0.35;
+          b.velocity.z += nz * impulse;
         }
       }
     }

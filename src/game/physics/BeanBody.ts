@@ -29,6 +29,8 @@ export class BeanBody {
   landedThisStep = false;
   lastImpactSpeed = 0;
   eliminated = false;
+  /** Pinned by the Show Director after a finish: physics stops moving it. */
+  frozen = false;
 
   constructor(options: BeanBodyOptions = {}) {
     if (options.position) this.position.copy(options.position);
@@ -45,5 +47,6 @@ export class BeanBody {
     this.landedThisStep = false;
     this.lastImpactSpeed = 0;
     this.eliminated = false;
+    this.frozen = false;
   }
 }

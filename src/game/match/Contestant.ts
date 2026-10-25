@@ -118,6 +118,7 @@ export class Contestant {
     this.controller.reset();
     this.bean.setVisible(true);
     this.bean.setMenuMode(false);
+    this.bean.setCelebrating(false);
     this.status = status;
     this.placement = null;
     this.finishTime = null;

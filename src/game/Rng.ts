@@ -76,6 +76,17 @@ export function resolveSeed(search: string, fallback: number): number {
   return hashSeed(raw);
 }
 
+/** A fresh uint32 for a new Quick Show. Never used for level/bot generation. */
+export function freshSeed(): number {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.getRandomValues) {
+    const value = new Uint32Array(1);
+    cryptoApi.getRandomValues(value);
+    return (value[0] ?? Date.now()) >>> 0;
+  }
+  return (Date.now() ^ 0x5eed1234) >>> 0;
+}
+
 export function formatSeed(seed: number): string {
   return `#${(seed >>> 0).toString(16).toUpperCase().padStart(8, '0')}`;
 }

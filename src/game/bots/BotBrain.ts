@@ -239,14 +239,25 @@ export function platformTopAt(level: Level, target: Vector3, tolerance = 2.6): n
   return best;
 }
 
-/** True when a posted hazard collider is close enough to warrant a hop. */
-export function hazardWithin(level: Level, body: BeanBody, radius: number): boolean {
+/**
+ * True when a posted hazard collider is close enough, and optionally ahead of
+ * the body, to warrant a hop. The direction check matters: sweeping past a
+ * sweeper and then jumping because it is still within the radius is how bots
+ * used to overshoot the A -> B lip and land in the gap.
+ */
+export function hazardWithin(
+  level: Level,
+  body: BeanBody,
+  radius: number,
+  forward?: { x: number; z: number },
+): boolean {
   for (const collider of level.colliders) {
     if (!collider.enabled || collider.kind !== 'hazard') continue;
     const dx = collider.position.x - body.position.x;
     const dz = collider.position.z - body.position.z;
     const dy = collider.position.y - body.position.y;
     if (Math.abs(dy) > 2.6) continue;
+    if (forward && dx * forward.x + dz * forward.z <= 0) continue;
     if (dx * dx + dz * dz < radius * radius) return true;
   }
   return false;
@@ -376,25 +387,35 @@ export class CourseBrain extends BotBrain {
 
     const rise = target.y - body.position.y;
     const directionLength = Math.hypot(dx, dz) || 1;
+    const dirX = dx / directionLength;
+    const dirZ = dz / directionLength;
+    // A real ledge take-off: probe just past the capsule's leading edge, not a
+    // leisurely 0.8 u early. A 0.55 u lead leaves 2–3 grounded steps to launch,
+    // which is enough for a full-speed jump (≈5.3 u at 8 u/s) to clear the
+    // authored A -> B gap instead of clipping its lip.
     const groundAhead = hasGroundAt(
       level,
-      body.position.x + (dx / directionLength) * 0.8,
+      body.position.x + dirX * 0.55,
       body.position.y - 0.08,
-      body.position.z + (dz / directionLength) * 0.8,
+      body.position.z + dirZ * 0.55,
     );
     // The side lane skips the two low hurdles, but the little gap between the
     // start deck and the next platform still needs its jump.
     const suppressedByLane = bypass > 0 && (waypoint?.position.z ?? 0) < 9.5;
-    const hazardClose = body.grounded && hazardWithin(level, body, 3.4);
+    const hazardClose =
+      body.grounded && hazardWithin(level, body, 2.8, { x: dirX, z: dirZ });
     this.owner.targetLabel = `${this.owner.targetLabel}${groundAhead ? '' : ' NOGROUND'}${hazardClose ? ' HAZARD' : ''}`;
     if (body.grounded && hazardClose) {
       frame.jumpPressed = true;
       frame.jumpHeld = true;
       this.staleTimer = 0;
     } else if (!groundAhead && (body.grounded || body.wasGrounded)) {
-      // A missing floor always beats hesitation or a hurdle detour. Limit the
-      // press to the last grounded step (plus the controller's coyote window)
-      // so a bot cannot bunny-hop across an entire gap chain.
+      // A missing floor always beats hesitation or a hurdle detour. Commit at
+      // full run speed for the leap: a hesitating bot that keeps its 55% pace
+      // in the air lands in the gap. Limit the press to the last grounded step
+      // (plus the controller's coyote window) so a bot cannot bunny-hop across
+      // an entire gap chain.
+      this.steer(dx, dz, 1);
       frame.jumpPressed = true;
       frame.jumpHeld = true;
       this.staleTimer = 0;

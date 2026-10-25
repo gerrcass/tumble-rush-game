@@ -33,6 +33,9 @@ jobs:
       - name: Typecheck, unit tests, production build
         run: npm run check
 
+      - name: Production build with the Pages base path
+        run: GITHUB_PAGES=true npm run build
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 

@@ -2,9 +2,10 @@ import {
   BackSide,
   BufferGeometry,
   CapsuleGeometry,
+  Color,
   ConeGeometry,
   CylinderGeometry,
-  DoubleSide,
+  Float32BufferAttribute,
   Group,
   Mesh,
   MeshBasicMaterial,
@@ -22,6 +23,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import type { BeanBody } from '../physics/BeanBody';
 import type { BeanController } from './BeanController';
 import { createPatternTexture, colorFor, type BeanLook, type EmoteId } from '../cosmetics';
+import { mergeColoredMeshes } from '../levels/common';
 import {
   canvasTexture,
   getShadowTexture,
@@ -78,6 +80,8 @@ export class Bean {
   private runPhase = 0;
   private outlineEnabled: boolean;
   private menuMode = false;
+  private celebrating = false;
+  private contactShadowEnabled = true;
 
   constructor(options: BeanOptions) {
     this.look = options.look;
@@ -91,8 +95,6 @@ export class Bean {
     const bodyMaterial = bodyMaterialFor(options.look, patternTexture);
     const skinMaterial = toonMaterialFor(palette.hex);
     const accentMaterial = toonMaterialFor(palette.accent);
-    const inkMaterial = assets.inkMaterial;
-    const blushMaterial = assets.blushMaterial;
 
     this.group.add(this.bodyRoot);
     this.bodyRoot.add(this.spinRoot);
@@ -121,16 +123,9 @@ export class Bean {
     // draw-call budget without losing the blink or the blush.
     this.eyeGroup.position.set(0, 0.99, 0);
     this.squashRoot.add(this.eyeGroup);
-    this.eyeGroup.add(new Mesh(assets.eyeWhiteGeometry, assets.eyeWhiteMaterial));
-    this.eyeGroup.add(new Mesh(assets.pupilGeometry, inkMaterial));
-
-    const mouth = new Mesh(assets.mouthGeometry, inkMaterial);
-    mouth.position.set(0, 0.72, -0.39);
-    mouth.rotation.z = Math.PI;
-    this.squashRoot.add(mouth);
-
-    const cheeks = new Mesh(assets.cheekGeometry, blushMaterial);
-    this.squashRoot.add(cheeks);
+    // Every face part shares one vertex-coloured mesh and material. Blinking
+    // scales the little face group; no separate eye/pupil/mouth draw calls.
+    this.eyeGroup.add(new Mesh(assets.faceGeometry, assets.faceMaterial));
 
     this.leftArm = this.createLimb(-1, assets.armGeometry, skinMaterial, 1.02);
     this.rightArm = this.createLimb(1, assets.armGeometry, skinMaterial, 1.02);
@@ -187,6 +182,17 @@ export class Bean {
     if (this.outlineMesh) this.outlineMesh.visible = enabled;
   }
 
+  /** Bots skip the extra contact-shadow quad; their body still casts a shadow. */
+  setContactShadowVisible(visible: boolean): void {
+    this.contactShadowEnabled = visible;
+    this.shadow.visible = visible && this.shadow.visible;
+  }
+
+  /** A finished Tumbler stays on the gate and cheers instead of racing on. */
+  setCelebrating(celebrating: boolean): void {
+    this.celebrating = celebrating;
+  }
+
   /** Hide a billboard that would fill the lens when a rival is on top of us. */
   setNameTagVisible(visible: boolean): void {
     this.nameTag.visible = visible;
@@ -241,6 +247,21 @@ export class Bean {
     this.eyeGroup.scale.y = 1;
     const blinkCycle = (elapsed + this.blinkTime) % 4.6;
     if (blinkCycle > 4.34) this.eyeGroup.scale.y = 0.1;
+
+    if (this.celebrating) {
+      const cheer = Math.abs(Math.sin(elapsed * 7 + this.blinkTime));
+      this.bodyRoot.position.y = cheer * 0.14;
+      this.tiltRoot.rotation.z = Math.sin(elapsed * 5.5 + this.blinkTime) * 0.14;
+      this.squashRoot.scale.set(1 + cheer * 0.03, 1 - cheer * 0.02, 1 + cheer * 0.03);
+      this.leftArm.pivot.rotation.z = -2.5;
+      this.rightArm.pivot.rotation.z = 2.5;
+      this.leftArm.pivot.rotation.x = -0.2;
+      this.rightArm.pivot.rotation.x = -0.2;
+      if (this.propeller) this.propeller.rotation.y += dt * 14;
+      if (this.halo) this.halo.position.y = 0.31 + Math.sin(elapsed * 2.1) * 0.035;
+      this.shadow.visible = this.contactShadowEnabled && body.grounded;
+      return;
+    }
 
     switch (motion) {
       case 'run': {
@@ -376,7 +397,7 @@ export class Bean {
     if (this.propeller) this.propeller.rotation.y += dt * (motion === 'idle' ? 3.2 : 9);
     if (this.halo) this.halo.position.y = 0.31 + Math.sin(elapsed * 2.1) * 0.035;
 
-    this.shadow.visible = body.grounded;
+    this.shadow.visible = this.contactShadowEnabled && body.grounded;
   }
 
   dispose(): void {
@@ -395,7 +416,9 @@ export class Bean {
     const pivot = new Group();
     pivot.position.set(side * 0.37, shoulderY, 0);
     const mesh = new Mesh(armGeometry, material);
-    mesh.castShadow = true;
+    // The contact shadow and the body's own shadow carry the grounding read;
+    // casting every limb and hat tripled the shadow pass for no visual gain.
+    mesh.castShadow = false;
     pivot.add(mesh);
     return { pivot, mesh };
   }
@@ -405,12 +428,29 @@ export class Bean {
     pivot.position.set(side * 0.19, 0.14, -0.02);
     const mesh = new Mesh(shoeGeometry, shoeMaterial);
     mesh.position.set(0, -0.07, -0.06);
-    mesh.castShadow = true;
+    mesh.castShadow = false;
     pivot.add(mesh);
     return { pivot, mesh };
   }
 
-  private createHat(id: BeanLook['hatId']): { group: Group; propeller: Group | null; halo: Mesh | null } {
+  private createHat(id: BeanLook['hatId']): {
+    group: Group;
+    propeller: Group | null;
+    halo: Mesh | null;
+  } {
+    return createHatModel(id);
+  }
+}
+
+/**
+ * Hats are shared templates: one geometry/material set per hat id for the whole
+ * session. Every Tumbler clones the template (geometries and materials are
+ * shared by Object3D.clone), so repeated Shows stop allocating ~65 geometries
+ * apiece. Only the per-bean name-tag material is unique.
+ */
+const hatModelCache = new Map<string, Group>();
+
+function hatModelFor(id: BeanLook['hatId']): Group {
     const group = new Group();
     let propeller: Group | null = null;
     let halo: Mesh | null = null;
@@ -433,21 +473,21 @@ export class Bean {
 
     switch (id) {
       case 'propeller': {
-        const brim = new Mesh(new CylinderGeometry(0.27, 0.3, 0.075, 20), gold);
+        const brim = new Mesh(new CylinderGeometry(0.27, 0.3, 0.075, 12), gold);
         brim.position.y = 0.035;
         brim.castShadow = true;
         group.add(brim);
-        const dome = new Mesh(new SphereGeometry(0.17, 16, 12), coral);
+        const dome = new Mesh(new SphereGeometry(0.17, 10, 8), coral);
         dome.scale.set(1, 0.72, 1);
         dome.position.y = 0.12;
         dome.castShadow = true;
         group.add(dome);
-        const stalk = new Mesh(new CylinderGeometry(0.025, 0.03, 0.16, 8), ink);
+        const stalk = new Mesh(new CylinderGeometry(0.025, 0.03, 0.16, 6), ink);
         stalk.position.y = 0.25;
         group.add(stalk);
         propeller = new Group();
         propeller.position.y = 0.34;
-        const bladeGeometry = new RoundedBoxGeometry(0.56, 0.035, 0.11, 2, 0.02);
+        const bladeGeometry = new RoundedBoxGeometry(0.56, 0.035, 0.11, 1, 0.02);
         for (let i = 0; i < 3; i += 1) {
           const blade = new Mesh(bladeGeometry, i === 1 ? cream : gold);
           blade.position.x = 0.26;
@@ -456,8 +496,10 @@ export class Bean {
           pivot.add(blade);
           propeller.add(pivot);
         }
-        const hub = new Mesh(new SphereGeometry(0.075, 10, 8), darkGold);
+        const hub = new Mesh(new SphereGeometry(0.075, 6, 6), darkGold);
         propeller.add(hub);
+        mergeColoredMeshes(propeller);
+        propeller.userData.keep = true;
         group.add(propeller);
         break;
       }
@@ -473,7 +515,7 @@ export class Bean {
           spike.castShadow = true;
           group.add(spike);
         }
-        const jewel = new Mesh(new SphereGeometry(0.045, 8, 6), coral);
+        const jewel = new Mesh(new SphereGeometry(0.045, 6, 5), coral);
         jewel.position.set(0, 0.09, -0.225);
         group.add(jewel);
         break;
@@ -482,63 +524,64 @@ export class Bean {
         const stalk = new Mesh(new CylinderGeometry(0.018, 0.022, 0.3, 6), ink);
         stalk.position.y = 0.15;
         group.add(stalk);
-        const bobble = new Mesh(new SphereGeometry(0.11, 14, 10), grape);
+        const bobble = new Mesh(new SphereGeometry(0.11, 8, 6), grape);
         bobble.position.y = 0.34;
         bobble.castShadow = true;
         group.add(bobble);
         break;
       }
       case 'ducky': {
-        const body = new Mesh(new SphereGeometry(0.17, 14, 10), gold);
+        const body = new Mesh(new SphereGeometry(0.17, 8, 6), gold);
         body.scale.set(1.15, 0.85, 1.2);
         body.position.y = 0.13;
         body.castShadow = true;
         group.add(body);
-        const head = new Mesh(new SphereGeometry(0.115, 12, 10), gold);
+        const head = new Mesh(new SphereGeometry(0.115, 8, 6), gold);
         head.position.set(0, 0.31, -0.02);
         head.castShadow = true;
         group.add(head);
-        const beak = new Mesh(new ConeGeometry(0.055, 0.12, 8), coral);
+        const beak = new Mesh(new ConeGeometry(0.055, 0.12, 6), coral);
         beak.rotation.x = Math.PI / 2;
         beak.position.set(0, 0.3, -0.14);
         group.add(beak);
         for (const side of [-1, 1]) {
-          const eye = new Mesh(new SphereGeometry(0.018, 6, 5), ink);
+          const eye = new Mesh(new SphereGeometry(0.018, 5, 4), ink);
           eye.position.set(side * 0.05, 0.35, -0.11);
           group.add(eye);
         }
         break;
       }
       case 'cone': {
-        const cone = new Mesh(new ConeGeometry(0.24, 0.56, 18), coral);
+        const cone = new Mesh(new ConeGeometry(0.24, 0.56, 10), coral);
         cone.position.y = 0.28;
         cone.castShadow = true;
         group.add(cone);
-        const tip = new Mesh(new SphereGeometry(0.07, 8, 6), cream);
+        const tip = new Mesh(new SphereGeometry(0.07, 6, 5), cream);
         tip.position.y = 0.57;
         group.add(tip);
         break;
       }
       case 'halo': {
-        halo = new Mesh(new TorusGeometry(0.24, 0.038, 8, 26), gold);
+        halo = new Mesh(new TorusGeometry(0.24, 0.038, 6, 16), gold);
         halo.rotation.x = Math.PI / 2;
         halo.position.y = 0.31;
+        halo.userData.keep = true;
         group.add(halo);
         break;
       }
       case 'flower': {
         for (let i = 0; i < 6; i += 1) {
           const angle = (i / 6) * Math.PI * 2;
-          const petal = new Mesh(new SphereGeometry(0.085, 8, 6), cream);
+          const petal = new Mesh(new SphereGeometry(0.085, 6, 5), cream);
           petal.scale.set(1.05, 0.42, 1.5);
           petal.position.set(Math.cos(angle) * 0.17, 0.21, Math.sin(angle) * 0.17);
           petal.rotation.y = -angle;
           group.add(petal);
         }
-        const center = new Mesh(new SphereGeometry(0.095, 10, 8), gold);
+        const center = new Mesh(new SphereGeometry(0.095, 8, 6), gold);
         center.position.y = 0.23;
         group.add(center);
-        const leaf = new Mesh(new SphereGeometry(0.07, 8, 6), mint);
+        const leaf = new Mesh(new SphereGeometry(0.07, 6, 5), mint);
         leaf.scale.set(1.5, 0.3, 0.7);
         leaf.position.set(0.16, 0.08, 0.12);
         group.add(leaf);
@@ -548,23 +591,42 @@ export class Bean {
       default:
         break;
     }
-    return { group, propeller, halo };
+    if (propeller) propeller.name = 'hat-propeller';
+    if (halo) halo.name = 'hat-halo';
+    // Static hat parts collapse into one vertex-coloured mesh; the spinning
+    // propeller and bobbing halo stay separate nodes.
+    mergeColoredMeshes(group);
+    group.traverse((object) => {
+      if (object instanceof Mesh) object.castShadow = false;
+    });
+    return group;
+}
+
+/** Clone the cached hat, keeping geometry and materials shared. */
+function createHatModel(id: BeanLook['hatId']): {
+  group: Group;
+  propeller: Group | null;
+  halo: Mesh | null;
+} {
+  let template = hatModelCache.get(id);
+  if (!template) {
+    template = hatModelFor(id);
+    hatModelCache.set(id, template);
   }
+  const group = template.clone(true);
+  const propeller = (group.getObjectByName('hat-propeller') as Group | null) ?? null;
+  const halo = (group.getObjectByName('hat-halo') as Mesh | null) ?? null;
+  return { group, propeller, halo };
 }
 
 
 interface BeanAssets {
   bodyGeometry: CapsuleGeometry;
-  eyeWhiteGeometry: BufferGeometry;
-  pupilGeometry: BufferGeometry;
-  cheekGeometry: BufferGeometry;
-  mouthGeometry: TorusGeometry;
+  faceGeometry: BufferGeometry;
   armGeometry: BufferGeometry;
   shoeGeometry: RoundedBoxGeometry;
   shadowGeometry: PlaneGeometry;
-  inkMaterial: MeshBasicMaterial;
-  eyeWhiteMaterial: MeshBasicMaterial;
-  blushMaterial: MeshBasicMaterial;
+  faceMaterial: MeshBasicMaterial;
   outlineMaterial: MeshBasicMaterial;
   shadowMaterial: MeshBasicMaterial;
 }
@@ -579,26 +641,66 @@ function mergeParts(parts: BufferGeometry[]): BufferGeometry {
 }
 
 /**
+ * Merge differently-coloured little face parts into one geometry using a
+ * vertex-colour attribute. One shared MeshBasicMaterial then draws the whole
+ * set, dropping the per-bean face from four draw calls to two.
+ */
+function mergeColored(parts: ReadonlyArray<readonly [BufferGeometry, number]>): BufferGeometry {
+  const prepared: BufferGeometry[] = [];
+  const color = new Color();
+  for (const [source, hex] of parts) {
+    const geometry = source.index ? source.toNonIndexed() : source.clone();
+    for (const name of Object.keys(geometry.attributes)) {
+      if (name !== 'position') geometry.deleteAttribute(name);
+    }
+    color.setHex(hex);
+    const count = geometry.getAttribute('position').count;
+    const colors = new Float32Array(count * 3);
+    for (let i = 0; i < count; i += 1) {
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+    }
+    geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
+    prepared.push(geometry);
+  }
+  const merged = mergeGeometries(prepared, false);
+  for (const geometry of prepared) geometry.dispose();
+  if (!merged) throw new Error('Bean face merge failed');
+  return merged;
+}
+
+/**
  * Shared bean geometry and materials. Sixteen contestants used to build ~500
  * geometries and a fresh material set per Tumbler; caching here keeps the GC and
  * GPU uploads flat for the whole Show.
  */
 function beanAssets(): BeanAssets {
   if (beanAssetSet) return beanAssetSet;
-  const eyeBase = new SphereGeometry(0.098, 14, 10);
-  const pupilBase = new SphereGeometry(0.048, 10, 8);
-  const cheekBase = new SphereGeometry(0.052, 10, 8);
+  const eyeBase = new SphereGeometry(0.098, 8, 6);
+  const pupilBase = new SphereGeometry(0.048, 6, 5);
+  const cheekBase = new SphereGeometry(0.052, 6, 5);
   const whiteParts = [-1, 1].map((side) => eyeBase.clone().translate(side * 0.15, 0, -0.35));
   const pupilParts = [-1, 1].map((side) => pupilBase.clone().translate(side * 0.15, 0.003, -0.432));
+  // Face geometry is authored relative to the eye group at y = 0.99.
   const cheekParts = [-1, 1].map((side) =>
-    cheekBase.clone().scale(1.1, 0.62, 0.28).translate(side * 0.255, 0.8, -0.348),
+    cheekBase.clone().scale(1.1, 0.62, 0.28).translate(side * 0.255, -0.19, -0.348),
   );
+  const mouth = new TorusGeometry(0.088, 0.017, 4, 10, Math.PI)
+    .rotateZ(Math.PI)
+    .translate(0, -0.27, -0.39);
+  const faceParts = [
+    ...whiteParts.map((part) => [part, 0xfffdf6] as const),
+    ...pupilParts.map((part) => [part, 0x24324a] as const),
+    [mouth, 0x24324a] as const,
+    ...cheekParts.map((part) => [part, 0xffa9b8] as const),
+  ];
   eyeBase.dispose();
   pupilBase.dispose();
   cheekBase.dispose();
 
-  const armBase = new CapsuleGeometry(0.072, 0.23, 4, 10);
-  const handBase = new SphereGeometry(0.1, 10, 8);
+  const armBase = new CapsuleGeometry(0.072, 0.23, 3, 8);
+  const handBase = new SphereGeometry(0.1, 8, 6);
   const armParts = [
     armBase.clone().translate(0, -0.16, 0),
     handBase.clone().translate(0, -0.37, 0),
@@ -607,22 +709,12 @@ function beanAssets(): BeanAssets {
   handBase.dispose();
 
   beanAssetSet = {
-    bodyGeometry: new CapsuleGeometry(0.4, 0.7, 8, 20),
-    eyeWhiteGeometry: mergeParts(whiteParts),
-    pupilGeometry: mergeParts(pupilParts),
-    cheekGeometry: mergeParts(cheekParts),
-    mouthGeometry: new TorusGeometry(0.088, 0.017, 6, 16, Math.PI),
+    bodyGeometry: new CapsuleGeometry(0.4, 0.7, 5, 12),
+    faceGeometry: mergeColored(faceParts),
     armGeometry: mergeParts(armParts),
-    shoeGeometry: new RoundedBoxGeometry(0.27, 0.16, 0.42, 2, 0.07),
+    shoeGeometry: new RoundedBoxGeometry(0.27, 0.16, 0.42, 1, 0.07),
     shadowGeometry: new PlaneGeometry(1.25, 1.05),
-    inkMaterial: new MeshBasicMaterial({ color: 0x24324a }),
-    eyeWhiteMaterial: new MeshBasicMaterial({ color: 0xfffdf6 }),
-    blushMaterial: new MeshBasicMaterial({
-      color: 0xff8fa3,
-      transparent: true,
-      opacity: 0.55,
-      side: DoubleSide,
-    }),
+    faceMaterial: new MeshBasicMaterial({ vertexColors: true }),
     outlineMaterial: new MeshBasicMaterial({ color: 0x24324a, side: BackSide }),
     shadowMaterial: new MeshBasicMaterial({
       map: getShadowTexture(),

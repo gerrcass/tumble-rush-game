@@ -52,6 +52,7 @@ export interface AudioEngineOptions {
 interface Voice {
   source: AudioScheduledSourceNode;
   gain: GainNode;
+  filter: BiquadFilterNode | null;
 }
 
 interface ToneOptions {
@@ -361,6 +362,7 @@ export class AudioEngine {
       }
       voice.source.disconnect();
       voice.gain.disconnect();
+      voice.filter?.disconnect();
     }
     this.voices.clear();
     this.master?.disconnect();
@@ -396,13 +398,20 @@ export class AudioEngine {
     return buffer;
   }
 
-  private track(source: AudioScheduledSourceNode, gain: GainNode): void {
-    const voice: Voice = { source, gain };
+  private track(
+    source: AudioScheduledSourceNode,
+    gain: GainNode,
+    filter: BiquadFilterNode | null,
+  ): void {
+    const voice: Voice = { source, gain, filter };
     this.voices.add(voice);
     source.onended = () => {
       this.voices.delete(voice);
       source.disconnect();
       gain.disconnect();
+      // Biquad filters are AudioNodes too; leaving them wired keeps the whole
+      // graph alive for the lifetime of the context.
+      filter?.disconnect();
     };
   }
 
@@ -427,6 +436,7 @@ export class AudioEngine {
     envelope.gain.exponentialRampToValueAtTime(gain, at + (options.attack ?? 0.008));
     envelope.gain.exponentialRampToValueAtTime(0.0001, at + duration);
     let tail: AudioNode = envelope;
+    let filterNode: BiquadFilterNode | null = null;
     osc.connect(envelope);
     if (options.filter) {
       const filter = ctx.createBiquadFilter();
@@ -435,11 +445,12 @@ export class AudioEngine {
       if (options.filter.q !== undefined) filter.Q.value = options.filter.q;
       envelope.connect(filter);
       tail = filter;
+      filterNode = filter;
     }
     tail.connect(bus);
     osc.start(at);
     osc.stop(at + duration + 0.02);
-    this.track(osc, envelope);
+    this.track(osc, envelope, filterNode);
   }
 
   private noise(options: NoiseOptions): void {
@@ -459,6 +470,7 @@ export class AudioEngine {
     envelope.gain.exponentialRampToValueAtTime(Math.max(0.0004, options.gain), at + 0.01);
     envelope.gain.exponentialRampToValueAtTime(0.0001, at + duration);
     let tail: AudioNode = envelope;
+    let filterNode: BiquadFilterNode | null = null;
     source.connect(envelope);
     if (options.filter) {
       const filter = ctx.createBiquadFilter();
@@ -473,11 +485,12 @@ export class AudioEngine {
       if (options.filter.q !== undefined) filter.Q.value = options.filter.q;
       envelope.connect(filter);
       tail = filter;
+      filterNode = filter;
     }
     tail.connect(bus);
     source.start(at);
     source.stop(at + duration + 0.02);
-    this.track(source, envelope);
+    this.track(source, envelope, filterNode);
   }
 
   // ----------------------------------------------------------------- music

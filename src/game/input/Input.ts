@@ -63,6 +63,7 @@ export class Input {
   private readonly padPrevious = new Array<boolean>(17).fill(false);
   private padStartHeld = false;
   private padPausePressed = false;
+  private gameplayActive = false;
 
   private readonly joystickBase: HTMLElement | null;
   private readonly joystickKnob: HTMLElement | null;
@@ -93,6 +94,15 @@ export class Input {
 
   get usingTouch(): boolean {
     return this.touchCapable;
+  }
+
+  /**
+   * Only the live gameplay phase may consume Space/arrows. Menus, intros and
+   * overlays keep native keyboard behaviour (button activation, typing, slider
+   * steps); otherwise the global listener hijacks every form control.
+   */
+  setGameplayActive(active: boolean): void {
+    this.gameplayActive = active;
   }
 
   get pausePressed(): boolean {
@@ -197,6 +207,8 @@ export class Input {
     window.addEventListener(
       'keydown',
       (event) => {
+        if (!this.gameplayActive) return;
+        if (isFormControl(event.target)) return;
         if (event.code === 'Space' || event.code.startsWith('Arrow')) {
           event.preventDefault();
         }
@@ -405,6 +417,19 @@ export class Input {
     if (rightX !== 0) this.orbitX += rightX * 420 * dt;
     if (rightY !== 0) this.orbitY += rightY * 300 * dt;
   }
+}
+
+/**
+ * Text fields, ranges, selects and buttons own their own Space/arrow keys.
+ * Matches on the event path so a span inside a button is ignored too.
+ */
+function isFormControl(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest(
+      'input, textarea, select, button, a[href], [contenteditable="true"], [role="button"], [role="slider"], [role="textbox"]',
+    ),
+  );
 }
 
 function axisWithDeadzone(value: number, deadzone: number): number {
