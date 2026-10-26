@@ -41,7 +41,10 @@ import type {
   Quality,
   Waypoint,
 } from './Level';
-import { hexDisc, hexRing, hexToWorld, type Axial } from './hexGrid';
+import type { Axial } from './hexGrid';
+import { hexToWorld } from './hexWorld';
+import { arenaCells, axialRing, type ArenaPlanId } from './arenaPlan';
+import { planShow } from './coursePlan';
 
 type TileState = 'idle' | 'warning' | 'falling' | 'gone';
 
@@ -136,6 +139,8 @@ export class Hexapop implements Level {
   ];
   readonly slimeHeight = SLIME_Y;
   readonly slime = new Group();
+  readonly arena: ArenaPlanId;
+  readonly arenaLabel: string;
 
   private readonly seed: number;
   private readonly ownedTextures = new Set<Texture>();
@@ -168,6 +173,9 @@ export class Hexapop implements Level {
 
   constructor(seed: number) {
     this.seed = seed >>> 0;
+    const show = planShow(this.seed);
+    this.arena = show.arena;
+    this.arenaLabel = show.arenaLabel;
     const rng = new Rng((this.seed ^ 0x4e6a9) >>> 0);
     this.group.add(makeSky());
     this.group.add(new HemisphereLight(0xffe8ee, 0x7fd4ff, 0.58));
@@ -257,16 +265,11 @@ export class Hexapop implements Level {
     const palette = [0xff6b6b, 0xffc145, 0x59d9b0, 0x57c7ff, 0xa78bfa, 0xff9ecb];
     const tierTint = [0xffc145, 0x59d9b0, 0x57c7ff];
     for (let tier = 0; tier < TIER_RADII.length; tier += 1) {
-      const radius = TIER_RADII[tier]!;
       const baseY = TIER_Y[tier]!;
-      const cells = hexDisc(radius);
+      const cells = arenaCells(this.arena, tier);
       const tierRng = rng.fork(tier + 11);
       for (const coord of cells) {
-        const ring = Math.max(
-          Math.abs(coord.q),
-          Math.abs(coord.r),
-          Math.abs(coord.q + coord.r),
-        );
+        const ring = axialRing(coord);
         const position = hexToWorld(coord, TILE_SIZE);
         const offset = TIER_OFFSETS[tier]!;
         // Keep a narrow chute under the starting perch. The lower decks are
@@ -338,6 +341,9 @@ export class Hexapop implements Level {
 
   private buildTierRims(): void {
     const tints = [0xffc145, 0x59d9b0, 0x57c7ff];
+    // RINGS keeps the M2 solid under-rim. SPIRAL and GEARWORKS must show their
+    // holes, so they get no disc that would visually fill them.
+    if (this.arena !== 'rings') return;
     for (let tier = 0; tier < TIER_RADII.length; tier += 1) {
       const radius = TIER_RADII[tier]!;
       const rim = new Mesh(
@@ -389,7 +395,7 @@ export class Hexapop implements Level {
       height: 0.4,
     });
     this.colliders.push(this.podiumCollider);
-    const sign = makeSign('HEXAPOP', 'do not trust the floor', 4.2, 1.5, this.ownedTextures);
+    const sign = makeSign(`HEXAPOP · ${this.arenaLabel}`, 'do not trust the floor', 4.4, 1.5, this.ownedTextures);
     sign.position.set(0, 3.1, -3.6);
     this.group.add(sign);
     for (const side of [-1, 1]) {
@@ -469,21 +475,21 @@ export class Hexapop implements Level {
   }
 
   private buildWaypoints(): Waypoint[] {
-    // The centre of each tier, then the next ring out. Phase-three bots can
-    // choose a neighbouring tile and hop based on collapse risk.
+    // One readable point per tier, then a spread of surviving tiles. The plan
+    // can remove cells; never point a bot at a tile that is not on the floor.
     const points: Waypoint[] = [
       { position: new Vector3(0, 0.43, 0), action: 'run', radius: 1.2 },
     ];
     for (let tier = 0; tier < TIER_RADII.length; tier += 1) {
-      const cells = hexRing(TIER_RADII[tier]!);
-      for (let i = 0; i < Math.min(6, cells.length); i += 1) {
-        const position = hexToWorld(cells[i]!, TILE_SIZE);
+      const tierTiles = this.tiles.filter((tile) => tile.tier === tier);
+      const sorted = [...tierTiles].sort(
+        (a, b) => Math.atan2(a.base.z, a.base.x) - Math.atan2(b.base.z, b.base.x),
+      );
+      const step = Math.max(1, Math.floor(sorted.length / 6));
+      for (let i = 0; i < Math.min(6, sorted.length); i += 1) {
+        const tile = sorted[i * step]!;
         points.push({
-          position: new Vector3(
-            position.x + TIER_OFFSETS[tier]!.x,
-            TIER_Y[tier]! + 0.1,
-            position.z + TIER_OFFSETS[tier]!.z,
-          ),
+          position: new Vector3(tile.base.x, tile.base.y + 0.1, tile.base.z),
           action: tier === 2 ? 'run' : 'jump',
           radius: 1.1,
         });
@@ -563,7 +569,11 @@ export class Hexapop implements Level {
       this.nextWaveAt = Math.max(this.nextWaveAt + WAVE_INTERVAL, this.elapsed + 1);
     }
 
-    if (!this.result && this.tileCountValue <= 4) {
+    // The 45 s Sugar Rush is an authored beat, not an optional one. A fast
+    // collapse can reach four survivors before 45 s; hold those survivors on
+    // the remaining floor until the wave so every show gets the beat. No tile
+    // is added and no bean is moved: there is simply nothing left to drop.
+    if (!this.result && this.tileCountValue <= 4 && this.elapsed >= SUGAR_RUSH_AT) {
       this.result = {
         kind: 'survived',
         title: 'SURVIVED!',
