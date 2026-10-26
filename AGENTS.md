@@ -9,10 +9,11 @@ npm ci
 npm run dev          # http://localhost:5173
 npm run check        # invariants + typecheck + unit tests + production build
 npm run lint         # invariants + typecheck
-npm run gate:release # check + verify:show + 10-seed pacing + full Playwright
+npm run gate:release # check + verify:show + 10-seed pacing + 12-seed variety + full Playwright
 npm run verify:show  # real 16-bean Course + real Hexapop spawn
 npm run measure:show # pacing baseline; see docs/METRICS.md
-npm run verify:pacing # 10-seed pacing gate
+npm run verify:pacing # historical 10-seed pacing gate
+npm run verify:variety # 12-seed route/arena + M2 band gate
 npm run test:e2e     # Playwright smoke + screenshots (set TUMBLE_E2E_PORT if 5173 is occupied)
 npm run evidence     # canonical screenshot set
 npm run ci:local     # clean install with workspace-local npm cache + check
@@ -26,7 +27,7 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 - `src/game/` — render loop, match/director, physics, beans, bots, levels, FX, audio, profile.
 - `src/test/` — Vitest unit tests. `e2e/` — Playwright specs and screenshot script.
 - `docs/` — spec, tickets, grill, retro, `evidence/` screenshots.
-- `.github/workflows/` — `ci.yml` (parallel check, pacing, and 3-shard e2e) and `deploy.yml` (GitHub Pages).
+- `.github/workflows/` — `ci.yml` (parallel check, pacing, variety, and 3-shard e2e) and `deploy.yml` (GitHub Pages).
 
 `Game` owns the renderer, clock, and quality settings. `Match` owns the show state machine and talks to the HUD through events. Levels build geometry and colliders; they never own game state. The physics world is the only place that mutates bean positions during a step.
 
@@ -58,7 +59,7 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 - `window.__tumble` is the test hook. Keep it available in dev/test builds; do not ship a debug overlay enabled in production.
 - Each PR needs visual evidence captured from the real build: menu, both Course route beats, all three Hexapop arenas, final, victory, and the Show Card. Store them in `docs/evidence/` and attach them to the PR with `gh --attach`.
 - Performance gate: ≥55 fps at 1080p high on real hardware; low quality must preserve playability. **This host is SwiftShader-only (no `/dev/dri`), so FPS is not a hardware signal.** Use `window.__tumble.renderInfo` draw calls/triangles and report the hardware-FPS gap instead of optimizing for software FPS.
-- Release gate: `npm run gate:release` runs invariants/typecheck/unit/build, `verify:show`, the pacing gate, and the full Playwright suite. `npm run check:release` is the focused review loop. M3 adds the 12-seed variety gate; it runs in CI and is authoritative for route/arena variety.
+- Release gate: `npm run gate:release` runs invariants/typecheck/unit/build, `verify:show`, the 10-seed pacing gate, the 12-seed variety gate, and the full Playwright suite. `npm run check:release` is the focused review loop. M3 adds the 12-seed variety gate; it runs in CI and is authoritative for route/arena variety.
 - Real-Match probes beat isolated unit setups for show bugs. `docs/REVIEW-*.md` records the independent review rounds; add a new review file when a round finds blockers.
 - Use `window.__tumble.simulate(seconds)` for deterministic test time. Wall-clock waits fail on SwiftShader (the fixed loop advances ~0.15× real time at 3 fps).
 

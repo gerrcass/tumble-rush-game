@@ -1,5 +1,6 @@
 import { Game, type GameState } from '../game/Game';
 import { dailySeed, formatSeed, freshSeed } from '../game/Rng';
+import { planShow } from '../game/levels/coursePlan';
 import type { LevelMode, LevelResult } from '../game/levels/Level';
 import type { DifficultyId } from '../game/match/Director';
 import type { RoundHistory, ShowResult, StampTone } from '../game/match/Match';
@@ -103,6 +104,7 @@ export class App {
     this.quickSeed = seed;
     this.seedOverride = new URLSearchParams(window.location.search).has('seed');
     this.daily = dailySeed();
+    const dailyPlan = planShow(this.daily.seed);
     const loaded = readProfile(this.storage);
     this.profile = loaded.profile;
     root.classList.add('tumble-app');
@@ -139,6 +141,7 @@ export class App {
     this.startScreen = new StartScreen({
       seedLabel: formatSeed(seed),
       dailyLabel: this.daily.label,
+      dailyCard: `${dailyPlan.routeLabel} · ${dailyPlan.arenaLabel}`,
       touch: this.touchDevice,
       initialDifficulty: 'show',
       profile: this.profile,
@@ -629,6 +632,7 @@ export class App {
           match.seedLabel,
           match.phase,
           match.countdown,
+          match.showPlan,
         );
       } else {
         this.roundIntro.update(match.phase, match.countdown);
@@ -667,6 +671,7 @@ export class App {
           match.seedLabel,
           match.resultsTimer,
           reward ?? undefined,
+          match.showPlan,
         );
       } else {
         this.resultsOverlay.update(match.resultsTimer);
@@ -683,11 +688,16 @@ export class App {
       const key = `${match.phase}:${match.showResult.seedLabel}:${match.showResult.won}`;
       if (key !== this.endKey || force) {
         this.endKey = key;
-        this.showEndOverlay.show(match.showResult, this.profile, {
-          kudos: this.showKudos,
-          crowns: this.showCrowns,
-          newBest: this.showNewBest,
-        });
+        this.showEndOverlay.show(
+          match.showResult,
+          this.profile,
+          {
+            kudos: this.showKudos,
+            crowns: this.showCrowns,
+            newBest: this.showNewBest,
+          },
+          match.showPlan,
+        );
       }
     }
   }

@@ -1,0 +1,64 @@
+
+> tumble-rush@1.0.0 verify:variety
+> node scripts/verify-variety.mjs --negative --out=docs/evidence/variety/m3-variety.json
+
+[1/24] idle seed=20260418 B-C-D/C-F-G/RINGS total=206.07s course=72.45s finishers=8 player=ELIMINATED hex=46.7s crown=56.02s living=true touch=true
+[2/24] casual seed=20260418 B-C-D/C-F-G/RINGS total=205.02s course=72.72s finishers=8 player=QUALIFIED hex=49.92s crown=51.48s living=true touch=true
+[3/24] idle seed=20365147 C-D-G/B-C-G/SPIRAL total=200.77s course=70.07s finishers=8 player=ELIMINATED hex=46.17s crown=53.63s living=true touch=true
+[4/24] casual seed=20365147 C-D-G/B-C-G/SPIRAL total=203.87s course=71.38s finishers=8 player=QUALIFIED hex=47.83s crown=53.75s living=true touch=true
+[5/24] idle seed=20469876 D-F-G/B-C-G/SPIRAL total=204.47s course=72.73s finishers=8 player=ELIMINATED hex=46.4s crown=54.43s living=true touch=true
+[6/24] casual seed=20469876 D-F-G/B-C-G/SPIRAL total=204.22s course=71.07s finishers=8 player=QUALIFIED hex=48.53s crown=53.72s living=true touch=true
+[7/24] idle seed=20574605 B-D-G/B-C-F/GEARWORKS total=198.77s course=70.73s finishers=8 player=ELIMINATED hex=46.17s crown=50.97s living=true touch=true
+[8/24] casual seed=20574605 B-D-G/B-C-F/GEARWORKS total=197.1s course=69.07s finishers=8 player=QUALIFIED hex=46.17s crown=50.97s living=true touch=true
+[9/24] idle seed=20679334 B-C-F/B-D-F/GEARWORKS total=208.57s course=69.45s finishers=8 player=ELIMINATED hex=46.17s crown=62.05s living=true touch=true
+[10/24] casual seed=20679334 B-C-F/B-D-F/GEARWORKS total=208.73s course=70.02s finishers=8 player=QUALIFIED hex=47.8s crown=60.02s living=true touch=true
+[11/24] idle seed=20784063 D-F-G/B-D-F/SPIRAL total=210.02s course=70.42s finishers=8 player=ELIMINATED hex=46.17s crown=62.53s living=true touch=true
+[12/24] casual seed=20784063 D-F-G/B-D-F/SPIRAL total=206.12s course=71.4s finishers=8 player=ELIMINATED hex=46.17s crown=57.65s living=true touch=true
+[13/24] idle seed=20888792 C-F-G/D-F-G/SPIRAL total=210.87s course=70.07s finishers=8 player=ELIMINATED hex=46.17s crown=63.73s living=true touch=true
+[14/24] casual seed=20888792 C-F-G/D-F-G/SPIRAL total=209.62s course=68.42s finishers=8 player=QUALIFIED hex=46.17s crown=64.13s living=true touch=true
+[15/24] idle seed=20993521 B-D-F/D-F-G/SPIRAL total=212.35s course=70.08s finishers=8 player=ELIMINATED hex=46.17s crown=65.2s living=true touch=true
+[16/24] casual seed=20993521 B-D-F/D-F-G/SPIRAL total=203.62s course=69.58s finishers=8 player=QUALIFIED hex=49.08s crown=54.05s living=true touch=true
+[17/24] idle seed=21098250 C-F-G/C-D-G/SPIRAL total=208.23s course=73.4s finishers=8 player=ELIMINATED hex=47.2s crown=56.73s living=true touch=true
+[18/24] casual seed=21098250 C-F-G/C-D-G/SPIRAL total=207.57s course=73.45s finishers=8 player=ELIMINATED hex=46.17s crown=57.05s living=true touch=true
+[19/24] idle seed=21202979 B-F-G/B-D-F/GEARWORKS total=202.17s course=68.7s finishers=8 player=ELIMINATED hex=46.17s crown=56.4s living=true touch=true
+[20/24] casual seed=21202979 B-F-G/B-D-F/GEARWORKS total=197.1s course=68.73s finishers=9 player=QUALIFIED hex=46.17s crown=51.3s living=true touch=true
+[21/24] idle seed=21307708 B-C-F/C-D-F/RINGS total=198.35s course=71.42s finishers=8 player=ELIMINATED hex=47.13s crown=48.9s living=true touch=true
+[22/24] casual seed=21307708 B-C-F/C-D-F/RINGS total=194.07s course=68.55s finishers=8 player=QUALIFIED hex=46.17s crown=48.45s living=true touch=true
+[23/24] idle seed=21412437 B-C-D/B-C-G/GEARWORKS total=206.33s course=72.4s finishers=9 player=ELIMINATED hex=46.17s crown=56.87s living=true touch=true
+[24/24] casual seed=21412437 B-C-D/B-C-G/GEARWORKS total=208.53s course=74.2s finishers=8 player=QUALIFIED hex=46.17s crown=57.27s living=true touch=true
+Tumble Rush M3 — Remix Season variety gate
+12 seeds × idle + casual = 24 observed shows
+
+| Seed | Course | Arena | Course s (finish) | Hex s | Crown s | Total s | Idle Q | Casual Q |
+| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+| 20260418 | B-C-D/C-F-G | RINGS | 72.45 (8) | 46.7 | 56.02 | 206.07 | OUT | Q |
+| 20365147 | C-D-G/B-C-G | SPIRAL | 70.07 (8) | 46.17 | 53.63 | 200.77 | OUT | Q |
+| 20469876 | D-F-G/B-C-G | SPIRAL | 72.73 (8) | 46.4 | 54.43 | 204.47 | OUT | Q |
+| 20574605 | B-D-G/B-C-F | GEARWORKS | 70.73 (8) | 46.17 | 50.97 | 198.77 | OUT | Q |
+| 20679334 | B-C-F/B-D-F | GEARWORKS | 69.45 (8) | 46.17 | 62.05 | 208.57 | OUT | Q |
+| 20784063 | D-F-G/B-D-F | SPIRAL | 70.42 (8) | 46.17 | 62.53 | 210.02 | OUT | OUT |
+| 20888792 | C-F-G/D-F-G | SPIRAL | 70.07 (8) | 46.17 | 63.73 | 210.87 | OUT | Q |
+| 20993521 | B-D-F/D-F-G | SPIRAL | 70.08 (8) | 46.17 | 65.2 | 212.35 | OUT | Q |
+| 21098250 | C-F-G/C-D-G | SPIRAL | 73.4 (8) | 47.2 | 56.73 | 208.23 | OUT | OUT |
+| 21202979 | B-F-G/B-D-F | GEARWORKS | 68.7 (8) | 46.17 | 56.4 | 202.17 | OUT | Q |
+| 21307708 | B-C-F/C-D-F | RINGS | 71.42 (8) | 47.13 | 48.9 | 198.35 | OUT | Q |
+| 21412437 | B-C-D/B-C-G | GEARWORKS | 72.4 (9) | 46.17 | 56.87 | 206.33 | OUT | Q |
+
+Checks:
+  [PASS] At least 8 distinct Course signatures across 12 seeds: 12 / 12 (target ≥ 8)
+  [PASS] All three Hexapop arena plans appear: 3 / 3 (target 3 / 3)
+  [PASS] Tumbler Tangle (F) appears in at least 4 shows: 10 / 12 (target ≥ 4)
+  [PASS] Bounce Bazaar (G) appears in at least 4 shows: 10 / 12 (target ≥ 4)
+  [PASS] Every run: Course 45–90 s and 8+ finishers: 24 / 24 runs (target 45–90 s, 8+)
+  [PASS] Every run: Hexapop 30–50 s with Sugar Rush reached: 24 / 24 runs (target 30–50 s, 100%)
+  [PASS] Crown 45–80 s with a living physical touch; ≥23/24: 24 living / 24 touched of 24 (target ≤1 no-winner, 23/24)
+  [PASS] Every show 150–360 s and median 180–300 s: 194.07–212.35 s, median 205.54500000000002 s (target 150–360 s / 180–300 s)
+  [PASS] Idle human never qualifies: 0 / 12 (target 0 / 12)
+  [PASS] Scripted casual human qualifies at least 8/12: 10 / 12 (target ≥ 8 / 12)
+
+RESULT: PASS
+
+Negative control: PASS — collapsed deck rejected by distinct-routes, arena-variety, new-section-f, new-section-g
+
+JSON evidence: docs/evidence/variety/m3-variety.json
+EXIT=0

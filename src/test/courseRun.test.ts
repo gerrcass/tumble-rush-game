@@ -11,6 +11,7 @@ import {
 } from '../game/match/Contestant';
 import { Match } from '../game/match/Match';
 import type { Level } from '../game/levels/Level';
+import type { Course } from '../game/levels/Course';
 import type { ControllerFrame } from '../game/player/BeanController';
 import { startPositionsFor } from '../game/levels/startPositions';
 
@@ -255,30 +256,53 @@ describe('Course connector and final checkpoint (M2)', () => {
   });
 
   it('places the final checkpoint on lap 2\'s raised finish deck', () => {
-    const level = createLevel('course', 20260418);
+    const level = createLevel('course', 20260418) as Course;
     const final = level.checkpoints[level.checkpoints.length - 1]!;
-    expect(final.position.y).toBe(9);
-    expect(final.maxY).toBe(11);
-    expect(final.position.z).toBe(-340);
+    const plan = level.plan;
+    expect(final.position.y).toBeCloseTo(4.5 + plan.lapOffsetY, 5);
+    expect(final.maxY).toBeCloseTo(6.5 + plan.lapOffsetY, 5);
+    // The final checkpoint is the finish-deck marker two units before the gate.
+    expect(final.position.z).toBeCloseTo(plan.courseFinishZ + 2, 5);
     level.dispose();
   });
 });
 
-describe('Course two-lap grammar (M2)', () => {
-  it('reuses the five sections twice and only finishes at the final gate', () => {
-    const course = createLevel('course', 20260418);
-    const lapTwoFinish = new Vector3(0, 4.6, -156);
-    expect(course.waypoints).toHaveLength(55);
-    expect(course.finishPosition.z).toBeCloseTo(-340, 5);
-    expect(course.finishPosition.y).toBeCloseTo(9.1, 5);
+describe('Course route grammar (M3)', () => {
+  it('builds the planned route twice and only finishes at the final gate', () => {
+    const course = createLevel('course', 20260418) as Course;
+    const plan = course.plan;
+    const lapTwoFinish = new Vector3(0, 4.6, plan.finishZ);
+    // The plan owns the waypoint chains; the level must expose every module and
+    // the connector, monotonic along the route.
+    expect(course.waypoints.length).toBeGreaterThan(40);
+    for (let index = 1; index < course.waypoints.length; index += 1) {
+      expect(course.waypoints[index]!.position.z).toBeLessThanOrEqual(
+        course.waypoints[index - 1]!.position.z + 0.001,
+      );
+    }
+    for (const section of plan.sections) {
+      const covered = course.waypoints.some(
+        (waypoint) =>
+          waypoint.position.z <= section.startZ + 0.001 &&
+          waypoint.position.z >= section.endZ - 0.001,
+      );
+      expect(covered, `section ${section.id} on lap ${section.lap + 1}`).toBe(true);
+    }
+    expect(course.waypoints[course.waypoints.length - 1]!.position.z).toBeCloseTo(
+      plan.courseFinishZ,
+      5,
+    );
+    expect(course.finishPosition.z).toBeCloseTo(plan.courseFinishZ, 5);
+    expect(course.finishPosition.y).toBeCloseTo(4.6 + plan.lapOffsetY, 5);
     // Lap 1's gate is a lap gate, not the finish.
     expect(course.isAtFinish(lapTwoFinish)).toBe(false);
     expect(course.isAtFinish(course.finishPosition)).toBe(true);
-    // The start deck sits just inside the authored 18 u start line.
+    // The start deck sits just inside the authored start line.
     expect(course.progress(new Vector3(0, 0, 16))).toBeGreaterThan(0);
     expect(course.progress(new Vector3(0, 0, 16))).toBeLessThan(0.01);
     expect(course.progress(course.finishPosition)).toBeCloseTo(1, 5);
-    // The same five section names are authored on both laps.
+    expect(plan.sections).toHaveLength(10);
+    expect(plan.laps[0]!.route).not.toEqual(plan.laps[1]!.route);
     const status = course.status();
     expect(status.phase).toBe('SHOWTIME');
     expect(course.title).toBe('SUNRISE SCRAMBLE');

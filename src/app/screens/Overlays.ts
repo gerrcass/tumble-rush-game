@@ -1,4 +1,5 @@
 import { el } from '../dom';
+import type { ShowPlan } from '../../game/levels/coursePlan';
 import type { LevelResult } from '../../game/levels/Level';
 import type { RoundDefinition, RoundPlacement } from '../../game/match/Director';
 import type { ShowResult } from '../../game/match/Match';
@@ -67,6 +68,23 @@ export class PauseOverlay {
 }
 
 /**
+ * One Show Card, three places. The text is rendered from the same `planShow`
+ * the levels consume, so the card cannot drift from the route under the player.
+ */
+function fillShowCard(container: HTMLElement, plan?: ShowPlan): void {
+  container.replaceChildren();
+  if (!plan) {
+    container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+  container.setAttribute('role', 'group');
+  container.setAttribute('aria-label', `Show card. ${plan.label}.`);
+  container.appendChild(el('span', 'show-card__course', `COURSE ${plan.routeLabel}`));
+  container.appendChild(el('span', 'show-card__arena', `ARENA ${plan.arenaLabel}`));
+}
+
+/**
  * Full-screen Round card: number, name, objective, field size, qualifier count
  * and the 3-2-1-TUMBLE countdown. Inputs are physically locked by Match during
  * this phase; this overlay only reports it.
@@ -76,6 +94,7 @@ export class RoundIntro {
   private readonly roundNumber: HTMLElement;
   private readonly roundName: HTMLElement;
   private readonly objective: HTMLElement;
+  private readonly showCard: HTMLElement;
   private readonly starters: HTMLElement;
   private readonly qualifiers: HTMLElement;
   private readonly seed: HTMLElement;
@@ -104,6 +123,8 @@ export class RoundIntro {
     card.appendChild(this.roundName);
     this.objective = el('p', 'round-intro__objective', '');
     card.appendChild(this.objective);
+    this.showCard = el('div', 'round-intro__show-card show-card');
+    card.appendChild(this.showCard);
 
     const facts = el('div', 'round-intro__facts');
     const startersFact = el('div', 'round-intro__fact');
@@ -135,6 +156,7 @@ export class RoundIntro {
     seedLabel: string,
     phase: 'intro' | 'countdown',
     countdown: number,
+    plan?: ShowPlan,
   ): void {
     this.element.hidden = false;
     this.roundNumber.textContent = `ROUND ${roundNumber}`;
@@ -143,6 +165,7 @@ export class RoundIntro {
     this.starters.textContent = String(definition.starters);
     this.qualifiers.textContent = `TOP ${definition.qualifiers}`;
     this.seed.textContent = `SEED ${seedLabel}`;
+    fillShowCard(this.showCard, plan);
     this.update(phase, countdown);
   }
 
@@ -192,6 +215,7 @@ export class ResultsOverlay {
   readonly element = el('section', 'results');
   private readonly title: HTMLElement;
   private readonly subtitle: HTMLElement;
+  private readonly showCard: HTMLElement;
   private readonly tableBody: HTMLElement;
   private readonly seed: HTMLElement;
   private readonly continueButton: HTMLButtonElement;
@@ -212,6 +236,8 @@ export class ResultsOverlay {
     card.appendChild(this.title);
     this.subtitle = el('p', 'results__subtitle', '');
     card.appendChild(this.subtitle);
+    this.showCard = el('div', 'results__show-card show-card');
+    card.appendChild(this.showCard);
 
     const head = el('div', 'results__row results__row--head');
     head.setAttribute('role', 'row');
@@ -255,11 +281,13 @@ export class ResultsOverlay {
     seedLabel: string,
     secondsLeft: number,
     reward?: RoundReward,
+    plan?: ShowPlan,
   ): void {
     this.element.hidden = false;
     this.title.textContent = definition.label;
     this.subtitle.textContent = `ROUND ${roundNumber} · TOP ${definition.qualifiers} QUALIFY`;
     this.seed.textContent = `SEED ${seedLabel}`;
+    fillShowCard(this.showCard, plan);
     this.reward.replaceChildren();
     if (reward) {
       this.reward.hidden = false;
@@ -363,6 +391,7 @@ export class ShowEndOverlay {
   private readonly replayButton: HTMLButtonElement;
   private readonly menuButton: HTMLButtonElement;
   private readonly career: HTMLElement;
+  private readonly showCard: HTMLElement;
 
   constructor(options: ShowEndOptions) {
     this.element.hidden = true;
@@ -398,6 +427,8 @@ export class ShowEndOverlay {
     this.card.appendChild(this.stats);
     this.career = el('p', 'show-end__profile');
     this.card.appendChild(this.career);
+    this.showCard = el('div', 'show-end__show-card show-card');
+    this.card.appendChild(this.showCard);
 
     const actions = el('div', 'show-end__actions');
     this.replayButton = el('button', 'btn btn--primary', 'PLAY AGAIN');
@@ -416,6 +447,7 @@ export class ShowEndOverlay {
     result: ShowResult,
     profile: Profile,
     summary: { kudos: number; crowns: number; newBest: boolean },
+    plan?: ShowPlan,
   ): void {
     const won = result.won;
     // A crown can only be claimed when the Show actually reached Crown Climb.
@@ -465,6 +497,7 @@ export class ShowEndOverlay {
       this.stats.appendChild(stat);
     }
     this.career.textContent = `${profile.name} · ${profile.wins} wins · ${profile.qualifications} qualifications · ${profile.kudos} kudos · seed ${result.seedLabel}`;
+    fillShowCard(this.showCard, plan);
     this.element.hidden = false;
     this.replayButton.focus({ preventScroll: true });
   }

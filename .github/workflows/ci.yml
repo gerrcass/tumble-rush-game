@@ -75,6 +75,44 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  variety:
+    name: Variety gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install from lockfile
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Variety gate (12 seeds, idle + casual)
+        run: |
+          set -o pipefail
+          npm run verify:variety -- --negative \
+            --out=docs/evidence/variety/m3-variety.json \
+            2>&1 | tee docs/evidence/variety/m3-variety.log
+
+      - name: Upload variety evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: variety-evidence
+          path: |
+            docs/evidence/variety/*
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
   e2e:
     name: Playwright shard ${{ matrix.shard }}/3
     runs-on: ubuntu-latest

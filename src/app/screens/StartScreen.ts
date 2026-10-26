@@ -7,6 +7,8 @@ import { formatBest, formatNumber, type Profile } from '../../game/profile';
 export interface StartScreenOptions {
   seedLabel: string;
   dailyLabel: string;
+  /** `B-D-G / C-F-G · SPIRAL` for today's Daily Show. */
+  dailyCard: string;
   touch: boolean;
   initialDifficulty?: DifficultyId;
   profile: Profile;
@@ -41,6 +43,7 @@ export class StartScreen {
   private readonly dailyChip: HTMLElement;
   private seedLabel: string;
   private readonly dailyLabel: string;
+  private readonly dailyCard: string;
   private readonly difficultyButtons = new Map<DifficultyId, HTMLButtonElement>();
   private difficulty: DifficultyId;
   private daily = false;
@@ -50,6 +53,7 @@ export class StartScreen {
     this.options = options;
     this.seedLabel = options.seedLabel;
     this.dailyLabel = options.dailyLabel;
+    this.dailyCard = options.dailyCard;
     this.difficulty = options.initialDifficulty ?? 'show';
     this.element.setAttribute('aria-labelledby', 'game-title');
 
@@ -328,7 +332,9 @@ export class StartScreen {
     this.seedChip.textContent = `SEED ${daily ? this.dailyLabel : this.seedLabel}`;
     this.kindChip.textContent = daily ? 'DAILY SHOW' : 'QUICK SHOW';
     this.kindChip.className = `chip ${daily ? 'chip--daily' : 'chip--mint'}`;
-    this.dailyChip.textContent = daily ? 'ONE RECORDED RESULT TODAY' : 'A FRESH SEEDED SHOW';
+    this.dailyChip.textContent = `TODAY · ${this.dailyCard}`;
+    this.dailyChip.setAttribute('title', `Today's Daily Show: ${this.dailyCard}`);
+    this.dailyChip.setAttribute('aria-label', `Today's Daily Show: ${this.dailyCard}`);
     for (const button of this.element.querySelectorAll<HTMLButtonElement>('.chip-toggle')) {
       const active = button.dataset.seed === (daily ? 'daily' : 'quick');
       button.classList.toggle('is-selected', active);

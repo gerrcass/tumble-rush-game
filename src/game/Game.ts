@@ -41,6 +41,7 @@ import {
 import { createLevel } from './levels/factory';
 import type { Course } from './levels/Course';
 import { startPositionsFor } from './levels/startPositions';
+import { planShow } from './levels/coursePlan';
 import { Rng, formatSeed } from './Rng';
 import { AudioEngine, type SfxName } from './audio/AudioEngine';
 import { Bursts, particleBudget } from './fx/Bursts';
@@ -445,6 +446,7 @@ export class Game {
       get course() {
         if (game.level.mode !== 'course') return null;
         const level = game.level as Course;
+        const plan = game.match?.showPlan ?? planShow(game.currentSeed);
         return {
           laps: level.plan.lapCount,
           lapOffsetZ: level.plan.lapOffsetZ,
@@ -453,6 +455,23 @@ export class Game {
           finishZ: level.finishPosition.z,
           finishY: level.finishPosition.y,
           waypointCount: level.waypoints.length,
+          routeLabel: plan.routeLabel,
+          courseSignature: plan.courseSignature,
+          arena: plan.arena,
+          signature: plan.signature,
+          showLabel: plan.label,
+        };
+      },
+      get plan() {
+        const plan = game.match?.showPlan ?? planShow(game.currentSeed);
+        return {
+          courseSignature: plan.courseSignature,
+          lapRoutes: plan.lapRoutes.map((lap) => [...lap]),
+          routeLabel: plan.routeLabel,
+          arena: plan.arena,
+          arenaLabel: plan.arenaLabel,
+          signature: plan.signature,
+          label: plan.label,
         };
       },
       isAtFinish: (x: number, y: number, z: number) =>

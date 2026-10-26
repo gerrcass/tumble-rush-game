@@ -867,6 +867,7 @@ export class HexBrain extends BotBrain {
 
 export class CrownBrain extends BotBrain {
   private waypointIndex = 0;
+  private waited = 0;
   private climbTimer = 0;
   private pauseTimer = 0;
   private pauseIndex = -1;
@@ -875,6 +876,7 @@ export class CrownBrain extends BotBrain {
   reset(): void {
     super.reset();
     this.waypointIndex = 0;
+    this.waited = 0;
     this.climbTimer = 0;
     this.pauseTimer = 0;
     this.pauseIndex = -1;
@@ -887,6 +889,16 @@ export class CrownBrain extends BotBrain {
     const { level, body } = context;
     const waypoints = level.waypoints;
     if (waypoints.length === 0) return frame;
+
+    // Four finalists spawn on the same start deck. A short authored stagger
+    // keeps them from pushing the front runner off the lip before the first
+    // jump; it is a waiting beat, not extra speed.
+    if (this.waited < 0.35 + (this.owner.id % 4) * 0.45) {
+      this.waited += context.dt;
+      this.steer(0, 0, 0);
+      this.owner.targetLabel = 'START';
+      return frame;
+    }
 
     this.waypointIndex = clamp(this.waypointIndex, 0, waypoints.length - 1);
     for (let guard = 0; guard < 3; guard += 1) {

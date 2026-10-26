@@ -53,11 +53,11 @@ import type {
   Waypoint,
 } from './Level';
 import {
-  COURSE_LAP_COUNT,
-  COURSE_LAP_OFFSET_Y,
-  COURSE_LAP_OFFSET_Z,
-  planCourse,
+  COURSE_FINISH_DECK_Y,
+  planShow,
+  type CourseLapPlan,
   type CoursePlan,
+  type CourseSectionId,
   type CourseSectionPlan,
 } from './coursePlan';
 
@@ -109,6 +109,88 @@ const CREAM = 0xfff6e5;
 const UP_AXIS = new Vector3(0, 1, 0);
 const Z_AXIS = new Vector3(0, 0, 1);
 
+interface CheckpointLocal {
+  localZ: number;
+  half: number;
+  y: number;
+  maxY: number;
+}
+
+/** One checkpoint per module, near its exit (A is the start, E the finish). */
+const CHECKPOINT_LOCAL: Readonly<Record<CourseSectionId, CheckpointLocal>> = {
+  A: { localZ: -2, half: 4.6, y: 0.04, maxY: 2.5 },
+  B: { localZ: -35, half: 3, y: 0.04, maxY: 2.5 },
+  C: { localZ: -38, half: 3, y: 0.04, maxY: 2.5 },
+  D: { localZ: -35.5, half: 2.5, y: 0.04, maxY: 2.5 },
+  E: { localZ: -22, half: 5, y: 4.5, maxY: 6.5 },
+  F: { localZ: -36, half: 2.5, y: 0.04, maxY: 2.5 },
+  G: { localZ: -35.5, half: 2.5, y: 0.04, maxY: 2.5 },
+};
+
+/**
+ * Module-local waypoint chains. The route planner offsets them by the module
+ * start and lap height, so a bot never needs to know the route order.
+ */
+const MODULE_WAYPOINTS: Readonly<
+  Record<CourseSectionId, ReadonlyArray<readonly [number, number, number, Waypoint['action']]>>
+> = {
+  A: [
+    [0, -2, 0.02, 'run'],
+    [0, -8, 0.02, 'jump'],
+    [0, -9.8, 0.02, 'jump'],
+    [0, -14, 0.02, 'run'],
+    [0, -21.5, 0.02, 'jump'],
+    [0, -28, 0.02, 'run'],
+    [0, -34.5, 0.02, 'jump'],
+  ],
+  B: [
+    [0, -3, 0.02, 'jump'],
+    [0, -12, 0.02, 'run'],
+    [0, -23, 0.02, 'run'],
+    [0, -33, 0.02, 'ride'],
+  ],
+  C: [
+    [0, -2, 0.02, 'jump'],
+    [0, -9, 0.02, 'ride'],
+    [0, -16, 0.02, 'jump'],
+    [0, -24.5, 0.02, 'jump'],
+    [0, -32, 0.02, 'ride'],
+    [0, -38.5, 0.02, 'jump'],
+  ],
+  D: [
+    [0, -2.5, 0.02, 'jump'],
+    [0, -11.5, -0.8, 'ride'],
+    [0, -22.5, -1.58, 'run'],
+    [0, -31.5, -1.58, 'jump'],
+    [0, -36, 0.02, 'run'],
+  ],
+  E: [
+    [0, -2, 0.02, 'jump'],
+    [0, -6, 1.12, 'jump'],
+    [0, -10, 2.22, 'jump'],
+    [0, -14, 3.32, 'jump'],
+    [0, -18, 4.42, 'jump'],
+    [0, -24, 4.52, 'run'],
+  ],
+  F: [
+    [0, -2, 0.02, 'jump'],
+    [0, -9, 0.02, 'jump'],
+    [0, -15, 0.02, 'jump'],
+    [0, -21, 0.02, 'run'],
+    [0, -27, 0.02, 'jump'],
+    [0, -33, 0.02, 'run'],
+  ],
+  G: [
+    [0, -2, 0.02, 'jump'],
+    [0, -6, 0.02, 'jump'],
+    [0, -12, 0.02, 'ride'],
+    [0, -18, 0.02, 'jump'],
+    [0, -24, 0.02, 'ride'],
+    [0, -31, 0.02, 'jump'],
+    [0, -35, 0.02, 'run'],
+  ],
+};
+
 /**
  * Sunrise Scramble — the linear Course Round.
  *
@@ -124,11 +206,7 @@ export class Course implements Level {
   readonly group = new Group();
   readonly colliders: Collider[] = [];
   readonly startPosition = new Vector3(0, 0.02, 16);
-  readonly finishPosition = new Vector3(
-    0,
-    4.6 + COURSE_LAP_OFFSET_Y * (COURSE_LAP_COUNT - 1),
-    -156 + COURSE_LAP_OFFSET_Z * (COURSE_LAP_COUNT - 1),
-  );
+  readonly finishPosition: Vector3;
   readonly respawnAllowed = false;
   readonly killY = -14;
   readonly cameraFloor = 0.8;
@@ -153,16 +231,23 @@ export class Course implements Level {
   private readonly finishSigns: Group[] = [];
   private readonly scratchQuaternion = new Quaternion();
   private readonly scratchBob = new Vector3();
-  private lapZ = 0;
+  /** World-space z of the module currently being authored. */
+  private sectionZ = 0;
   private lapY = 0;
   private lapIndex = 0;
+  private current: CourseSectionPlan | null = null;
   private elapsed = 0;
   private bodyProgress = 0;
   private result: LevelResult | null = null;
 
   constructor(seed: number) {
     this.seed = seed >>> 0;
-    this.plan = planCourse(this.seed);
+    this.plan = planShow(this.seed).course;
+    this.finishPosition = new Vector3(
+      0,
+      COURSE_FINISH_DECK_Y + 0.1 + this.plan.lapOffsetY,
+      this.plan.courseFinishZ,
+    );
     const rng = new Rng((this.seed ^ 0x517e5) >>> 0);
 
 
@@ -178,14 +263,14 @@ export class Course implements Level {
     this.directional.shadow.camera.top = 190;
     this.directional.shadow.camera.bottom = -190;
     this.directional.shadow.camera.near = 1;
-    this.directional.shadow.camera.far = 360;
+    this.directional.shadow.camera.far = 380;
     this.directional.shadow.bias = -0.0004;
     this.directional.shadow.normalBias = 0.03;
-    this.directional.target.position.set(0, 0, -160);
+    this.directional.target.position.set(0, 0, -this.plan.courseLength / 2);
     this.group.add(this.directional);
     this.group.add(this.directional.target);
 
-    for (let lap = 0; lap < COURSE_LAP_COUNT; lap += 1) this.buildLap(lap);
+    for (const lap of this.plan.laps) this.buildLap(lap);
     this.buildLapConnector();
     this.buildScenery(rng);
     // Every non-animated Course prop shares a small per-Level material pool,
@@ -195,32 +280,21 @@ export class Course implements Level {
     this.group.add(this.staticVisuals);
 
     const checkpoints: Checkpoint[] = [];
-    for (let lap = 0; lap < COURSE_LAP_COUNT; lap += 1) {
-      const lapZ = COURSE_LAP_OFFSET_Z * lap;
-      const lapY = COURSE_LAP_OFFSET_Y * lap;
-      for (const checkpoint of [
-        [16, 12, 22, 2, 0.04],
-        [-22, -25, -19, 2, 0.04],
-        [-58, -61, -55, 2, 0.04],
-        [-98, -101, -95, 2, 0.04],
-        [-133, -136, -130, 0.5, -1.55],
-      ] as const) {
+    for (const lap of this.plan.laps) {
+      for (const section of lap.sections) {
+        const marker = CHECKPOINT_LOCAL[section.id];
         checkpoints.push({
-          position: new Vector3(0, checkpoint[4] + lapY, checkpoint[0] + lapZ),
-          minZ: checkpoint[1] + lapZ,
-          maxZ: checkpoint[2] + lapZ,
-          maxY: checkpoint[3] + lapY,
+          position: new Vector3(
+            0,
+            marker.y + lap.offsetY,
+            section.startZ + marker.localZ,
+          ),
+          minZ: section.startZ + marker.localZ - marker.half,
+          maxZ: section.startZ + marker.localZ + marker.half,
+          maxY: marker.maxY + lap.offsetY,
         });
       }
     }
-    checkpoints.push({
-      // The final checkpoint must sit on lap 2's raised finish deck (y 9.0),
-      // not on lap 1's deck at y 4.5.
-      position: new Vector3(0, 4.5 + COURSE_LAP_OFFSET_Y, -156 + COURSE_LAP_OFFSET_Z),
-      minZ: -161 + COURSE_LAP_OFFSET_Z,
-      maxZ: -151 + COURSE_LAP_OFFSET_Z,
-      maxY: 6.5 + COURSE_LAP_OFFSET_Y,
-    });
     this.checkpoints = checkpoints;
     this.waypoints = this.buildWaypoints();
 
@@ -229,7 +303,7 @@ export class Course implements Level {
       maxX: 32,
       minY: -2,
       maxY: 30,
-      minZ: -350,
+      minZ: this.plan.courseFinishZ - 10,
       maxZ: 24,
     });
     this.group.add(this.confetti.mesh);
@@ -243,25 +317,63 @@ export class Course implements Level {
    * builders below add `lapZ`/`lapY` to every visual and collider so the two
    * laps cannot drift apart.
    */
-  private buildLap(lap: number): void {
-    this.lapIndex = lap;
-    this.lapZ = COURSE_LAP_OFFSET_Z * lap;
-    this.lapY = COURSE_LAP_OFFSET_Y * lap;
-    this.buildSectionA();
-    this.buildSectionB();
-    this.buildSectionC();
-    this.buildSectionD();
-    this.buildSectionE();
+  private buildLap(lap: CourseLapPlan): void {
+    this.lapIndex = lap.lap;
+    this.lapY = lap.offsetY;
+    for (const section of lap.sections) {
+      // The planner owns the cursor. A module only knows its own local z.
+      this.sectionZ = section.startZ;
+      this.current = section;
+      this.buildSection(section.id);
+    }
     this.lapIndex = 0;
-    this.lapZ = 0;
+    this.sectionZ = 0;
     this.lapY = 0;
+    this.current = null;
+  }
+
+  private currentSection(): CourseSectionPlan {
+    if (!this.current) throw new Error('Course section builder ran outside buildLap');
+    return this.current;
+  }
+
+  private buildSection(id: CourseSectionId): void {
+    switch (id) {
+      case 'A':
+        this.buildSectionA();
+        break;
+      case 'B':
+        this.buildSectionB();
+        break;
+      case 'C':
+        this.buildSectionC();
+        break;
+      case 'D':
+        this.buildSectionD();
+        break;
+      case 'E':
+        this.buildSectionE();
+        break;
+      case 'F':
+        this.buildSectionF();
+        break;
+      case 'G':
+        this.buildSectionG();
+        break;
+    }
   }
 
   /** A short deck across the lap gate: lap 1's finish deck to lap 2's start. */
   private buildLapConnector(): void {
-    const y = 4.5;
-    this.addPlatform(0, -162, 6.4, 4, 0xffffff, 0xffc145, 0x59d9b0, null, y);
-    this.addBox(0, y - 0.5, -162, 3.2, 0.5, 2, 'solid');
+    this.sectionZ = 0;
+    this.lapY = 0;
+    const next = this.plan.laps[1]!;
+    // The connector spans the planner's inter-lap gap: 4 u of deck just before
+    // lap 2's start, on the lap-1 finish deck height.
+    const z = next.startZ + 4;
+    const y = COURSE_FINISH_DECK_Y;
+    this.addPlatform(0, z, 6.4, 4, 0xffffff, 0xffc145, 0x59d9b0, null, y);
+    this.addBox(0, y - 0.5, z, 3.2, 0.5, 2, 'solid');
     const sign = makeSign(
       'LAP 2',
       'one more lap · finish gate at the end',
@@ -270,60 +382,62 @@ export class Course implements Level {
       this.ownedTextures,
       this.materials,
     );
-    sign.position.set(0, y + 3.4, -161.6);
+    sign.position.set(0, y + 3.4, z + 0.4);
     this.staticVisuals.add(sign);
   }
+
+  /** Local z positions below are relative to the module start (the cursor). */
 
   private buildSectionA(): void {
     const plan = this.plan;
     const scale = plan.laneScale;
     const width = 12 * scale;
 
-    this.addPlatform(0, 16, width, 9, CREAM, 0x59d9b0, 0xff6b6b);
-    this.addBox(0, -0.5, 16, width / 2, 0.5, 4.5, 'solid');
-    if (this.lapIndex === 0) this.addStartLine(16, width);
+    this.addPlatform(0, -2, width, 9, CREAM, 0x59d9b0, 0xff6b6b);
+    this.addBox(0, -0.5, -2, width / 2, 0.5, 4.5, 'solid');
+    if (this.lapIndex === 0) this.addStartLine(-2, width);
 
-    this.addPlatform(0, 4, 9.5 * scale, 14, CREAM, 0x57c7ff, 0xffc145);
-    this.addBox(0, -0.5, 4, 4.75 * scale, 0.5, 7, 'solid');
+    this.addPlatform(0, -14, 9.5 * scale, 14, CREAM, 0x57c7ff, 0xffc145);
+    this.addBox(0, -0.5, -14, 4.75 * scale, 0.5, 7, 'solid');
 
     // Low hurdles: readable over-or-around choices, never traps.
-    for (const [index, z] of [8.2].entries()) {
+    for (const [index, z] of [-9.8].entries()) {
       const height = plan.hurdleHeight;
       const hurdleWidth = 6.2 * scale + index * 0.4;
       this.addHurdle(plan.platformOffset * 0.4, z, hurdleWidth, height);
     }
 
-    this.addPlatform(0, -10, 8.6 * scale, 11, CREAM, 0xffc145, 0xff6b6b);
-    this.addBox(0, -0.5, -10, 4.3 * scale, 0.5, 5.5, 'solid');
+    this.addPlatform(0, -28, 8.6 * scale, 11, CREAM, 0xffc145, 0xff6b6b);
+    this.addBox(0, -0.5, -28, 4.3 * scale, 0.5, 5.5, 'solid');
     this.addSweeper(
       plan.platformOffset * 0.8,
       0.06,
-      -8.2,
+      -26.2,
       3.6 * scale,
       0.55,
       plan.sweeperSpeed * 0.58,
       plan.sections[0]!.hazardPhase,
     );
-    this.addSign('BUNTING RUN', 'hop the hurdles · duck the sweeper', 0, 2.7, -8.2, 3.1, 1.1);
+    this.addSign('BUNTING RUN', 'hop the hurdles · duck the sweeper', 0, 2.7, -26.2, 3.1, 1.1);
   }
 
   private buildSectionB(): void {
     const plan = this.plan;
     const scale = plan.laneScale;
-    const phase = plan.sections[1]!.hazardPhase;
+    const section = this.currentSection();
+    const phase = section.hazardPhase;
 
     // The A -> B gap is the signature leap. Keep it a real jump, but leave
-    // enough landing lip that a full-speed take-off clears it (tuned against
-    // the headless no-input race in courseRun.test.ts).
-    this.addPlatform(0, -21, 8.4 * scale, 8, CREAM, 0x59d9b0, 0x57c7ff);
-    this.addBox(0, -0.5, -21, 4.2 * scale, 0.5, 4, 'solid');
+    // enough landing lip that a full-speed take-off clears it.
+    this.addPlatform(0, -3, 8.4 * scale, 8, CREAM, 0x59d9b0, 0x57c7ff);
+    this.addBox(0, -0.5, -3, 4.2 * scale, 0.5, 4, 'solid');
 
-    this.addPlatform(0, -30.5, 10.2 * scale, 13, 0xfff0d2, 0x57c7ff, 0xffc145);
-    this.addBox(0, -0.5, -30.5, 5.1 * scale, 0.5, 6.5, 'solid');
+    this.addPlatform(0, -12.5, 10.2 * scale, 13, 0xfff0d2, 0x57c7ff, 0xffc145);
+    this.addBox(0, -0.5, -12.5, 5.1 * scale, 0.5, 6.5, 'solid');
     this.addSweeper(
       plan.platformOffset,
       0.08,
-      -27.6,
+      -9.6,
       4.4 * scale,
       0.5,
       plan.sweeperSpeed,
@@ -332,83 +446,67 @@ export class Course implements Level {
     this.addSweeper(
       -plan.platformOffset,
       0.08,
-      -33.2,
+      -15.2,
       3.8 * scale,
       0.5,
       -plan.sweeperSpeed * 1.2,
       phase + 2.1,
     );
 
-    this.addPlatform(0, -41.5, 10 * scale, 10, 0xfff0d2, 0xffc145, 0xff6b6b);
-    this.addBox(0, -0.5, -41.5, 5 * scale, 0.5, 5, 'solid');
-    this.addPendulum(0, 7.6, -38.6, 5.4, plan.sweeperSpeed * 1.15, phase, 0.7);
-    this.addPendulum(0, 8.4, -44.2, 5.8, plan.sweeperSpeed * 1.35, phase + 1.9, 0.6);
+    this.addPlatform(0, -23.5, 10 * scale, 10, 0xfff0d2, 0xffc145, 0xff6b6b);
+    this.addBox(0, -0.5, -23.5, 5 * scale, 0.5, 5, 'solid');
+    this.addPendulum(0, 7.6, -20.6, 5.4, plan.sweeperSpeed * 1.15, phase, 0.7);
+    this.addPendulum(0, 8.4, -26.2, 5.8, plan.sweeperSpeed * 1.35, phase + 1.9, 0.6);
 
-    this.addPlatform(0, -51, 9 * scale, 8, 0xffffff, 0xa78bfa, 0xffc145, this.beltTexture);
+    this.addPlatform(0, -33, 9 * scale, 8, 0xffffff, 0xa78bfa, 0xffc145, this.beltTexture);
     this.addBox(
       0,
       -0.5,
-      -51,
+      -33,
       4.5 * scale,
       0.5,
       4,
       'conveyor',
       new Vector3(plan.conveyorSpeed, 0, 0),
     );
-    this.addConveyorRails(0, -51, 9 * scale, 8);
-    this.addSign('WHIRLYBIRD ALLEY', 'time the sweepers · ride the belt', 0, 2.9, -34, 3.4, 1.2);
+    this.addConveyorRails(0, -33, 9 * scale, 8);
+    this.addSign('WHIRLYBIRD ALLEY', 'time the sweepers · ride the belt', 0, 2.9, -16, 3.4, 1.2);
   }
 
   private buildSectionC(): void {
     const plan = this.plan;
     const scale = plan.laneScale;
-    const phase = plan.sections[2]!.hazardPhase;
+    const section = this.currentSection();
+    const phase = section.hazardPhase;
 
     // The Jelly Jumps gaps are tuned generously: a full-speed jump at 8 u/s
     // must clear them even for a bot with a slower takeoff.
-    this.addPlatform(0, -58, 7.4 * scale, 5.6, CREAM, 0x59d9b0, 0xff6b6b);
-    this.addBox(0, -0.5, -58, 3.7 * scale, 0.5, 2.8, 'solid');
+    this.addPlatform(0, -2, 7.4 * scale, 5.6, CREAM, 0x59d9b0, 0xff6b6b);
+    this.addBox(0, -0.5, -2, 3.7 * scale, 0.5, 2.8, 'solid');
 
-    this.addMotion(
-      0,
-      -65,
-      5.2,
-      6,
-      'x',
-      2.2,
-      0.72,
-      phase,
-    );
-    this.addPlatform(0, -72, 6.2 * scale, 5.6, CREAM, 0xffc145, 0x57c7ff);
-    this.addBox(0, -0.5, -72, 3.1 * scale, 0.5, 2.8, 'solid');
-    this.addBouncePad(0, -72);
+    this.addMotion(0, -9, 5.2, 6, 'x', 2.2, 0.72, phase);
+    this.addPlatform(0, -16, 6.2 * scale, 5.6, CREAM, 0xffc145, 0x57c7ff);
+    this.addBox(0, -0.5, -16, 3.1 * scale, 0.5, 2.8, 'solid');
+    this.addBouncePad(0, -16);
 
-    this.addPlatform(0, -80.5, 6 * scale, 6.4, CREAM, 0x57c7ff, 0x59d9b0);
-    this.addBox(0, -0.5, -80.5, 3 * scale, 0.5, 3.2, 'solid');
+    this.addPlatform(0, -24.5, 6 * scale, 6.4, CREAM, 0x57c7ff, 0x59d9b0);
+    this.addBox(0, -0.5, -24.5, 3 * scale, 0.5, 3.2, 'solid');
 
-    this.addMotion(
-      0,
-      -88,
-      5.2,
-      6,
-      'x',
-      2.4,
-      0.92,
-      phase + 2.4,
-    );
-    this.addPlatform(0, -94.5, 7.2 * scale, 6.4, CREAM, 0x59d9b0, 0xffc145);
-    this.addBox(0, -0.5, -94.5, 3.6 * scale, 0.5, 3.2, 'solid');
+    this.addMotion(0, -32, 5.2, 6, 'x', 2.4, 0.92, phase + 2.4);
+    this.addPlatform(0, -38.5, 7.2 * scale, 6.4, CREAM, 0x59d9b0, 0xffc145);
+    this.addBox(0, -0.5, -38.5, 3.6 * scale, 0.5, 3.2, 'solid');
 
-    this.addSign('JELLY JUMPS', 'commit to the gap · use the pad', 0, 2.6, -72, 3.1, 1.1);
+    this.addSign('JELLY JUMPS', 'commit to the gap · use the pad', 0, 2.6, -16, 3.1, 1.1);
   }
 
   private buildSectionD(): void {
     const plan = this.plan;
     const scale = plan.laneScale;
-    const phase = plan.sections[3]!.hazardPhase;
+    const section = this.currentSection();
+    const phase = section.hazardPhase;
 
-    this.addPlatform(0, -98.5, 7.2 * scale, 4.4, CREAM, 0xff9ecb, 0xa78bfa);
-    this.addBox(0, -0.5, -98.5, 3.6 * scale, 0.5, 2.2, 'solid');
+    this.addPlatform(0, -2.5, 7.2 * scale, 4.4, CREAM, 0xff9ecb, 0xa78bfa);
+    this.addBox(0, -0.5, -2.5, 3.6 * scale, 0.5, 2.2, 'solid');
 
     // Angled slime slide down from 0 to -1.6 over 12 units.
     const rampAngle = -Math.atan2(1.6, 12);
@@ -422,13 +520,13 @@ export class Course implements Level {
       null,
       this.materials,
     );
-    ramp.position.set(0, -0.85 + this.lapY, -107.5 + this.lapZ);
+    ramp.position.set(0, -0.85 + this.lapY, this.sectionZ - 11.5);
     ramp.rotation.x = rampAngle;
     this.staticVisuals.add(ramp);
     this.colliders.push(
       createBoxCollider({
         kind: 'solid',
-        position: new Vector3(0, -1.35 + this.lapY, -107.5 + this.lapZ),
+        position: new Vector3(0, -1.35 + this.lapY, this.sectionZ - 11.5),
         halfExtents: new Vector3(3.2 * scale, 0.5, 6.4),
         quaternion: rampQuaternion,
       }),
@@ -436,35 +534,72 @@ export class Course implements Level {
 
     // Narrow-ish bridge at the bottom of the slide. It has to leave a bean a
     // lane to recover after a pusher, especially for the AI pack.
-    this.addPlatform(0, -118.5, 6.8 * scale, 13, CREAM, 0xa78bfa, 0xffc145, null, -1.6);
-    this.addBox(0, -2.1, -118.5, 3.4 * scale, 0.5, 6.5, 'solid');
+    this.addPlatform(0, -22.5, 6.8 * scale, 13, CREAM, 0xa78bfa, 0xffc145, null, -1.6);
+    this.addBox(0, -2.1, -22.5, 3.4 * scale, 0.5, 6.5, 'solid');
 
     // Moving pusher walls: solid, with surface velocity, so they can sweep.
-    this.addPusher(0, -112.8, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.6, phase, 1.2);
-    this.addPusher(0, -117.6, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.85, phase + 1.6, 1.4);
-    this.addPusher(0, -122.4, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.7, phase + 3.1, 1.1);
+    this.addPusher(0, -16.8, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.6, phase, 1.2);
+    this.addPusher(0, -21.6, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.85, phase + 1.6, 1.4);
+    this.addPusher(0, -26.4, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.7, phase + 3.1, 1.1);
 
     if (plan.shortcut.enabled) {
       const x = plan.shortcut.side * (4.6 * scale);
-      this.addPlatform(x, plan.shortcut.z, plan.shortcut.width, 13, 0xfff0d2, 0x59d9b0, 0xff6b6b, null, -1.6);
-      this.addBox(x, -2.1, plan.shortcut.z, plan.shortcut.width / 2, 0.5, 6.5, 'solid');
-      this.addSign('RISKY', 'narrow · one wobble', x, -0.5, plan.shortcut.z, 2.1, 0.8);
+      this.addPlatform(
+        x,
+        plan.shortcut.localZ,
+        plan.shortcut.width,
+        13,
+        0xfff0d2,
+        0x59d9b0,
+        0xff6b6b,
+        null,
+        -1.6,
+      );
+      this.addBox(x, -2.1, plan.shortcut.localZ, plan.shortcut.width / 2, 0.5, 6.5, 'solid');
+      this.addSign('RISKY', 'narrow · one wobble', x, -0.5, plan.shortcut.localZ, 2.1, 0.8);
     }
 
-    this.addPlatform(0, -129.5, 7.4 * scale, 9.5, CREAM, 0xffc145, 0x59d9b0, null, -1.6);
-    this.addBox(0, -2.1, -129.5, 3.7 * scale, 0.5, 4.75, 'solid');
-    this.addSign('SLIME SLIDE', 'lean into the pushers · trust the bridge', 0, 2.5, -118, 3.4, 1.2);
+    this.addPlatform(0, -31.5, 7.4 * scale, 8, CREAM, 0xffc145, 0x59d9b0, null, -1.6);
+    this.addBox(0, -2.1, -31.5, 3.7 * scale, 0.5, 4, 'solid');
+
+    // Height-neutral exit: climb back to y 0 before the next module. Every
+    // middle section must leave the same height it entered so D can sit
+    // anywhere in the route.
+    const exitAngle = Math.atan2(1.6, 5);
+    const exitQuaternion = new Quaternion().setFromEuler(new Euler(exitAngle, 0, 0));
+    const exitRamp = makePlatform(
+      6.8 * scale,
+      5,
+      0xffe0f0,
+      0xa78bfa,
+      0xffc145,
+      null,
+      this.materials,
+    );
+    exitRamp.position.set(0, -0.8 + this.lapY, this.sectionZ - 34.5);
+    exitRamp.rotation.x = exitAngle;
+    this.staticVisuals.add(exitRamp);
+    this.colliders.push(
+      createBoxCollider({
+        kind: 'solid',
+        position: new Vector3(0, -1.3 + this.lapY, this.sectionZ - 34.5),
+        halfExtents: new Vector3(3.4 * scale, 0.5, 2.5),
+        quaternion: exitQuaternion,
+      }),
+    );
+
+    this.addSign('SLIME SLIDE', 'lean into the pushers · trust the bridge', 0, 2.5, -22, 3.4, 1.2);
   }
 
   private buildSectionE(): void {
     const plan = this.plan;
     const scale = plan.laneScale;
     const steps: ReadonlyArray<readonly [number, number, number, number]> = [
-      [-133.5, -1.0, 6.4, 4.2],
-      [-137.5, 0.1, 6.4, 4.2],
-      [-141.5, 1.2, 6.0, 4.2],
-      [-145.5, 2.3, 5.8, 4.2],
-      [-149.5, 3.4, 5.8, 4.2],
+      [-2, 0, 6.4, 4.2],
+      [-6, 1.1, 6.4, 4.2],
+      [-10, 2.2, 6.0, 4.2],
+      [-14, 3.3, 5.8, 4.2],
+      [-18, COURSE_FINISH_DECK_Y - 0.1, 5.8, 4.2],
     ];
     for (const [z, y, width, depth] of steps) {
       this.addPlatform(0, z, width * scale, depth, CREAM, 0xff6b6b, 0xffc145, null, y);
@@ -472,13 +607,13 @@ export class Course implements Level {
     }
 
     const finishWidth = plan.finishWidth * Math.max(0.9, scale);
-    this.addPlatform(0, -156, finishWidth, 10, 0xffffff, 0x59d9b0, 0xffc145, this.finishChecker(), 4.5);
-    this.addBox(0, 4.0, -156, finishWidth / 2, 0.5, 5, 'solid');
+    this.addPlatform(0, -24, finishWidth, 10, 0xffffff, 0x59d9b0, 0xffc145, this.finishChecker(), COURSE_FINISH_DECK_Y);
+    this.addBox(0, 4.0, -24, finishWidth / 2, 0.5, 5, 'solid');
     this.buildFinishGate(finishWidth);
 
     const crowd = this.plan.crowdArrangement;
     const crowdLeft = makeCrowd(14, 6, new Rng(this.seed ^ 0xc0a1), 0xffc145, this.materials);
-    crowdLeft.position.set(-finishWidth / 2 - 4.4, 4.7 + this.lapY, -154 + this.lapZ);
+    crowdLeft.position.set(-finishWidth / 2 - 4.4, 4.7 + this.lapY, this.sectionZ - 22);
     crowdLeft.rotation.y = Math.PI / 2.2;
     this.group.add(crowdLeft);
     this.crowd.push({
@@ -487,7 +622,7 @@ export class Course implements Level {
       phase: (crowd[0] ?? 0.5) * Math.PI * 2,
     });
     const crowdRight = makeCrowd(14, 6, new Rng(this.seed ^ 0xc0a2), 0xff6b6b, this.materials);
-    crowdRight.position.set(finishWidth / 2 + 4.4, 4.7 + this.lapY, -154 + this.lapZ);
+    crowdRight.position.set(finishWidth / 2 + 4.4, 4.7 + this.lapY, this.sectionZ - 22);
     crowdRight.rotation.y = -Math.PI / 2.2;
     this.group.add(crowdRight);
     this.crowd.push({
@@ -497,11 +632,71 @@ export class Course implements Level {
     });
   }
 
+  /**
+   * F — Tumbler Tangle. A narrow lane through two counter-rotating sweepers
+   * and a pusher wall. The lesson is "thread the needle, do not panic-dive".
+   */
+  private buildSectionF(): void {
+    const plan = this.plan;
+    const scale = plan.laneScale;
+    const section = this.currentSection();
+    const phase = section.hazardPhase;
+
+    this.addPlatform(0, -4.5, 8.6 * scale, 7, CREAM, 0xff9ecb, 0xffc145);
+    this.addBox(0, -0.5, -4.5, 4.3 * scale, 0.5, 3.5, 'solid');
+
+    this.addPlatform(0, -13, 6.8 * scale, 8, 0xfff0d2, 0xa78bfa, 0xff6b6b);
+    this.addBox(0, -0.5, -13, 3.4 * scale, 0.5, 4, 'solid');
+    this.addSweeper(0, 0.08, -11, 2.5 * scale, 0.5, plan.sweeperSpeed * 0.9, phase);
+    this.addSweeper(0, 0.08, -15.4, 2.7 * scale, 0.5, -plan.sweeperSpeed * 1.05, phase + 2.3);
+
+    this.addPlatform(0, -21, 8.2 * scale, 6.4, 0xfff0d2, 0x57c7ff, 0xffc145);
+    this.addBox(0, -0.5, -21, 4.1 * scale, 0.5, 3.2, 'solid');
+
+    this.addPlatform(0, -29, 8.6 * scale, 7, CREAM, 0xffc145, 0x59d9b0);
+    this.addBox(0, -0.5, -29, 4.3 * scale, 0.5, 3.5, 'solid');
+    this.addPusher(0, -27.5, 0, 4.8, 1.5, plan.pusherSpeed * 0.7, phase + 1.1, 1.0);
+
+    this.addPlatform(0, -35.5, 8.6 * scale, 5, CREAM, 0x59d9b0, 0xffc145);
+    this.addBox(0, -0.5, -35.5, 4.3 * scale, 0.5, 2.5, 'solid');
+
+    this.addSign('TUMBLER TANGLE', 'thread the needle · do not dive', 0, 2.8, -12, 3.4, 1.2);
+  }
+
+  /**
+   * G — Bounce Bazaar. A chain of bounce pads and moving platforms with one
+   * committed gap. The lesson is "use the pad, trust the landing".
+   */
+  private buildSectionG(): void {
+    const plan = this.plan;
+    const scale = plan.laneScale;
+    const section = this.currentSection();
+    const phase = section.hazardPhase;
+
+    this.addPlatform(0, -4.5, 8.4 * scale, 6, CREAM, 0xffc145, 0x59d9b0);
+    this.addBox(0, -0.5, -4.5, 4.2 * scale, 0.5, 3, 'solid');
+    this.addBouncePad(0, -4.5);
+
+    this.addMotion(0, -11.5, 5.4, 5.6, 'x', 2.0, 0.86, phase);
+    this.addPlatform(0, -18, 7.0 * scale, 6, 0xfff0d2, 0x59d9b0, 0xff6b6b);
+    this.addBox(0, -0.5, -18, 3.5 * scale, 0.5, 3, 'solid');
+    this.addBouncePad(0, -18);
+
+    this.addMotion(0, -24.5, 5.2, 5.6, 'x', 2.2, 1.02, phase + 2.2);
+    this.addPlatform(0, -31, 7.8 * scale, 7, CREAM, 0xff9ecb, 0xffc145);
+    this.addBox(0, -0.5, -31, 3.9 * scale, 0.5, 3.5, 'solid');
+
+    this.addPlatform(0, -35.5, 8.6 * scale, 3, 0xffffff, 0x57c7ff, 0x59d9b0);
+    this.addBox(0, -0.5, -35.5, 4.3 * scale, 0.5, 1.5, 'solid');
+
+    this.addSign('BOUNCE BAZAAR', 'use the pad · trust the landing', 0, 2.7, -18, 3.5, 1.2);
+  }
+
   // ------------------------------------------------------------------ Builders
 
   private buildFinishGate(width: number): void {
     const gold = this.materials.toon({ color: 0xffc145 });
-    const gateZ = -155.2 + this.lapZ;
+    const gateZ = this.sectionZ - 23.2;
     for (const side of [-1, 1]) {
       const post = new Mesh(new CylinderGeometry(0.26, 0.34, 4.4, 12), gold);
       post.position.set(side * (width / 2 - 0.4), 6.7 + this.lapY, gateZ);
@@ -516,7 +711,7 @@ export class Course implements Level {
     finishSign.position.set(0, 10.4 + this.lapY, gateZ);
     this.group.add(finishSign);
     this.finishSigns.push(finishSign);
-    const finalLap = this.lapIndex >= COURSE_LAP_COUNT - 1;
+    const finalLap = this.lapIndex >= this.plan.lapCount - 1;
     const sign = makeSign(
       finalLap ? 'FINISH GATE' : 'LAP 2',
       finalLap ? 'qualify for the next round' : 'one more lap · keep tumbling',
@@ -546,7 +741,7 @@ export class Course implements Level {
       new RoundedBoxGeometry(width - 1.2, 0.04, 0.7, 2, 0.02),
       this.materials.toon({ color: 0xffffff, map: lineTexture }),
     );
-    line.position.set(0, 4.53 + this.lapY, -152.4 + this.lapZ);
+    line.position.set(0, 4.53 + this.lapY, this.sectionZ - 20.4);
     line.receiveShadow = true;
     this.staticVisuals.add(line);
   }
@@ -658,7 +853,7 @@ export class Course implements Level {
     phase: number,
   ): void {
     const visual = new Group();
-    visual.position.set(x, y + this.lapY, z + this.lapZ);
+    visual.position.set(x, y + this.lapY, z + this.sectionZ);
     const beam = new Mesh(
       new RoundedBoxGeometry(length * 2, thickness, thickness * 1.5, 2, 0.12),
       this.materials.toon({ color: 0xff6b6b, emissive: 0xff6b6b, emissiveIntensity: 0.12 }),
@@ -681,7 +876,7 @@ export class Course implements Level {
 
     const collider = createBoxCollider({
       kind: 'hazard',
-      position: new Vector3(x, y + this.lapY, z + this.lapZ),
+      position: new Vector3(x, y + this.lapY, z + this.sectionZ),
       halfExtents: new Vector3(length, thickness / 2, thickness * 0.75),
       angularVelocity: new Vector3(0, speed, 0),
     });
@@ -698,7 +893,7 @@ export class Course implements Level {
     phase: number,
     amplitude: number,
   ): void {
-    const pivot = new Vector3(x, pivotY + this.lapY, z + this.lapZ);
+    const pivot = new Vector3(x, pivotY + this.lapY, z + this.sectionZ);
     const arm = new Group();
     arm.position.copy(pivot);
     const rod = new Mesh(
@@ -725,7 +920,7 @@ export class Course implements Level {
 
     const collider = createBoxCollider({
       kind: 'hazard',
-      position: new Vector3(x, pivotY - length + this.lapY, z + this.lapZ),
+      position: new Vector3(x, pivotY - length + this.lapY, z + this.sectionZ),
       halfExtents: new Vector3(0.85, 0.65, 0.85),
     });
     this.colliders.push(collider);
@@ -744,12 +939,12 @@ export class Course implements Level {
   ): void {
     const visual = makePlatform(width, depth, 0xffc145, 0xff6b6b, 0xfff6e5);
     mergeColoredMeshes(visual);
-    const base = new Vector3(x, this.lapY, z + this.lapZ);
-    visual.position.set(x, this.lapY, z + this.lapZ);
+    const base = new Vector3(x, this.lapY, z + this.sectionZ);
+    visual.position.set(x, this.lapY, z + this.sectionZ);
     this.group.add(visual);
     const collider = createBoxCollider({
       kind: 'solid',
-      position: new Vector3(x, -0.5 + this.lapY, z + this.lapZ),
+      position: new Vector3(x, -0.5 + this.lapY, z + this.sectionZ),
       halfExtents: new Vector3(width / 2, 0.5, depth / 2),
     });
     this.colliders.push(collider);
@@ -781,7 +976,7 @@ export class Course implements Level {
     amplitude: number,
   ): void {
     const visual = new Group();
-    visual.position.set(x, y + this.lapY, z + this.lapZ);
+    visual.position.set(x, y + this.lapY, z + this.sectionZ);
     const bar = new Mesh(
       new RoundedBoxGeometry(width, height, 0.9, 3, 0.18),
       this.materials.toon({ color: 0xa78bfa, emissive: 0xff6b6b, emissiveIntensity: 0.12 }),
@@ -799,7 +994,7 @@ export class Course implements Level {
 
     const collider = createBoxCollider({
       kind: 'hazard',
-      position: new Vector3(x, y + this.lapY, z + this.lapZ),
+      position: new Vector3(x, y + this.lapY, z + this.sectionZ),
       halfExtents: new Vector3(width / 2, height / 2, 0.45),
     });
     this.colliders.push(collider);
@@ -810,7 +1005,7 @@ export class Course implements Level {
     this.motions.push({
       collider,
       visual,
-      base: new Vector3(x, y + this.lapY, -118.5 + this.lapZ),
+      base: new Vector3(x, y + this.lapY, z + this.sectionZ),
       axis: 'x',
       amplitude,
       speed,
@@ -822,7 +1017,7 @@ export class Course implements Level {
   private addHurdle(x: number, z: number, width: number, height: number): void {
     const material = this.materials.toon({ color: 0xff6b6b });
     const hurdle = new Mesh(new RoundedBoxGeometry(width, height, 0.48, 3, 0.14), material);
-    hurdle.position.set(x, height / 2 + this.lapY, z + this.lapZ);
+    hurdle.position.set(x, height / 2 + this.lapY, z + this.sectionZ);
     hurdle.castShadow = true;
     this.staticVisuals.add(hurdle);
     const stripeMaterial = this.materials.toon({ color: 0xfff6e5 });
@@ -831,7 +1026,7 @@ export class Course implements Level {
         new RoundedBoxGeometry(0.48, height - 0.06, 0.54, 2, 0.05),
         stripeMaterial,
       );
-      stripe.position.set(x + i * (width / 3.2), height / 2 + this.lapY, z + this.lapZ);
+      stripe.position.set(x + i * (width / 3.2), height / 2 + this.lapY, z + this.sectionZ);
       this.staticVisuals.add(stripe);
     }
     this.addBox(x, height / 2, z, width / 2, height / 2, 0.24, 'solid');
@@ -839,7 +1034,7 @@ export class Course implements Level {
 
   private addBouncePad(x: number, z: number): void {
     const padVisual = new Group();
-    padVisual.position.set(x, this.lapY, z + this.lapZ);
+    padVisual.position.set(x, this.lapY, z + this.sectionZ);
     this.group.add(padVisual);
     this.padVisuals.push(padVisual);
     const base = new Mesh(
@@ -873,7 +1068,7 @@ export class Course implements Level {
         new RoundedBoxGeometry(0.26, 0.4, depth, 2, 0.08),
         railMaterial,
       );
-      rail.position.set(x + side * (width / 2 - 0.12), 0.18 + this.lapY, z + this.lapZ);
+      rail.position.set(x + side * (width / 2 - 0.12), 0.18 + this.lapY, z + this.sectionZ);
       rail.castShadow = true;
       this.staticVisuals.add(rail);
     }
@@ -910,11 +1105,11 @@ export class Course implements Level {
     height: number,
   ): void {
     const sign = makeSign(title, subtitle, width, height, this.ownedTextures, this.materials);
-    sign.position.set(x, y + this.lapY, z + this.lapZ);
+    sign.position.set(x, y + this.lapY, z + this.sectionZ);
     this.staticVisuals.add(sign);
     for (const side of [-1, 1]) {
       const post = makePole(y + height / 2, 0xfff6e5, this.materials);
-      post.position.set(x + side * (width / 2 - 0.3), this.lapY, z + 0.2 + this.lapZ);
+      post.position.set(x + side * (width / 2 - 0.3), this.lapY, z + 0.2 + this.sectionZ);
       this.group.add(post);
     }
   }
@@ -937,16 +1132,10 @@ export class Course implements Level {
       side: 2,
       toneMapped: false,
     });
-    for (const spot of [
-      [0, 10],
-      [0, -20],
-      [0, -56],
-      [0, -96],
-      [0, -132],
-    ] as const) {
+    for (const spot of [-8, -16, -24, -32] as const) {
       const arrow = new Mesh(new PlaneGeometry(2.2, 2.2), arrowMaterial);
       arrow.rotation.x = -Math.PI / 2;
-      arrow.position.set(spot[0], 0.05, spot[1]);
+      arrow.position.set(0, 0.05, this.sectionZ + spot);
       arrow.renderOrder = 2;
       this.staticVisuals.add(arrow);
     }
@@ -976,7 +1165,7 @@ export class Course implements Level {
       topTexture,
       this.materials,
     );
-    platform.position.set(x, y + this.lapY, z + this.lapZ);
+    platform.position.set(x, y + this.lapY, z + this.sectionZ);
     this.staticVisuals.add(platform);
     return platform;
   }
@@ -993,7 +1182,7 @@ export class Course implements Level {
   ): Collider {
     const collider = createBoxCollider({
       kind,
-      position: new Vector3(x, y + this.lapY, z + this.lapZ),
+      position: new Vector3(x, y + this.lapY, z + this.sectionZ),
       halfExtents: new Vector3(hx, hy, hz),
       velocity,
     });
@@ -1012,7 +1201,7 @@ export class Course implements Level {
   ): Collider {
     const collider = createCylinderCollider({
       kind,
-      position: new Vector3(x, y + this.lapY, z + this.lapZ),
+      position: new Vector3(x, y + this.lapY, z + this.sectionZ),
       radius,
       height,
       bounceStrength,
@@ -1170,7 +1359,7 @@ export class Course implements Level {
     // The finish gate sits at finishPosition, inside the planned section E
     // envelope. Progress must read 100% on the gate, not 95% at the plan end.
     return clamp(
-      (this.plan.startZ - position.z) / (this.plan.startZ - this.finishPosition.z),
+      (this.plan.startZ - position.z) / (this.plan.startZ - this.plan.courseFinishZ),
       0,
       1,
     );
@@ -1236,78 +1425,43 @@ export class Course implements Level {
   }
 
   private lapAt(progress: number): number {
-    const z = this.plan.startZ - progress * (this.plan.startZ - this.finishPosition.z);
-    if (z <= -161.5) return 1;
-    return 0;
+    const z =
+      this.plan.startZ - progress * (this.plan.startZ - this.plan.courseFinishZ);
+    return z < this.plan.laps[0]!.finishZ - 1 ? 1 : 0;
   }
 
   private sectionAt(progress: number): CourseSectionPlan | null {
     if (progress <= 0) return null;
-    const lap = this.lapAt(progress);
     const z =
-      this.plan.startZ -
-      progress * (this.plan.startZ - this.finishPosition.z) -
-      COURSE_LAP_OFFSET_Z * lap;
+      this.plan.startZ - progress * (this.plan.startZ - this.plan.courseFinishZ);
     for (const section of this.plan.sections) {
       if (z <= section.startZ && z >= section.endZ) return section;
     }
-    // Between lap 1's gate and lap 2's start deck the translated z is in front
-    // of section A. Do not fall back to section E: that printed
-    // "LAP 2 · SECTION E" on the connector.
-    const first = this.plan.sections[0];
-    if (first && z > first.startZ) return null;
-    return this.plan.sections[4] ?? null;
+    return null;
   }
 
   private buildWaypoints(): Waypoint[] {
-    const actions: ReadonlyArray<readonly [number, number, number, Waypoint['action']]> = [
-      [0, 16, 0.02, 'run'],
-      [0, 10, 0.02, 'jump'],
-      [0, 8.2, 0.02, 'jump'],
-      [0, 4, 0.02, 'run'],
-      [0, -3.5, 0.02, 'jump'],
-      [0, -10, 0.02, 'run'],
-      [0, -16.5, 0.02, 'jump'],
-      [0, -21, 0.02, 'run'],
-      [0, -30, 0.02, 'run'],
-      [0, -41, 0.02, 'run'],
-      [0, -51, 0.02, 'ride'],
-      [0, -58, 0.02, 'jump'],
-      [0, -65, 0.02, 'ride'],
-      [0, -72, 0.02, 'jump'],
-      [0, -80.5, 0.02, 'jump'],
-      [0, -88, 0.02, 'ride'],
-      [0, -94.5, 0.02, 'jump'],
-      [0, -98.5, 0.02, 'run'],
-      [0, -107.5, -0.8, 'ride'],
-      [0, -118.5, -1.58, 'run'],
-      [0, -129.5, -1.58, 'jump'],
-      [0, -133.5, -0.98, 'jump'],
-      [0, -137.5, 0.12, 'jump'],
-      [0, -141.5, 1.22, 'jump'],
-      [0, -145.5, 2.32, 'jump'],
-      [0, -149.5, 3.42, 'jump'],
-      [0, -156, 4.52, 'run'],
-    ];
     const waypoints: Waypoint[] = [];
-    for (let lap = 0; lap < COURSE_LAP_COUNT; lap += 1) {
-      const zOffset = COURSE_LAP_OFFSET_Z * lap;
-      const yOffset = COURSE_LAP_OFFSET_Y * lap;
-      actions.forEach(([x, z, y, action], index) => {
+    let index = 0;
+    for (const lap of this.plan.laps) {
+      for (const section of lap.sections) {
+        for (const [x, z, y, action] of MODULE_WAYPOINTS[section.id]) {
+          waypoints.push({
+            position: new Vector3(
+              x + this.plan.platformOffset * (index % 2 === 0 ? 0.3 : -0.3),
+              y + lap.offsetY,
+              section.startZ + z,
+            ),
+            action,
+            radius: action === 'jump' ? 1.5 : 1.1,
+            lane: index % 3,
+          });
+          index += 1;
+        }
+      }
+      if (lap.lap < this.plan.lapCount - 1) {
         waypoints.push({
-          position: new Vector3(
-            x + this.plan.platformOffset * (index % 2 === 0 ? 0.3 : -0.3),
-            y + yOffset,
-            z + zOffset,
-          ),
-          action,
-          radius: action === 'jump' ? 1.5 : 1.1,
-          lane: index % 3,
-        });
-      });
-      if (lap < COURSE_LAP_COUNT - 1) {
-        waypoints.push({
-          position: new Vector3(0, 4.52 + yOffset, -162 + zOffset),
+          position: new Vector3(0, 4.52 + lap.offsetY, lap.finishZ - 6),
           action: 'run',
           radius: 1.1,
           lane: 0,
