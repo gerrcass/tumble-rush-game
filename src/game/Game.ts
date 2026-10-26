@@ -852,22 +852,21 @@ export class Game {
 
   /** Debug accelerator: run the fixed loop without waiting wall-clock time. */
   simulate(seconds: number): { steps: number; phase: string; round: number } {
-    if (!this.match) return { steps: 0, phase: 'none', round: 0 };
     if (this.currentState === 'paused') this.currentState = 'playing';
     const total = Math.min(60 * 60 * 8, Math.max(1, Math.floor(seconds / FIXED_STEP)));
     let steps = 0;
     for (let i = 0; i < total; i += 1) {
       this.stepFixed(FIXED_STEP, steps === 0);
       steps += 1;
-      if (this.match.phase === 'victory' || this.match.phase === 'defeat') break;
+      if (this.match?.phase === 'victory' || this.match?.phase === 'defeat') break;
       if (this.currentState === 'finished') break;
     }
     this.accumulator = 0;
     this.input.reset();
     return {
       steps,
-      phase: this.match.phase,
-      round: this.match.roundIndex,
+      phase: this.match?.phase ?? this.currentState,
+      round: this.match?.roundIndex ?? 0,
     };
   }
 
