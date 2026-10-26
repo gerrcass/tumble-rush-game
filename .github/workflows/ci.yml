@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,9 +15,9 @@ concurrency:
 
 jobs:
   check:
-    name: Check and smoke
+    name: Check and build
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 15
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -30,11 +31,28 @@ jobs:
       - name: Install from lockfile
         run: npm ci
 
-      - name: Typecheck, unit tests, production build
+      - name: Invariants, typecheck, unit tests, production build
         run: npm run check
 
       - name: Production build with the Pages base path
         run: GITHUB_PAGES=true npm run build
+
+  pacing:
+    name: Pacing gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install from lockfile
+        run: npm ci
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -46,8 +64,43 @@ jobs:
             --out=docs/evidence/pacing/m2-phase-b-pacing.json \
             2>&1 | tee docs/evidence/pacing/m2-phase-b-pacing.log
 
-      - name: Playwright smoke and screenshot
-        run: npm run test:e2e
+      - name: Upload pacing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacing-evidence
+          path: |
+            docs/evidence/pacing/*
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  e2e:
+    name: Playwright shard ${{ matrix.shard }}/3
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install from lockfile
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright shard
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
         env:
           CI: 'true'
 
@@ -55,10 +108,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tumble-rush-evidence
+          name: e2e-evidence-${{ matrix.shard }}
           path: |
             docs/evidence/*.png
             docs/evidence/pacing/*
             playwright-report/
             test-results/
           if-no-files-found: ignore
+          retention-days: 14
