@@ -21,19 +21,60 @@ export interface PacingStats {
   max: number;
 }
 
+export interface CrownOutlier {
+  seed: number;
+  mode: string;
+  seconds: number;
+  winner: string | null;
+  winnerTouchedCrown: boolean;
+  winnerHeight: number | null;
+  winnerDistanceToCrown: number | null;
+}
+
 export interface PacingSummary {
   runs: number;
   casualRuns: number;
+  combinedRuns: number;
   seeds: number[];
-  total: PacingStats;
+  total: PacingStats & { idle: PacingStats; casual: PacingStats };
   roundSeconds: PacingStats;
   course: PacingStats & { finishers: PacingStats; qualifiers: PacingStats };
-  hexapop: PacingStats;
-  crown: PacingStats & { livingWinners: number; livingWinnerRate: number };
+  hexapop: PacingStats & {
+    idle: PacingStats;
+    casual: PacingStats;
+    sugarRushReached: number;
+    sugarRushRate: number;
+  };
+  crown: PacingStats & {
+    idle: PacingStats;
+    casual: PacingStats;
+    living: PacingStats;
+    livingWinners: number;
+    livingWinnerRate: number;
+    touchedCrown: number;
+    touchedCrownRate: number;
+    noWinnerRuns: number;
+    outliers: CrownOutlier[];
+  };
   idleQualified: number;
   casualQualified: number;
   casualRate: number;
 }
+
+export interface CrownPhysical {
+  centerY: number;
+  bandRadius: number;
+  bandHeight: number;
+  beanRadius: number;
+  beanHeight: number;
+}
+
+export const CROWN_PHYSICAL: CrownPhysical;
+export function touchesCrown(winner: {
+  finishTime: number | null;
+  height: number;
+  distanceToCrown: number;
+}): boolean;
 
 export interface PacingCheck {
   id: string;

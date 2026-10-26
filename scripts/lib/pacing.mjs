@@ -5,6 +5,30 @@
  * share one implementation. No browser, no wall clock, no random seeds.
  */
 
+/**
+ * Crown Climb contact geometry. `CrownClimb.ts` exports the same numbers and
+ * `pacing.test.ts` asserts they match, so the harness derives touch from the
+ * winner's physical y/distance instead of trusting a flag set by the game.
+ */
+export const CROWN_PHYSICAL = Object.freeze({
+  centerY: 49,
+  bandRadius: 2.45,
+  bandHeight: 1.15,
+  beanRadius: 0.42,
+  beanHeight: 1.5,
+});
+
+/** True only when the winner's capsule physically reaches the crown band. */
+export function touchesCrown(winner) {
+  if (!winner || winner.finishTime === null || winner.finishTime === undefined) return false;
+  const headY = winner.height + CROWN_PHYSICAL.beanHeight;
+  if (headY < CROWN_PHYSICAL.centerY) return false;
+  if (winner.height > CROWN_PHYSICAL.centerY + CROWN_PHYSICAL.bandHeight / 2) return false;
+  return (
+    winner.distanceToCrown <= CROWN_PHYSICAL.bandRadius + CROWN_PHYSICAL.beanRadius
+  );
+}
+
 export const PACING_BANDS = Object.freeze({
   courseMinSeconds: 45,
   courseMaxSeconds: 90,
@@ -64,19 +88,47 @@ function roundFor(run, mode) {
  */
 export function summarize(idleRuns, casualRuns) {
   const courseRuns = idleRuns.map((run) => roundFor(run, 'course')).filter(Boolean);
-  const hexRuns = idleRuns.map((run) => roundFor(run, 'hexapop')).filter(Boolean);
-  const crownRuns = idleRuns.map((run) => roundFor(run, 'crown-climb')).filter(Boolean);
+  const idleHex = idleRuns.map((run) => roundFor(run, 'hexapop')).filter(Boolean);
+  const idleCrown = idleRuns.map((run) => roundFor(run, 'crown-climb')).filter(Boolean);
   const casualCourseRuns = casualRuns.map((run) => roundFor(run, 'course')).filter(Boolean);
-  const livingCrown = crownRuns.filter((round) => round.livingWinner).length;
+  const casualHex = casualRuns.map((run) => roundFor(run, 'hexapop')).filter(Boolean);
+  const casualCrown = casualRuns.map((run) => roundFor(run, 'crown-climb')).filter(Boolean);
+  // H-2: Crown, Hexapop and the show total are summarized over the combined
+  // idle + casual set, not idle only. The casual Crown failure was previously
+  // measured but never gated or reported.
+  const hexRuns = [...idleHex, ...casualHex];
+  const crownRuns = [...idleCrown, ...casualCrown];
+  const allRuns = [...idleRuns, ...casualRuns];
+  const livingCrownRuns = crownRuns.filter((round) => round.livingWinner);
+  const livingCrown = livingCrownRuns.length;
   const touchingCrown = crownRuns.filter((round) => round.winnerTouchedCrown).length;
   const sugarRush = hexRuns.filter((round) => round.sugarRushReached).length;
+  const crownOutliers = [
+    ...idleRuns.map((run) => ({ run, round: roundFor(run, 'crown-climb') })),
+    ...casualRuns.map((run) => ({ run, round: roundFor(run, 'crown-climb') })),
+  ]
+    .filter(({ round }) => round && !round.livingWinner)
+    .map(({ run, round }) => ({
+      seed: run.seed,
+      mode: run.mode,
+      seconds: round.seconds,
+      winner: round.winner,
+      winnerTouchedCrown: round.winnerTouchedCrown,
+      winnerHeight: round.winnerHeight ?? null,
+      winnerDistanceToCrown: round.winnerDistanceToCrown ?? null,
+    }));
 
   return {
     runs: idleRuns.length,
     casualRuns: casualRuns.length,
+    combinedRuns: allRuns.length,
     seeds: idleRuns.map((run) => run.seed),
-    total: stats(idleRuns.map((run) => run.totalSeconds)),
-    roundSeconds: stats(idleRuns.map((run) => run.roundSeconds)),
+    total: {
+      ...stats(allRuns.map((run) => run.totalSeconds)),
+      idle: stats(idleRuns.map((run) => run.totalSeconds)),
+      casual: stats(casualRuns.map((run) => run.totalSeconds)),
+    },
+    roundSeconds: stats(allRuns.map((run) => run.roundSeconds)),
     course: {
       ...stats(courseRuns.map((round) => round.seconds)),
       finishers: stats(courseRuns.map((round) => round.finishers)),
@@ -84,15 +136,22 @@ export function summarize(idleRuns, casualRuns) {
     },
     hexapop: {
       ...stats(hexRuns.map((round) => round.seconds)),
+      idle: stats(idleHex.map((round) => round.seconds)),
+      casual: stats(casualHex.map((round) => round.seconds)),
       sugarRushReached: sugarRush,
       sugarRushRate: hexRuns.length === 0 ? 0 : round2(sugarRush / hexRuns.length),
     },
     crown: {
       ...stats(crownRuns.map((round) => round.seconds)),
+      idle: stats(idleCrown.map((round) => round.seconds)),
+      casual: stats(casualCrown.map((round) => round.seconds)),
+      living: stats(livingCrownRuns.map((round) => round.seconds)),
       livingWinners: livingCrown,
       livingWinnerRate: crownRuns.length === 0 ? 0 : round2(livingCrown / crownRuns.length),
       touchedCrown: touchingCrown,
       touchedCrownRate: crownRuns.length === 0 ? 0 : round2(touchingCrown / crownRuns.length),
+      noWinnerRuns: crownRuns.length - livingCrown,
+      outliers: crownOutliers,
     },
     idleQualified: courseRuns.filter((round) => round.playerQualified).length,
     casualQualified: casualCourseRuns.filter((round) => round.playerQualified).length,
@@ -123,6 +182,11 @@ export function evaluatePacing(summary, { phase = 'a' } = {}) {
   const bands = PACING_BANDS;
   const pending = phase !== 'b';
   const course = summary.course;
+  const hexapop = summary.hexapop;
+  const crown = summary.crown;
+  const total = summary.total;
+  const crownRuns = crown.count;
+  const checkDetail = pending ? 'M2-003/004 own these Round tunings' : '';
   const checks = [];
 
   checks.push(
@@ -158,7 +222,7 @@ export function evaluatePacing(summary, { phase = 'a' } = {}) {
   checks.push(
     check(
       'casual-qualifies',
-      'Scripted casual path qualifies 7/10',
+      'Scripted casual path meets the 70% qualification target',
       `${summary.casualQualified} / ${summary.casualRuns} (${Math.round(summary.casualRate * 100)}%)`,
       summary.casualRate >= bands.casualQualifyRate,
       { target: '≥ 70%' },
@@ -167,65 +231,89 @@ export function evaluatePacing(summary, { phase = 'a' } = {}) {
   checks.push(
     check(
       'hexapop-clock',
-      'Hexapop clock 30–50 s',
-      `${summary.hexapop.min}–${summary.hexapop.max} s (median ${summary.hexapop.median} s)`,
-      summary.hexapop.median >= bands.hexMinSeconds && summary.hexapop.median <= bands.hexMaxSeconds,
-      { target: '30–50 s', pending, detail: 'M2-003 owns the Hexapop tuning' },
+      'Hexapop clock 30–50 s (idle + casual, every seed)',
+      `${hexapop.min}–${hexapop.max} s (median ${hexapop.median} s)`,
+      hexapop.median >= bands.hexMinSeconds &&
+        hexapop.median <= bands.hexMaxSeconds &&
+        hexapop.min >= bands.hexMinSeconds &&
+        hexapop.max <= bands.hexMaxSeconds,
+      { target: '30–50 s', pending, detail: checkDetail },
     ),
   );
   checks.push(
     check(
       'hexapop-sugar-rush',
       'Sugar Rush reached at 45 s',
-      `${summary.hexapop.sugarRushReached} / ${summary.runs} (${Math.round(summary.hexapop.sugarRushRate * 100)}%)`,
-      summary.hexapop.sugarRushRate >= 0.7,
-      { target: '≥ 70% of seeds', pending, detail: 'M2-003 owns the Hexapop tuning' },
+      `${hexapop.sugarRushReached} / ${hexapop.count} (${Math.round(hexapop.sugarRushRate * 100)}%)`,
+      hexapop.sugarRushRate >= 0.7,
+      { target: '≥ 70% of seeds', pending, detail: checkDetail },
     ),
   );
   checks.push(
     check(
       'crown-clock',
-      'Crown clock 45–80 s',
-      `${summary.crown.min}–${summary.crown.max} s (median ${summary.crown.median} s)`,
-      summary.crown.median >= bands.crownMinSeconds && summary.crown.median <= bands.crownMaxSeconds,
-      { target: '45–80 s', pending, detail: 'M2-004 owns the Crown tuning' },
+      'Crown clock 45–80 s (living-winner runs, every seed)',
+      crown.livingWinners === 0
+        ? 'no living Crown winners'
+        : `${crown.living.min}–${crown.living.max} s (median ${crown.living.median} s, ${crown.livingWinners} runs)`,
+      crown.livingWinners > 0 &&
+        crown.living.min >= bands.crownMinSeconds &&
+        crown.living.max <= bands.crownMaxSeconds,
+      { target: '45–80 s', pending, detail: checkDetail },
     ),
   );
   checks.push(
     check(
       'crown-living-winner',
-      'Living crown winner ≥95%',
-      `${summary.crown.livingWinners} / ${summary.runs} (${Math.round(summary.crown.livingWinnerRate * 100)}%)`,
-      summary.crown.livingWinnerRate >= bands.crownLivingWinnerRate,
-      { target: '≥ 95%', pending, detail: 'M2-004 owns the Crown tuning' },
+      'Living crown winner ≥95% (idle + casual, 20 runs)',
+      `${crown.livingWinners} / ${crownRuns} (${Math.round(crown.livingWinnerRate * 100)}%)`,
+      crown.livingWinnerRate >= bands.crownLivingWinnerRate,
+      { target: '≥ 19 / 20', pending, detail: checkDetail },
+    ),
+  );
+  checks.push(
+    check(
+      'crown-no-hidden-outlier',
+      'At most one no-winner Crown run, and it is reported',
+      `${crown.noWinnerRuns} no-winner run(s)`,
+      crown.noWinnerRuns <= 1,
+      {
+        target: '≤ 1, listed in docs/METRICS.md',
+        pending,
+        detail: crown.outliers.length
+          ? crown.outliers
+              .map((run) => `${run.mode} seed ${run.seed}${run.winner ? ` (${run.winner})` : ''}`)
+              .join(', ')
+          : checkDetail,
+      },
     ),
   );
   checks.push(
     check(
       'crown-touches-crown',
-      'Crown winner physically touched the crown',
-      `${summary.crown.touchedCrown} / ${summary.runs} (${Math.round(summary.crown.touchedCrownRate * 100)}%)`,
-      summary.crown.touchedCrownRate >= bands.crownLivingWinnerRate,
-      { target: '≥ 95%', pending, detail: 'no timeout fallback in the winning run' },
+      'Crown winner physically touched the crown (y + horizontal radius)',
+      `${crown.touchedCrown} / ${crownRuns} (${Math.round(crown.touchedCrownRate * 100)}%)`,
+      crown.touchedCrownRate >= bands.crownLivingWinnerRate,
+      { target: '≥ 95% (physical contact, not finish flag)', pending, detail: checkDetail },
     ),
   );
   checks.push(
     check(
       'show-total-target',
-      'Median show 3–5 min',
-      `${summary.total.median} s (median)`,
-      summary.total.median >= bands.showTargetMinSeconds &&
-        summary.total.median <= bands.showTargetMaxSeconds,
-      { target: '180–300 s', pending, detail: 'depends on M2-003/004 Round clocks' },
+      'Median show 3–5 min (idle + casual)',
+      `${total.median} s (median)`,
+      total.median >= bands.showTargetMinSeconds &&
+        total.median <= bands.showTargetMaxSeconds,
+      { target: '180–300 s', pending, detail: checkDetail },
     ),
   );
   checks.push(
     check(
       'show-total-bounds',
-      'No show <2.5 or >6 min',
-      `${summary.total.min}–${summary.total.max} s`,
-      summary.total.min >= bands.showFloorSeconds && summary.total.max <= bands.showCeilingSeconds,
-      { target: '150–360 s', pending, detail: 'depends on M2-003/004 Round clocks' },
+      'No show <2.5 or >6 min (idle + casual, every seed)',
+      `${total.min}–${total.max} s`,
+      total.min >= bands.showFloorSeconds && total.max <= bands.showCeilingSeconds,
+      { target: '150–360 s', pending, detail: checkDetail },
     ),
   );
 
@@ -247,24 +335,39 @@ export function formatReport(summary, evaluation) {
     `seeds: ${summary.seeds.join(', ')}  |  idle runs: ${summary.runs}  |  casual runs: ${summary.casualRuns}`,
   );
   lines.push('');
-  lines.push('Per-round medians (idle, observed full show):');
+  lines.push('Per-round clocks (idle + casual, observed full show):');
   lines.push(
     `  Course   ${String(summary.course.median).padStart(6)} s  finishers ${summary.course.finishers.median}  qualifiers ${summary.course.qualifiers.median}`,
   );
   lines.push(
-    `  Hexapop  ${String(summary.hexapop.median).padStart(6)} s  Sugar Rush ${Math.round(summary.hexapop.sugarRushRate * 100)}%`,
+    `  Hexapop  ${String(summary.hexapop.median).padStart(6)} s  idle ${summary.hexapop.idle.median} s / casual ${summary.hexapop.casual.median} s  Sugar Rush ${Math.round(summary.hexapop.sugarRushRate * 100)}%`,
   );
   lines.push(
-    `  Crown    ${String(summary.crown.median).padStart(6)} s  living winner ${Math.round(summary.crown.livingWinnerRate * 100)}%  touched ${Math.round(summary.crown.touchedCrownRate * 100)}%`,
+    `  Crown    ${String(summary.crown.median).padStart(6)} s  idle ${summary.crown.idle.median} s / casual ${summary.crown.casual.median} s  living ${summary.crown.livingWinners}/${summary.crown.count}  touched ${summary.crown.touchedCrown}/${summary.crown.count}`,
   );
   lines.push(
-    `  Total    ${String(summary.total.median).padStart(6)} s (round clocks ${summary.roundSeconds.median} s, incl. intros/results)`,
+    `  Total    ${String(summary.total.median).padStart(6)} s  idle ${summary.total.idle.median} s / casual ${summary.total.casual.median} s (incl. intros/results)`,
   );
+  lines.push('');
+  lines.push('Crown clock, per living-winner run:');
+  lines.push(
+    `  ${summary.crown.living.count} runs  ${summary.crown.living.min}–${summary.crown.living.max} s  median ${summary.crown.living.median} s`,
+  );
+  if (summary.crown.outliers.length > 0) {
+    lines.push('');
+    lines.push('Crown no-winner outliers (reported, never hidden):');
+    for (const run of summary.crown.outliers) {
+      lines.push(
+        `  ${run.mode} seed=${run.seed} clock=${run.seconds}s winner=${run.winner ?? 'none'} touched=${run.winnerTouchedCrown} y=${run.winnerHeight ?? '—'} d=${run.winnerDistanceToCrown ?? '—'}`,
+      );
+    }
+  }
   lines.push('');
   lines.push('Checks:');
   for (const entry of evaluation.checks) {
     const mark = entry.pending ? 'PENDING' : entry.pass ? 'PASS' : 'FAIL';
     lines.push(`  [${mark.padEnd(7)}] ${entry.label}: ${entry.value} (target ${entry.target})`);
+    if (!entry.pass && entry.detail && !entry.pending) lines.push(`            ${entry.detail}`);
   }
   lines.push('');
   lines.push(

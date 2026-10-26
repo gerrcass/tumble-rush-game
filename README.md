@@ -40,7 +40,7 @@ A full show runs **3–4 minutes**, with a two-minute clock on the Course and fi
 - **Desktop and touch** — keyboard + mouse, gamepad, and a touch joystick with jump/dive/grab/emote buttons. Responsive down to 390×844.
 - **Accessible by default** — keyboard routes, visible focus, ARIA live announcements, reduced motion, name-tag toggle, and independent audio controls.
 - **Local progression** — versioned profile, safe corrupt-data recovery, kudos economy, cosmetic unlocks, best finish, and a daily seeded show.
-- **Tested and deployed** — 109 Vitest unit tests, 48 Playwright checks, a 10-seed pacing gate in CI, and GitHub Pages deployment from `main`.
+- **Tested and deployed** — 119 Vitest unit tests, 49 Playwright checks, a 10-seed pacing gate in CI, and GitHub Pages deployment from `main`.
 
 ## Play
 
@@ -104,7 +104,7 @@ docs/                    spec, tickets, decisions, reviews, evidence
 - **Custom fixed-step physics** at 1/60 s: capsule-vs-OBB/cylinder, collide-and-slide, moving-platform carry, conveyor surfaces, bounce pads, hazard impulses, and bean-vs-bean capsule collision. No general rigid-body engine.
 - **Deterministic content** — every layout decision comes from a seeded mulberry32 RNG; the daily show uses the date.
 - **Original assets only** — geometry, canvas textures, particles, and audio are generated at runtime. The only external asset is the bundled open-license Fredoka variable font.
-- **Quality budgets** — the 1440×810 Course start measures **243 draw calls / 117,160 triangles** on high quality, inside the 250 / 120k budget. The development host is SwiftShader-only, so the 55 fps hardware target is validated by draw-call/triangle budgets here and must be checked on real hardware.
+- **Quality budgets** — the 1440×810 two-lap Course start measures **305 draw calls / 186,560 triangles** on high quality, inside the M2 budget of 320 / 200k. The development host is SwiftShader-only, so the 55 fps hardware target is validated by draw-call/triangle budgets here and must be checked on real hardware.
 
 ## Development
 

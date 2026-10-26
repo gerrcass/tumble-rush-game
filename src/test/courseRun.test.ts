@@ -134,6 +134,13 @@ function runShow(
       (max, contestant) => (contestant.body.eliminated ? max : Math.max(max, contestant.progress)),
       0,
     );
+    // Match the real Game step: bots receive the human's progress so the
+    // bounded human-pace anchor is part of the measured casual run.
+    const humanProgress = active.includes(player)
+      ? player.body.eliminated
+        ? null
+        : player.progress
+      : null;
     for (const contestant of active) {
       if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
@@ -160,6 +167,7 @@ function runShow(
           body: contestant.body,
           contestants: active,
           leaderProgress,
+          humanProgress,
           dt: FIXED_STEP,
         });
         contestant.controller.update(FIXED_STEP, frame);
@@ -234,6 +242,26 @@ describe('Course scripted casual qualification (M2)', () => {
     }
     expect(qualified).toBeGreaterThanOrEqual(7);
   }, 120_000);
+});
+
+describe('Course connector and final checkpoint (M2)', () => {
+  it('labels the lap-2 connector instead of a stale section E', () => {
+    const level = createLevel('course', 20260418);
+    const body = new BeanBody();
+    body.position.set(0, 4.6, -162);
+    level.step(FIXED_STEP, [body]);
+    expect(level.status().phase).toBe('LAP 2 · CONNECTOR');
+    level.dispose();
+  });
+
+  it('places the final checkpoint on lap 2\'s raised finish deck', () => {
+    const level = createLevel('course', 20260418);
+    const final = level.checkpoints[level.checkpoints.length - 1]!;
+    expect(final.position.y).toBe(9);
+    expect(final.maxY).toBe(11);
+    expect(final.position.z).toBe(-340);
+    level.dispose();
+  });
 });
 
 describe('Course two-lap grammar (M2)', () => {

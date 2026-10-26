@@ -214,10 +214,12 @@ export class Course implements Level {
       }
     }
     checkpoints.push({
-      position: new Vector3(0, 4.5, -156 + COURSE_LAP_OFFSET_Z),
+      // The final checkpoint must sit on lap 2's raised finish deck (y 9.0),
+      // not on lap 1's deck at y 4.5.
+      position: new Vector3(0, 4.5 + COURSE_LAP_OFFSET_Y, -156 + COURSE_LAP_OFFSET_Z),
       minZ: -161 + COURSE_LAP_OFFSET_Z,
       maxZ: -151 + COURSE_LAP_OFFSET_Z,
-      maxY: 6.5,
+      maxY: 6.5 + COURSE_LAP_OFFSET_Y,
     });
     this.checkpoints = checkpoints;
     this.waypoints = this.buildWaypoints();
@@ -476,21 +478,21 @@ export class Course implements Level {
 
     const crowd = this.plan.crowdArrangement;
     const crowdLeft = makeCrowd(14, 6, new Rng(this.seed ^ 0xc0a1), 0xffc145, this.materials);
-    crowdLeft.position.set(-finishWidth / 2 - 4.4, 4.7, -154);
+    crowdLeft.position.set(-finishWidth / 2 - 4.4, 4.7 + this.lapY, -154 + this.lapZ);
     crowdLeft.rotation.y = Math.PI / 2.2;
     this.group.add(crowdLeft);
     this.crowd.push({
       group: crowdLeft,
-      baseY: 4.7 + ((crowd[0] ?? 0.5) - 0.5) * 0.24,
+      baseY: 4.7 + this.lapY + ((crowd[0] ?? 0.5) - 0.5) * 0.24,
       phase: (crowd[0] ?? 0.5) * Math.PI * 2,
     });
     const crowdRight = makeCrowd(14, 6, new Rng(this.seed ^ 0xc0a2), 0xff6b6b, this.materials);
-    crowdRight.position.set(finishWidth / 2 + 4.4, 4.7, -154);
+    crowdRight.position.set(finishWidth / 2 + 4.4, 4.7 + this.lapY, -154 + this.lapZ);
     crowdRight.rotation.y = -Math.PI / 2.2;
     this.group.add(crowdRight);
     this.crowd.push({
       group: crowdRight,
-      baseY: 4.7 + ((crowd[1] ?? 0.5) - 0.5) * 0.24,
+      baseY: 4.7 + this.lapY + ((crowd[1] ?? 0.5) - 0.5) * 0.24,
       phase: (crowd[1] ?? 0.5) * Math.PI * 2,
     });
   }
@@ -1202,7 +1204,9 @@ export class Course implements Level {
         ? 'FINISHED'
         : section
           ? `${lapLabel}SECTION ${section.id} · ${section.name}`
-          : 'SHOWTIME',
+          : lap > 0
+            ? 'LAP 2 · CONNECTOR'
+            : 'SHOWTIME',
       result: this.result,
     };
   }
@@ -1247,6 +1251,11 @@ export class Course implements Level {
     for (const section of this.plan.sections) {
       if (z <= section.startZ && z >= section.endZ) return section;
     }
+    // Between lap 1's gate and lap 2's start deck the translated z is in front
+    // of section A. Do not fall back to section E: that printed
+    // "LAP 2 · SECTION E" on the connector.
+    const first = this.plan.sections[0];
+    if (first && z > first.startZ) return null;
     return this.plan.sections[4] ?? null;
   }
 

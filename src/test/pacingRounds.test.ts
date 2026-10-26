@@ -8,7 +8,7 @@ import { Match } from '../game/match/Match';
 import type { Level } from '../game/levels/Level';
 import type { ControllerFrame } from '../game/player/BeanController';
 import { startPositionsFor } from '../game/levels/startPositions';
-import { sweepSeeds } from '../../scripts/lib/pacing.mjs';
+import { CROWN_PHYSICAL, sweepSeeds, touchesCrown } from '../../scripts/lib/pacing.mjs';
 
 const IDLE_FRAME: ControllerFrame = {
   moveX: 0,
@@ -29,6 +29,10 @@ interface RoundReport {
   qualified: number;
   livingWinner: boolean;
   winnerTouchedCrown: boolean;
+  winnerHeight: number | null;
+  winnerDistanceToCrown: number | null;
+  winnerFinishTime: number | null;
+  winnerEliminated: boolean | null;
   /** Outermost-ring tiles still present when the 45 s Sugar Rush wave starts. */
   rushRingWarnings: number;
   rushRingAfter: number;
@@ -193,8 +197,14 @@ function runObservedShow(seed: number): ShowReport {
         seconds: Number(match.roundTime.toFixed(2)),
         finishers: placements.filter((entry) => entry.finishTime !== null).length,
         qualified: placements.filter((entry) => entry.qualified).length,
-        livingWinner: Boolean(winner && !winner.eliminated),
-        winnerTouchedCrown: Boolean(winner && winner.finishTime !== null),
+        // Physical fields first; the flags are derived from them, never from
+        // the code's own living/finish bookkeeping alone.
+        livingWinner: Boolean(winner && winner.finishTime !== null && !winner.eliminated),
+        winnerTouchedCrown: winner ? touchesCrown(winner) : false,
+        winnerHeight: winner?.height ?? null,
+        winnerDistanceToCrown: winner?.distanceToCrown ?? null,
+        winnerFinishTime: winner?.finishTime ?? null,
+        winnerEliminated: winner?.eliminated ?? null,
         rushRingWarnings,
         rushRingAfter,
       });
@@ -240,12 +250,32 @@ describe('M2 Phase B real-Match pacing', () => {
       expect(crown.seconds).toBeLessThanOrEqual(80);
       expect(crown.livingWinner).toBe(true);
       expect(crown.winnerTouchedCrown).toBe(true);
+      expect(crown.winnerFinishTime).not.toBeNull();
+      expect(crown.winnerEliminated).toBe(false);
+      expect(crown.winnerHeight).not.toBeNull();
+      expect(crown.winnerDistanceToCrown).not.toBeNull();
+      // A real crown touch: the head reaches the band and the body is inside
+      // the band radius. This fails for dais proximity under a floating crown.
+      expect(crown.winnerHeight! + CROWN_PHYSICAL.beanHeight).toBeGreaterThanOrEqual(
+        CROWN_PHYSICAL.centerY,
+      );
+      expect(crown.winnerDistanceToCrown!).toBeLessThanOrEqual(
+        CROWN_PHYSICAL.bandRadius + CROWN_PHYSICAL.beanRadius,
+      );
     }
 
     // Most of the sweep plays through the 45 s Sugar Rush beat. Two seeds can
     // resolve a moment before it when a qualifier falls on the last step; the
     // deterministic ring-drop test lives in hexapop.test.ts.
     expect(hexes.filter((hex) => hex.seconds >= 45).length).toBeGreaterThanOrEqual(8);
+    // M-3: every real four-survivor Round that reaches the Sugar Rush must
+    // warn the outer ring and then remove it. The old `living > 4` guard made
+    // this a no-op at exactly four survivors.
+    const rushRounds = hexes.filter((hex) => hex.seconds >= 45.05);
+    for (const hex of rushRounds) {
+      expect(hex.rushRingWarnings).toBeGreaterThan(0);
+      expect(hex.rushRingAfter).toBe(0);
+    }
 
     // At least four Tumblers reach Hexapop's qualifying row on the baseline
     // seed and most of the sweep; a smaller living field still advances.

@@ -10,7 +10,7 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { chromium } from '@playwright/test';
-import { sweepSeeds } from './pacing.mjs';
+import { sweepSeeds, touchesCrown } from './pacing.mjs';
 
 const FIXED_STEP = 1 / 60;
 const MAX_SHOW_SECONDS = 600;
@@ -52,7 +52,7 @@ export async function stopDevServer(server) {
 export async function measureShow(page, url, seed, mode) {
   await page.goto(`${url}/?seed=${seed}`, { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /PLAY SHOW/i }).waitFor({ timeout: 30_000 });
-  return page.evaluate(
+  const result = await page.evaluate(
     ({ showMode, maxSeconds }) => {
       const t = window.__tumble;
       if (!t) throw new Error('window.__tumble is only available in the dev build');
@@ -70,6 +70,12 @@ export async function measureShow(page, url, seed, mode) {
         const placements = t.roundPlacements;
         const player = placements.find((entry) => entry.isPlayer) ?? null;
         const winner = placements.find((entry) => entry.won) ?? null;
+        // Physical fields, not code-set flags: a living winner must have a
+        // finish time and an un-eliminated body; contact is derived from the
+        // winner's height and horizontal crown distance below.
+        const livingWinner = Boolean(
+          winner && winner.finishTime !== null && !winner.eliminated,
+        );
         rounds.push({
           roundIndex: show.roundIndex,
           round: show.roundNumber,
@@ -81,8 +87,13 @@ export async function measureShow(page, url, seed, mode) {
           eliminated: placements.filter((entry) => !entry.qualified).length,
           playerStatus: player?.status ?? 'NOT_IN_ROUND',
           playerQualified: Boolean(player?.qualified),
-          livingWinner: Boolean(winner && !winner.eliminated),
-          winnerTouchedCrown: Boolean(winner && winner.finishTime !== null),
+          livingWinner,
+          // Filled in by Node after evaluation: the exported helper cannot run
+          // inside the browser page's serialized callback.
+          winnerTouchedCrown: false,
+          winnerFinishTime: winner?.finishTime ?? null,
+          winnerHeight: winner ? Number(winner.height.toFixed(3)) : null,
+          winnerDistanceToCrown: winner ? Number(winner.distanceToCrown.toFixed(3)) : null,
           sugarRushReached: show.roundMode === 'hexapop' ? show.time >= 45 : null,
           winner: winner?.name ?? null,
           placements: placements.map((entry) => ({
@@ -92,7 +103,11 @@ export async function measureShow(page, url, seed, mode) {
             status: entry.status,
             finishTime: entry.finishTime,
             progress: entry.progress,
+            height: entry.height,
+            distanceToCrown: entry.distanceToCrown,
+            eliminated: entry.eliminated,
             won: entry.won,
+            qualified: entry.qualified,
           })),
         });
       };
@@ -133,6 +148,19 @@ export async function measureShow(page, url, seed, mode) {
     },
     { showMode: mode, maxSeconds: MAX_SHOW_SECONDS },
   );
+  // Derive the physical touch flag in Node from the winner's real y/distance,
+  // never from a flag the game set.
+  for (const round of result.rounds) {
+    round.winnerTouchedCrown =
+      round.mode === 'crown-climb' && round.winnerFinishTime !== null
+        ? touchesCrown({
+            finishTime: round.winnerFinishTime,
+            height: round.winnerHeight ?? 0,
+            distanceToCrown: round.winnerDistanceToCrown ?? Infinity,
+          })
+        : false;
+  }
+  return result;
 }
 
 /**

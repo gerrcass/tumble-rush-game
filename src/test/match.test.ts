@@ -259,7 +259,42 @@ describe('Match show progression', () => {
     expect(match.finalPlacements.filter((entry) => entry.qualified)).toHaveLength(2);
   });
 
-  it('marks a Crown Climb timeout winner as won, qualified and not eliminated', () => {
+  it('resolves a Crown Climb total wipe as a documented no-winner defeat', () => {
+    const contestants = Array.from({ length: 4 }, (_, index) => fakeContestant(index, index === 0));
+    const player = contestants[0]!;
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.jumpToRound(2);
+    match.beginRound();
+    // Every finalist was eliminated: the committed casual failure mode. The
+    // top row is still the highest-progress dead bean, but it must not become
+    // the champion or get its eliminated flag cleared.
+    player.body.position.y = 30;
+    player.eliminatedAt = 2;
+    player.body.eliminated = true;
+    for (const contestant of contestants.slice(1)) {
+      contestant.body.position.y = 10 + contestant.id;
+      contestant.body.eliminated = true;
+      contestant.eliminatedAt = 3;
+    }
+    match.finishRound();
+    const top = match.finalPlacements[0];
+    expect(top?.isPlayer).toBe(true);
+    expect(top?.won).toBe(false);
+    expect(top?.qualified).toBe(false);
+    expect(top?.status).toBe('ELIMINATED');
+    expect(top?.eliminated).toBe(true);
+    expect(player.body.eliminated).toBe(true);
+    expect(player.status).toBe('eliminated');
+    expect(match.finalPlacements.every((entry) => !entry.qualified)).toBe(true);
+    match.nextRound();
+    expect(match.phase).toBe('defeat');
+    expect(match.showResult?.won).toBe(false);
+    expect(match.showResult?.winnerName).toBeNull();
+    expect(match.showResult?.winnerLook).toBeNull();
+  });
+
+  it('keeps the timeout-height fallback for a living finalist', () => {
     const contestants = Array.from({ length: 4 }, (_, index) => fakeContestant(index, index === 0));
     const player = contestants[0]!;
     const match = makeMatch(contestants);
@@ -267,8 +302,6 @@ describe('Match show progression', () => {
     match.jumpToRound(2);
     match.beginRound();
     player.body.position.y = 30;
-    player.eliminatedAt = 2;
-    player.body.eliminated = true;
     for (const contestant of contestants.slice(1)) {
       contestant.body.position.y = 10 + contestant.id;
       contestant.body.eliminated = true;
@@ -284,7 +317,6 @@ describe('Match show progression', () => {
     expect(player.status).toBe('qualified');
     match.nextRound();
     expect(match.phase).toBe('victory');
-    expect(match.showResult?.won).toBe(true);
     expect(match.showResult?.winnerName).toBe('YOU');
   });
 
@@ -339,6 +371,27 @@ describe('Match show progression', () => {
     expect(finisher.body.frozen).toBe(true);
     match.finishRound();
     expect(match.finalPlacements.find((entry) => entry.id === '3')?.qualified).toBe(true);
+  });
+
+  it('never follows a finished Course bot and retargets when the leader finishes', () => {
+    const contestants = Array.from({ length: 16 }, (_, index) =>
+      fakeContestant(index, index === 0),
+    );
+    const match = makeMatch(contestants);
+    match.startShow();
+    match.beginRound();
+    const finished = contestants[2]!;
+    const living = contestants[3]!;
+    finished.finishTime = 10;
+    finished.status = 'qualified';
+    finished.progress = 1;
+    finished.body.frozen = true;
+    living.progress = 0.5;
+    living.body.position.y = 0.4;
+    // Pretend the old follow-cam is locked onto the frozen finisher.
+    (match as unknown as { spectating: Contestant | null }).spectating = finished;
+    match.afterPhysics(fakeLevel());
+    expect(match.spectating).toBe(living);
   });
 
   it('drives the HUD from level status and the followed leader, not the dead player', () => {

@@ -38,10 +38,15 @@ const { seeds, idle, casual } = await measureSweep({
   onRun: (run) => {
     completed += 1;
     const course = run.rounds.find((round) => round.mode === 'course');
+    const hex = run.rounds.find((round) => round.mode === 'hexapop');
+    const crown = run.rounds.find((round) => round.mode === 'crown-climb');
     process.stderr.write(
       `[${completed}/${total}] ${run.mode} seed=${run.seed} total=${run.totalSeconds}s ` +
         `course=${course?.seconds ?? '—'}s finishers=${course?.finishers ?? '—'} ` +
-        `player=${course?.playerStatus ?? '—'}\n`,
+        `player=${course?.playerStatus ?? '—'} hex=${hex?.seconds ?? '—'}s ` +
+        `crown=${crown?.seconds ?? '—'}s living=${crown?.livingWinner ?? '—'} ` +
+        `touch=${crown?.winnerTouchedCrown ?? '—'} y=${crown?.winnerHeight ?? '—'} ` +
+        `d=${crown?.winnerDistanceToCrown ?? '—'}\n`,
     );
   },
 });

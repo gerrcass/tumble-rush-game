@@ -113,7 +113,8 @@ const PERCH_CHUTE = 1.45;
  * Hexapop — the collapsing-tile survival Round.
  *
  * Three honeycomb tiers hang over lethal pink slime. Every touch starts a
- * readable 0.45 s warning before the tile drops and its collider is disabled.
+ * readable 3.3 s warning before the tile drops and its collider is disabled;
+ * the Sugar Rush shortens that to 1 s.
  * Sugar Rush removes the current outer ring on a timer so the Round always
  * ends. Tile state, collapse waves and the slime plane are all seeded/authored
  * here; Game owns elimination and the HUD.
@@ -553,17 +554,13 @@ export class Hexapop implements Level {
     if (changed) this.tileMesh.instanceMatrix.needsUpdate = true;
 
     if (this.elapsed >= this.nextWaveAt && this.tileCountValue > 4) {
-      // Sugar Rush: the untouched outer ring drops away. Once four Tumblers are
-      // left the floor stops being taken away, so the Round ends in a result
-      // rather than a total wipe. The wave never targets the last four tiles.
-      let living = 0;
-      for (const body of bodies) if (!body.eliminated) living += 1;
-      // An empty field (solo/level tests and practice) still gets the show
-      // beat; a live Round stops taking floor away at four survivors.
-      if (bodies.length === 0 || living > 4) {
-        this.collapseOuterRing();
-        this.nextWaveAt = Math.max(this.nextWaveAt + WAVE_INTERVAL, this.elapsed + 1);
-      }
+      // Sugar Rush: the untouched outer ring drops away. Four survivors must
+      // still see the ring collapse — the HUD says SUGAR RUSH at 45 s, so the
+      // floor cannot quietly stop moving at exactly four. The four tiles the
+      // survivors are standing on are held: the wave never undercuts a living
+      // bean, so it cannot turn the final four into a total wipe.
+      this.collapseOuterRing(bodies);
+      this.nextWaveAt = Math.max(this.nextWaveAt + WAVE_INTERVAL, this.elapsed + 1);
     }
 
     if (!this.result && this.tileCountValue <= 4) {
@@ -829,7 +826,7 @@ export class Hexapop implements Level {
     return true;
   }
 
-  private collapseOuterRing(): void {
+  private collapseOuterRing(bodies: readonly BeanBody[]): void {
     let outer = -1;
     for (const tile of this.tiles) {
       if (tile.state === 'idle' || tile.state === 'warning') {
@@ -837,11 +834,20 @@ export class Hexapop implements Level {
       }
     }
     if (outer < 0) return;
+    const living = bodies.filter((body) => !body.eliminated);
     for (const tile of this.tiles) {
-      if (tile.ring === outer && tile.state === 'idle') {
-        tile.safe = false;
-        this.warnTile(tile);
-      }
+      if (tile.ring !== outer || tile.state !== 'idle') continue;
+      // Preserve the last four safe tiles: never warn the tile under a living
+      // Tumbler. With four survivors the rest of the outer ring still visibly
+      // drops, which is the Sugar Rush beat the HUD promises.
+      const occupied = living.some(
+        (body) =>
+          Math.abs(body.position.y - tile.base.y) <= 0.55 &&
+          Math.hypot(body.position.x - tile.base.x, body.position.z - tile.base.z) < 1.05,
+      );
+      if (occupied) continue;
+      tile.safe = false;
+      this.warnTile(tile);
     }
   }
 }

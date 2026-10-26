@@ -44,7 +44,7 @@ jobs:
           set -o pipefail
           npm run verify:pacing -- --phase=b \
             --out=docs/evidence/pacing/m2-phase-b-pacing.json \
-            | tee docs/evidence/pacing/m2-phase-b-pacing.log
+            2>&1 | tee docs/evidence/pacing/m2-phase-b-pacing.log
 
       - name: Playwright smoke and screenshot
         run: npm run test:e2e

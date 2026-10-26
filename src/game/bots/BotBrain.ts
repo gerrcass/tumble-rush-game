@@ -34,8 +34,10 @@ export const HUMAN_ANCHOR_MAX_SLOWDOWN = 0.1;
 export const HUMAN_ANCHOR_MIN_PROGRESS = 0.02;
 
 export interface CourseBrainOptions {
-  /** Multiplier on the skill-scaled 0.62–0.78 target speed. */
+  /** Multiplier on the skill-scaled 0.62–0.78 cruise target speed. */
   speedScale?: number;
+  /** Multiplier on the 0.78-of-max jump commitment (a run-up, not cruise). */
+  jumpSpeedScale?: number;
   /** Added to the bot's reaction time before re-planning. */
   reactionBonus?: number;
   /** Hazard lookahead radius in world units (humanized bots react later). */
@@ -515,6 +517,7 @@ export function selectHexTarget(
 
 const COURSE_TUNING: Required<CourseBrainOptions> = {
   speedScale: 1,
+  jumpSpeedScale: 1,
   reactionBonus: 0.14,
   hazardRadius: 2.35,
   mistakeScale: 1,
@@ -616,18 +619,23 @@ export class CourseBrain extends BotBrain {
       return frame;
     }
     const baseSpeed = courseBotSpeed(this.owner.skill) * this.tuning.speedScale;
+    const forwardDistance = Math.abs(target.z - body.position.z);
     // A flat scripted jump can be a bounce pad: the authored pad throws a bean
     // ~1.15 s forward and a human clears it by holding full run. Commit to the
     // top of the humanized band (never above it), and do not let the pack
     // anchor shorten that jump into the gap after the pad.
     const commitJump =
       bouncePadAhead(level, body) ||
-      (waypoint?.action === 'jump' &&
-        rise < 0.45 &&
-        Math.abs(targetZ - body.position.z) < 4.5);
-    const speed = commitJump
-      ? COURSE_SPEED_MAX * this.tuning.speedScale
-      : this.courseSpeed(this.hesitation > 0 ? baseSpeed * 0.55 : baseSpeed, context);
+      (waypoint?.action === 'jump' && rise < 0.45 && forwardDistance < 4.5);
+    const jumpSpeed = COURSE_SPEED_MAX * this.tuning.jumpSpeedScale;
+    // Build the run-up before the lip, not on the jump frame: a slower casual
+    // cruise must not arrive at a 4 u gap with 0.71 actual speed and fall in.
+    const jumpApproach =
+      !finalTarget && waypoint?.action === 'jump' && forwardDistance < 6.4;
+    const speed =
+      commitJump || jumpApproach
+        ? jumpSpeed
+        : this.courseSpeed(this.hesitation > 0 ? baseSpeed * 0.55 : baseSpeed, context);
     this.steer(dx, dz, speed);
 
     if (this.maybeShoveNeighbour(context)) return frame;
@@ -659,17 +667,16 @@ export class CourseBrain extends BotBrain {
       frame.jumpHeld = true;
       this.staleTimer = 0;
     } else if (!groundAhead && (body.grounded || body.wasGrounded)) {
-      // A missing floor always beats hesitation or a hurdle detour. Commit at
-      // least the bottom of the humanized band, never above the pack's cap:
-      // the 1.5 u authored gaps are clearable at 0.62 of max.
-      this.steer(dx, dz, Math.max(speed, COURSE_SPEED_MIN));
+      // A missing floor always beats hesitation or a hurdle detour. A jump
+      // commits at the top of the humanized band (still below the player's
+      // cap); a slower cruise must not shorten the take-off into a gap.
+      this.steer(dx, dz, Math.max(speed, jumpSpeed));
       frame.jumpPressed = true;
       frame.jumpHeld = true;
       this.staleTimer = 0;
     } else if (body.grounded && this.hesitation <= 0 && !suppressedByLane) {
       const wantsJump = waypoint?.action === 'jump' || rise > 0.45;
       const jumpDistance = waypoint?.action === 'jump' ? 1.7 : 2.6;
-      const forwardDistance = Math.abs(target.z - body.position.z);
       if (wantsJump && forwardDistance < jumpDistance) {
         // Decide once per waypoint whether this contestant commits cleanly.
         // A skipped jump is a visible stumble; the ledge probe above is still
@@ -679,6 +686,10 @@ export class CourseBrain extends BotBrain {
           this.jumpAllowed = this.rng.chance(this.tuning.jumpDiscipline);
         }
         if (this.jumpAllowed) {
+          // The run-up is a committed jump, not the casual cruise: this is the
+          // same target the bots use to clear a 4 u gap, still inside the
+          // humanized 0.62–0.78 band.
+          this.steer(dx, dz, Math.max(speed, jumpSpeed));
           frame.jumpPressed = true;
           frame.jumpHeld = true;
           this.staleTimer = 0;
@@ -1127,6 +1138,24 @@ export function createBotBrain(
  * The tuning is deliberately below the bot pack's median: a slightly lower
  * target speed, a longer reaction, later hazard reads and ordinary mistakes.
  */
+export const CASUAL_COURSE_OPTIONS: Readonly<CourseBrainOptions> = Object.freeze({
+  // A genuinely below-median human, not a top-band bot: 0.91 × 0.78 ≈ 0.71
+  // target speed, a longer reaction beat, later hazard reads (radius below the
+  // bots' 2.35), and ordinary mistakes.
+  speedScale: 0.91,
+  // Cruise at ~0.71, but commit jumps like a human holding run: the authored
+  // 4 u final gaps are marginal at the bot-band top (0.78) and impossible at
+  // casual cruise. This is the same 1.0 controller cap a human gets, not a
+  // hidden speed above it.
+  jumpSpeedScale: 1.28,
+  reactionBonus: 0.18,
+  hazardRadius: 2.3,
+  baseMistake: 0.005,
+  hazardJumpChance: 0.98,
+  jumpDiscipline: 0.95,
+  laneScale: 0.15,
+});
+
 export function createCasualPilot(owner: Contestant, seed: number): CourseBrain {
-  return new CourseBrain(owner, seed, 17, { laneScale: 0.15, hazardRadius: 3.1 });
+  return new CourseBrain(owner, seed, 17, CASUAL_COURSE_OPTIONS);
 }

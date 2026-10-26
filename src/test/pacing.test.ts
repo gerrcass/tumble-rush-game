@@ -8,6 +8,7 @@ import {
   sweepSeeds,
 } from '../../scripts/lib/pacing.mjs';
 import {
+  CASUAL_COURSE_OPTIONS,
   COURSE_SPEED_MAX,
   COURSE_SPEED_MIN,
   courseBotSpeed,
@@ -23,6 +24,11 @@ function round(mode: string, seconds: number, extra: Record<string, unknown> = {
     playerQualified: false,
     playerStatus: 'ELIMINATED',
     livingWinner: mode === 'crown-climb',
+    winnerTouchedCrown: mode === 'crown-climb',
+    winnerHeight: mode === 'crown-climb' ? 48.4 : null,
+    winnerDistanceToCrown: mode === 'crown-climb' ? 0 : null,
+    winnerFinishTime: mode === 'crown-climb' ? 55 : null,
+    winnerEliminated: mode === 'crown-climb' ? false : null,
     ...extra,
   };
 }
@@ -104,7 +110,16 @@ describe('pace bands', () => {
 
   it('makes the Phase B placeholders hard when asked', () => {
     const data = summary();
-    data.hexapop = { count: 10, median: 6, min: 6, max: 6 };
+    data.hexapop = {
+      count: 20,
+      median: 6,
+      min: 6,
+      max: 6,
+      idle: { count: 10, median: 6, min: 6, max: 6 },
+      casual: { count: 10, median: 6, min: 6, max: 6 },
+      sugarRushReached: 0,
+      sugarRushRate: 0,
+    };
     const phaseA = evaluatePacing(data, { phase: 'a' });
     expect(phaseA.pass).toBe(true);
     const phaseB = evaluatePacing(data, { phase: 'b' });
@@ -139,6 +154,16 @@ describe('Course bot pace and human anchor', () => {
       expect(courseBotSpeed(skill)).toBeGreaterThanOrEqual(0.62);
       expect(courseBotSpeed(skill)).toBeLessThanOrEqual(0.78);
     }
+  });
+
+  it('keeps the scripted casual pilot below the bot pack', () => {
+    expect(CASUAL_COURSE_OPTIONS.speedScale).toBeDefined();
+    const casualCruise = COURSE_SPEED_MAX * CASUAL_COURSE_OPTIONS.speedScale!;
+    expect(casualCruise).toBeGreaterThanOrEqual(0.7);
+    expect(casualCruise).toBeLessThanOrEqual(0.72);
+    expect(CASUAL_COURSE_OPTIONS.reactionBonus!).toBeGreaterThan(0.14);
+    expect(CASUAL_COURSE_OPTIONS.hazardRadius!).toBeLessThan(2.35);
+    expect(CASUAL_COURSE_OPTIONS.baseMistake!).toBeGreaterThan(0);
   });
 
   it('only slows bots after the human is more than 25% behind', () => {

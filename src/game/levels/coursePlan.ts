@@ -28,7 +28,7 @@ export interface CourseShortcutPlan {
 }
 
 /**
- * M2 pacing: the 173 u lap alone cannot last 45–90 s once the pack runs at a
+ * M2 pacing: the 174 u lap alone cannot last 45–90 s once the pack runs at a
  * humanized 0.62–0.78 of max speed, so Sunrise Scramble runs the same five
  * authored sections twice. Lap 2 is a pure translation of the existing grammar
  * (no new section, collider recipe, or art direction).
@@ -78,7 +78,7 @@ const SECTION_LAYOUT: ReadonlyArray<{
   { id: 'B', name: 'WHIRLYBIRD ALLEY', startZ: -18, endZ: -56, accent: 0x59d9b0 },
   { id: 'C', name: 'JELLY JUMPS', startZ: -56, endZ: -96, accent: 0x57c7ff },
   { id: 'D', name: 'SLIME SLIDE', startZ: -96, endZ: -132, accent: 0xa78bfa },
-  { id: 'E', name: 'CROWN GATE', startZ: -132, endZ: -166, accent: 0xff6b6b },
+  { id: 'E', name: 'CROWN GATE', startZ: -132, endZ: -156, accent: 0xff6b6b },
 ];
 
 const COLOR_POOL = [0xff6b6b, 0xffc145, 0x59d9b0, 0x57c7ff, 0xa78bfa, 0xff9ecb] as const;
@@ -106,7 +106,10 @@ export function planCourse(seed: number): CoursePlan {
   };
   const propColors = [0, 1, 2, 3, 4].map(() => rng.pick(COLOR_POOL));
   const crowdArrangement = Array.from({ length: 8 }, () => rng.float(0, 1));
-  const finishZ = -166;
+  // The authored finish deck/gate, not the section envelope. Keep this in
+  // lockstep with Course.finishPosition; METRICS and README quote the same
+  // 174 u lap / 358 u two-lap lengths.
+  const finishZ = -156;
   const courseFinishZ = finishZ + COURSE_LAP_OFFSET_Z * (COURSE_LAP_COUNT - 1);
 
   return {

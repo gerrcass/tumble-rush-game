@@ -22,6 +22,11 @@ const launchOptions = {
   args: ['--enable-unsafe-swiftshader', '--disable-dev-shm-usage'],
 };
 
+// The dev host can have an unrelated app on 5173; allow a one-off port override
+// without changing the CI default.
+const port = Number(process.env.TUMBLE_E2E_PORT ?? 5173);
+const baseURL = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -30,7 +35,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL,
     viewport: { width: 1440, height: 810 },
     launchOptions,
     screenshot: 'only-on-failure',
@@ -43,8 +48,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
-    url: 'http://127.0.0.1:5173',
+    command: `npm run dev -- --host 127.0.0.1 --port ${port} --strictPort`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
