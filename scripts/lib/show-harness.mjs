@@ -58,6 +58,17 @@ export async function measureShow(page, url, seed, mode) {
       if (!t) throw new Error('window.__tumble is only available in the dev build');
       if (showMode === 'casual') t.startCasualRun('show');
       else t.startObservedShow('show');
+      // The debug plan is the same pure planShow output the levels consume.
+      const plan = {
+        seed: t.seed,
+        courseSignature: t.plan.courseSignature,
+        lapRoutes: t.plan.lapRoutes,
+        routeLabel: t.plan.routeLabel,
+        arena: t.plan.arena,
+        arenaLabel: t.plan.arenaLabel,
+        signature: t.plan.signature,
+        label: t.plan.label,
+      };
 
       const rounds = [];
       let elapsed = 0;
@@ -136,6 +147,7 @@ export async function measureShow(page, url, seed, mode) {
       capture();
       if (t.state !== 'finished') throw new Error(`show did not finish in ${maxSeconds}s`);
       return {
+        plan,
         rounds,
         totalSeconds: Number(elapsed.toFixed(2)),
         roundSeconds: Number(
