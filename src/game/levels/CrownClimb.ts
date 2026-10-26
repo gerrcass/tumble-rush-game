@@ -695,11 +695,16 @@ export class CrownClimb implements Level {
     }
 
     const body = bodies[0];
-    if (body) {
-      this.bodyProgress = this.progress(body.position);
-      if (body.position.y <= this.slimeY + 0.25 && !body.eliminated) {
-        body.eliminated = true;
+    if (body) this.bodyProgress = this.progress(body.position);
+    // The slime is lethal to every finalist, not only the first body in the
+    // world list. A bot that fell into the start-deck side could otherwise sit
+    // inside the collider while the slime rose past it.
+    for (const candidate of bodies) {
+      if (candidate.position.y <= this.slimeY + 0.25 && !candidate.eliminated) {
+        candidate.eliminated = true;
       }
+    }
+    if (body) {
       if (!this.result && this.isAtFinish(body.position)) {
         this.winnerName = 'YOU';
         this.result = {
