@@ -75,9 +75,13 @@ Coyote time and jump buffering make the platforming forgiving; dives are committ
 | --- | --- |
 | ![Menu](docs/readme-hero.png) | ![Sunrise Scramble](docs/evidence/phase3-show-course.png) |
 
-| Hexapop | Crown ceremony |
+| Hexapop | Crown Climb |
 | --- | --- |
-| ![Hexapop](docs/evidence/phase2-hexapop.png) | ![Victory](docs/evidence/phase3-victory.png) |
+| ![Hexapop](docs/evidence/m2-hexapop.png) | ![Crown Climb](docs/evidence/m2-crown.png) |
+
+| Spectate | Victory |
+| --- | --- |
+| ![Spectate](docs/evidence/m2-spectate.png) | ![Victory](docs/evidence/phase3-victory.png) |
 
 More evidence lives in [`docs/evidence/`](docs/evidence/).
 

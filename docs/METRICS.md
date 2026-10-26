@@ -107,12 +107,14 @@ Changes measured here (hardening pass after [`docs/REVIEW-M2.md`](REVIEW-M2.md))
   8 u/s cap), has a longer reaction beat (`+0.18` vs the bots' `+0.14`), reads
   hazards later (`2.30` vs `2.35`), and carries a small mistake chance. It still
   commits jumps at the human controller cap so the authored 4 u final gaps are
-  clearable; that is a run-up, not a hidden cruise speed. The measured casual
+  clearable; that is a run-up, not a hidden cruise speed. It is a competence
+  proxy, not a median human: jump commitment is stronger than the bot default. The measured casual
   qualification is **7 / 10**, exactly the M2 floor.
 - **M-3 Sugar Rush at four survivors.** The outer-ring wave is no longer
   suppressed by `living > 4`. It warns and drops the current outer ring with
-  exactly four survivors, holding the tiles under living beans and never
-  taking the tile count below four. The 10-seed real-Match test asserts the
+  exactly four survivors, holding the tiles under living beans. The surviving
+  tile count can settle below four as the warnings expire; the Round still ends
+  at four survivors. The 10-seed real-Match test asserts the
   warning and post-wave counts (all sampled four-survivor rounds: warnings > 0,
   remaining outer ring 0).
 - **M-4 physical assertions.** The real-Match test asserts winner `height`,
@@ -226,6 +228,15 @@ sweep no longer reaches it on any seed, but the behavior is covered by
 - The total is the full simulated show (all three Round clocks plus intros, countdowns and results). The v1 baseline was the sum of the three Round clocks only; the Phase A row is therefore not directly comparable. `summary.roundSeconds` reports the sum for a like-for-like comparison.
 - The anchor uses the human's progress, not their input. An idle human at 0% does not slow the pack (`HUMAN_ANCHOR_MIN_PROGRESS`); a player who has left the start deck does.
 - FPS is only meaningful on hardware WebGL. Use `window.__tumble.renderInfo` for draw calls/triangles in this environment; validate FPS manually on a real GPU and record it here.
+
+## Accepted gaps (not M2 blockers)
+
+- A no-winner Crown can record the top placement as a career best even though
+  the card says CROWN MISSED; no crown/kudos win is awarded. This is a product
+  decision for a follow-up, not a pacing failure.
+- The non-Crown total-wipe fallback can still name the last-row bean as the
+  pack leader; this predates M2 and is outside the Crown fix.
+- Hardware FPS remains a manual check; the SwiftShader host cannot validate it.
 
 ## Hardware FPS protocol (manual, real GPU)
 

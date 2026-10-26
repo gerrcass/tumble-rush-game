@@ -265,10 +265,10 @@ export function evaluatePacing(summary, { phase = 'a' } = {}) {
   checks.push(
     check(
       'crown-living-winner',
-      'Living crown winner ≥95% (idle + casual, 20 runs)',
+      `Living crown winner ≥95% (idle + casual, ${crownRuns} runs)`,
       `${crown.livingWinners} / ${crownRuns} (${Math.round(crown.livingWinnerRate * 100)}%)`,
       crown.livingWinnerRate >= bands.crownLivingWinnerRate,
-      { target: '≥ 19 / 20', pending, detail: checkDetail },
+      { target: `≥ ${Math.ceil(crownRuns * bands.crownLivingWinnerRate)} / ${crownRuns}`, pending, detail: checkDetail },
     ),
   );
   checks.push(

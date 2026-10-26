@@ -83,7 +83,8 @@ addressed or explicitly recorded. Re-measured with the real `Match` on the same
   (bots 2.35), and carries a small mistake chance. It commits jumps at the
   human cap for the authored 4 u gaps. Honest 10-seed result: 7/10.
 - **M-3:** The Sugar Rush outer ring drops with exactly four survivors, holding
-  the tiles under living beans and never taking the floor below four. The
+  the tiles under living beans; the remaining tile count can settle below four
+  as warnings expire, while the Round still ends at four survivors. The
   real-Match test asserts warning/after counts.
 - **M-4:** Winners are asserted by `height`, `distanceToCrown`, `finishTime` and
   `eliminated`; flags are derived from those fields. The old self-fulfilling
