@@ -72,9 +72,25 @@ _Avoid_: Tackle, push
 The linear obstacle Round, Sunrise Scramble.
 _Avoid_: Race track, map
 
+**Route**:
+The ordered Sections that make up one Course lap. A Show has two Routes, one
+per lap, and they are not identical.
+_Avoid_: Path, track list
+
 **Section**:
 An authored chunk of the Course with one teaching idea.
 _Avoid_: Zone, stage
+
+**Section Module**:
+A relocatable Section with its own geometry, checkpoint, waypoints, and
+difficulty weight. A Route composes Section Modules; a Section Module does not
+own the Route.
+_Avoid_: Chunk, block
+
+**Show Card**:
+The seeded label that names a Show's Course Routes and Hexapop Arena Plan,
+shown in the Round intro, results, and Daily chip.
+_Avoid_: Seed card, summary
 
 **Hazard**:
 A moving or static Course object that can knock a Tumbler off.
@@ -87,6 +103,11 @@ _Avoid_: Finish line
 **Hexapop**:
 The collapsing-tile survival Round.
 _Avoid_: Hex-a-gone, tile game
+
+**Arena Plan**:
+The seeded shape of the Hexapop floor: RINGS, SPIRAL, or GEARWORKS. Every plan
+keeps the centre perch and the same collapse rules.
+_Avoid_: Map, layout
 
 **Tile**:
 A single hexagonal platform in Hexapop that can collapse.
@@ -129,6 +150,11 @@ _Avoid_: Interface, overlay
 **Stamp**:
 A large transient centre-screen message such as QUALIFIED! or ELIMINATED!.
 _Avoid_: Toast, popup
+
+**Variety Gate**:
+The 12-seed measurement that proves Shows have distinct Routes and Arena Plans
+while still meeting the pacing and fairness bands.
+_Avoid_: Variety check, seed test
 
 **Quality Tier**:
 The renderer preset (high or low) controlling shadows, outlines, particles, and pixel ratio.
