@@ -11,7 +11,7 @@ npm run check        # typecheck + unit tests + production build
 npm run verify:show  # real 16-bean Course + real Hexapop spawn
 npm run measure:show # pacing baseline; see docs/METRICS.md
 npm run verify:pacing # 10-seed pacing gate (M2)
-npm run test:e2e     # Playwright smoke + screenshots
+npm run test:e2e     # Playwright smoke + screenshots (set TUMBLE_E2E_PORT if 5173 is occupied)
 npm run evidence     # canonical screenshot set
 npm run ci:local     # clean install with workspace-local npm cache + check
 ```
@@ -56,6 +56,7 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 - Performance gate: ≥55 fps at 1080p high on real hardware; low quality must preserve playability. **This host is SwiftShader-only (no `/dev/dri`), so FPS is not a hardware signal.** Use `window.__tumble.renderInfo` draw calls/triangles and report the hardware-FPS gap instead of optimizing for software FPS.
 - Release gate: `npm run check:release` runs the unit/build gate plus the focused review specs. `npm run verify:show` runs the real 16-bean Course and Hexapop spawn gate.
 - Real-Match probes beat isolated unit setups for show bugs. `docs/REVIEW-*.md` records the independent review rounds; add a new review file when a round finds blockers.
+- Use `window.__tumble.simulate(seconds)` for deterministic test time. Wall-clock waits fail on SwiftShader (the fixed loop advances ~0.15× real time at 3 fps).
 
 ## Delivery workflow
 

@@ -252,3 +252,10 @@ This dev host is SwiftShader-only (`/dev/dri` is absent). Recorded FPS here is a
 5. Record the GPU, driver, browser build, average FPS, p95 frame time, draw calls and triangles in this file. Do not substitute the SwiftShader number.
 
 Known SwiftShader-only dev-host numbers (not a hardware claim): the two-lap Course start reports **305 draw calls / 186,560 triangles** at 1440×810 high against the M2 budget of 320 / 200k. The 250 / 120k v1 budget was deliberately scaled once for the second lap; see the `Course start stays inside the draw-call and triangle budgets` Playwright check.
+
+## M2 deployment verification — 2026-10-26
+
+- PR #22 merged into `main`; Pages deploy run `40268045511` completed successfully.
+- Live URL <https://gerrcass.github.io/tumble-rush-game/> returns 200.
+- Live smoke: menu loads, **PLAY SHOW** reaches `SUNRISE SCRAMBLE` with the HUD visible, and there are **no console errors or failed requests**.
+- The README hero was recaptured from the live deployment (`docs/readme-hero.png`).
