@@ -9,9 +9,8 @@ import {
   hexRing,
   hexRingCount,
   hexRound,
-  hexToWorld,
-  worldToHex,
 } from '../game/levels/hexGrid';
+import { hexToWorld, worldToHex } from '../game/levels/hexWorld';
 
 describe('hexGrid — axial honeycomb helpers', () => {
   it('builds the documented 19/37/61 tile discs', () => {

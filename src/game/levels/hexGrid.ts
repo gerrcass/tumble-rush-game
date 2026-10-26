@@ -1,5 +1,3 @@
-import { Vector3 } from 'three';
-
 /**
  * Axial hex coordinates for pointy-top hexagons.
  *
@@ -72,27 +70,6 @@ export function hexRingCount(radius: number): number {
 export function hexDiscCount(radius: number): number {
   if (radius < 0) return 0;
   return 1 + 3 * radius * (radius + 1);
-}
-
-/**
- * World-space centre of a pointy-top tile. `size` is the circumradius, i.e.
- * the distance from centre to corner, which is also the tile's nominal radius.
- */
-export function hexToWorld(coord: Axial, size: number, out?: Vector3): Vector3 {
-  const x = size * Math.sqrt(3) * (coord.q + coord.r / 2);
-  const z = size * 1.5 * coord.r;
-  if (out) {
-    out.set(x, 0, z);
-    return out;
-  }
-  return new Vector3(x, 0, z);
-}
-
-/** Nearest axial tile for a world XZ position (used by collapse lookups). */
-export function worldToHex(x: number, z: number, size: number): Axial {
-  const q = ((Math.sqrt(3) / 3) * x - z / 3) / size;
-  const r = ((2 / 3) * z) / size;
-  return hexRound(q, r);
 }
 
 export function hexRound(qf: number, rf: number): Axial {

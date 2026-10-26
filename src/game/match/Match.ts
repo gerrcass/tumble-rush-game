@@ -10,6 +10,7 @@ import {
   type ShowPhase,
 } from './Director';
 import { clamp } from '../util/math';
+import { planShow, type ShowPlan } from '../levels/coursePlan';
 
 export type StampTone = 'good' | 'bad' | 'normal';
 
@@ -114,9 +115,10 @@ const SPECTATE_SWITCH_SECONDS = 1.5;
 const HEXAPOP_GRACE = 4;
 /**
  * The Sugar Rush is the survival Round's fourth act, not an optional extra.
- * When a full four-Tumbler qualifying field is already safe, hold the result
- * for the 45 s ring drop and its one-second warning, then resolve. A field
- * that has already lost a slot (< qualifiers alive) still resolves at once.
+ * A full field is held for the 45 s ring drop and its one-second warning even
+ * when it has already lost a slot, so every M3 arena plan reaches the authored
+ * beat. A genuinely underfilled field (four or fewer entrants) still resolves
+ * after the short grace: there is no qualifier race left to watch.
  */
 const HEXAPOP_SUGAR_RUSH_SECONDS = 45;
 const HEXAPOP_RUSH_SETTLE_SECONDS = HEXAPOP_SUGAR_RUSH_SECONDS + 1.15;
@@ -129,6 +131,8 @@ const HEXAPOP_RUSH_SETTLE_SECONDS = HEXAPOP_SUGAR_RUSH_SECONDS + 1.15;
 export class Match {
   readonly seed: number;
   readonly seedLabel: string;
+  /** The one pure show plan shared with the levels, the card and the gate. */
+  readonly showPlan: ShowPlan;
   readonly contestants: readonly Contestant[];
   readonly player: Contestant;
   difficulty: DifficultyId;
@@ -158,6 +162,7 @@ export class Match {
   constructor(options: MatchOptions) {
     this.seed = options.seed;
     this.seedLabel = options.seedLabel;
+    this.showPlan = planShow(this.seed);
     this.difficulty = options.difficulty;
     this.contestants = options.contestants;
     this.player = options.player;
@@ -476,7 +481,7 @@ export class Match {
         this.roundTime >= HEXAPOP_GRACE &&
         (hasElimination || underfilled) &&
         alive.length <= definition.qualifiers &&
-        (alive.length < definition.qualifiers || !fullField || sugarRushSettled)
+        (!fullField || sugarRushSettled)
       ) {
         this.resolveRound();
       }

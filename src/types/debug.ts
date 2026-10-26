@@ -81,6 +81,22 @@ export interface DebugCourse {
   finishZ: number;
   finishY: number;
   waypointCount: number;
+  /** The two lap routes and the arena plan, for evidence and the gate. */
+  routeLabel: string;
+  courseSignature: string;
+  arena: string;
+  signature: string;
+  showLabel: string;
+}
+
+export interface DebugShowPlan {
+  courseSignature: string;
+  lapRoutes: readonly (readonly string[])[];
+  routeLabel: string;
+  arena: string;
+  arenaLabel: string;
+  signature: string;
+  label: string;
 }
 
 /** M2-005 spectate evidence: who the camera follows and what it can see. */
@@ -131,6 +147,7 @@ export interface TumbleDebugApi {
   readonly roundPlacements: readonly RoundPlacement[];
   readonly autopilot: 'off' | 'casual';
   readonly course: DebugCourse | null;
+  readonly plan: DebugShowPlan;
   readonly spectate: DebugSpectate;
   setQuality: (quality: Quality) => void;
   teleport: (x: number, y: number, z: number) => void;

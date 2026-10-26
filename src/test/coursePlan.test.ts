@@ -19,9 +19,10 @@ describe('Sunrise Scramble course plan', () => {
       a.conveyorSpeed !== b.conveyorSpeed,
       a.finishWidth !== b.finishWidth,
       a.shortcut.enabled !== b.shortcut.enabled,
-      a.shortcut.z !== b.shortcut.z,
+      a.shortcut.localZ !== b.shortcut.localZ,
       a.propColors.join(',') !== b.propColors.join(','),
       a.crowdArrangement.join(',') !== b.crowdArrangement.join(','),
+      a.laps[0]!.route.join('') !== b.laps[0]!.route.join(''),
       a.sections.some((section, index) => section.hazardPhase !== b.sections[index]?.hazardPhase),
     ].filter(Boolean);
     expect(differences.length).toBeGreaterThanOrEqual(5);
@@ -30,32 +31,29 @@ describe('Sunrise Scramble course plan', () => {
   it('keeps the authored grammar inside documented bounds', () => {
     for (const seed of [0, 1, 42, 0xffffffff, 987654321]) {
       const plan = planCourse(seed);
-      expect(plan.sections.map((section) => section.id)).toEqual(['A', 'B', 'C', 'D', 'E']);
-      expect(plan.sections.map((section) => section.name)).toEqual([
-        'BUNTING RUN',
-        'WHIRLYBIRD ALLEY',
-        'JELLY JUMPS',
-        'SLIME SLIDE',
-        'CROWN GATE',
-      ]);
-      expect(plan.length).toBeGreaterThanOrEqual(160);
-      expect(plan.length).toBeLessThanOrEqual(196);
-      // L-1: the plan must match the authored gate, not the section envelope.
-      expect(plan.finishZ).toBe(-156);
-      expect(plan.length).toBe(174);
-      expect(plan.courseFinishZ).toBe(-340);
-      expect(plan.courseLength).toBe(358);
-      expect(plan.sections[4]?.endZ).toBe(-156);
+      expect(plan.sections[0]?.id).toBe('A');
+      expect(plan.sections[4]?.id).toBe('E');
+      expect(plan.sections[5]?.id).toBe('A');
+      expect(plan.sections[9]?.id).toBe('E');
+      expect(plan.length).toBeGreaterThanOrEqual(165);
+      expect(plan.length).toBeLessThanOrEqual(185);
+      expect(plan.courseLength).toBeGreaterThanOrEqual(330);
+      expect(plan.courseLength).toBeLessThanOrEqual(370);
+      // The gate sits exactly at the end of the authored lap.
+      expect(plan.finishZ).toBe(plan.laps[0]!.finishZ);
+      expect(plan.courseFinishZ).toBe(plan.laps[1]!.finishZ);
+      expect(plan.sections[4]?.endZ).toBe(plan.finishZ);
+      expect(plan.sections[9]?.endZ).toBe(plan.courseFinishZ);
       expect(plan.laneScale).toBeGreaterThanOrEqual(0.85);
       expect(plan.laneScale).toBeLessThanOrEqual(1.15);
       expect(plan.platformOffset).toBeGreaterThanOrEqual(-0.75);
       expect(plan.platformOffset).toBeLessThanOrEqual(0.75);
-      expect(plan.shortcut.z).toBeGreaterThanOrEqual(-120);
-      expect(plan.shortcut.z).toBeLessThanOrEqual(-108);
+      expect(plan.shortcut.localZ).toBeGreaterThanOrEqual(-24);
+      expect(plan.shortcut.localZ).toBeLessThanOrEqual(-12);
       expect(plan.shortcut.width).toBeGreaterThan(1);
       expect(plan.propColors).toHaveLength(5);
       expect(plan.crowdArrangement).toHaveLength(8);
-      expect(describeCoursePlan(plan)).toHaveLength(10);
+      expect(describeCoursePlan(plan)).toHaveLength(12);
     }
   });
 
@@ -66,8 +64,8 @@ describe('Sunrise Scramble course plan', () => {
     for (const plan of plans) {
       if (plan.shortcut.enabled) {
         expect([-1, 1]).toContain(plan.shortcut.side);
-        expect(plan.shortcut.z).toBeGreaterThan(-120);
-        expect(plan.shortcut.z).toBeLessThan(-108);
+        expect(plan.shortcut.localZ).toBeGreaterThan(-24);
+        expect(plan.shortcut.localZ).toBeLessThan(-12);
       }
     }
   });
