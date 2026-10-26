@@ -164,6 +164,16 @@ test.describe('M2 Phase B show feel', () => {
     });
     await expect(page.locator('.hud-spectate')).toBeVisible();
 
+    // `simulate` advances the fixed step but not the render-rate tag/camera
+    // pass. Wait for two real frames before reading the visual debug fields,
+    // otherwise a slow CI renderer can expose the previous leader's tags.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+
     const first = await page.evaluate(() => window.__tumble?.spectate ?? null);
     expect(first?.active).toBe(true);
     expect(first?.name).not.toBe('');
@@ -182,20 +192,33 @@ test.describe('M2 Phase B show feel', () => {
     // Remove the followed leader: the same file step must retarget a living
     // leader, not resolve the Round or keep the dead tag. Bots can occasionally
     // be mid-fall when the check fires, so give the retarget a bounded second
-    // elimination instead of asserting on one frame-sensitive sample.
-    await page.evaluate(() => {
+    // elimination instead of asserting on one frame-sensitive sample. The
+    // leader can also change naturally while the live loop runs, so record the
+    // name actually eliminated rather than comparing with the earlier snapshot.
+    const retarget = await page.evaluate(() => {
       const t = window.__tumble;
-      if (!t) return;
-      const first = t.spectate.name;
-      for (let attempt = 0; attempt < 3 && t.spectate.name === first; attempt += 1) {
-        t.eliminateContestant(t.spectate.name);
+      if (!t) return null;
+      let before = t.spectate.name;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        before = t.spectate.name;
+        t.eliminateContestant(before);
         t.simulate(1.8);
+        if (t.spectate.name !== before) break;
       }
+      return { before, after: t.spectate.name };
     });
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
     const second = await page.evaluate(() => window.__tumble?.spectate ?? null);
     expect(second?.active).toBe(true);
-    expect(second?.name).not.toBe(first?.name);
-    expect(second?.name).not.toBe('');
+    expect(retarget?.after).not.toBe(retarget?.before);
+    expect(retarget?.after).not.toBe('');
+    expect(second?.name).toBe(retarget?.after);
+    expect(second?.name).not.toBe(retarget?.before);
     expect(second?.leaderTagVisible).toBe(true);
     expect(second?.nonTargetTagsVisible).toBe(0);
     expect(second?.nearestBeanClearance ?? 0).toBeGreaterThan(0.6);
