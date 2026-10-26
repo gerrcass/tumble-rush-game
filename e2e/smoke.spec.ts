@@ -204,7 +204,7 @@ test.describe('Phase 2 mechanics in debug rounds', () => {
     await page.evaluate(() => window.__tumble?.startMode('hexapop'));
     await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
     const initialTiles = await page.evaluate(() => window.__tumble?.tileCount ?? 0);
-    await page.evaluate(() => window.__tumble?.teleport(3.5, 0.06, 1.2));
+    await page.evaluate(() => window.__tumble?.teleport(3.5, 0.5, 1.2));
     await expect
       .poll(() => page.evaluate(() => window.__tumble?.tileCount ?? 999), { timeout: 12000 })
       .toBeLessThan(initialTiles);
