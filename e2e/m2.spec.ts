@@ -168,7 +168,10 @@ test.describe('M2 Phase B show feel', () => {
     // pass. Wait for two real frames before reading the visual debug fields,
     // otherwise a slow CI renderer can expose the previous leader's tags.
     await page.evaluate(
-      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
     );
 
     const first = await page.evaluate(() => window.__tumble?.spectate ?? null);
@@ -205,7 +208,10 @@ test.describe('M2 Phase B show feel', () => {
       return { before, after: t.spectate.name };
     });
     await page.evaluate(
-      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
     );
     const second = await page.evaluate(() => window.__tumble?.spectate ?? null);
     expect(second?.active).toBe(true);
