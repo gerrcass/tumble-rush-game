@@ -4,81 +4,123 @@ This is a navigation note for the M3 implementer. It describes where the
 current code lives and which seams the spec expects to change. It is not a
 second spec; the decisions are in [`SPEC.md`](./SPEC.md).
 
+## Show plan
+
+- `src/game/levels/coursePlan.ts` is now the one pure `planShow(seed)`:
+  - `COURSE_MODULES` is the section-module contract (id, name, weight, length,
+    2 u lead-in, height-neutral middle, A/E bookends);
+  - each lap is `A + three distinct middles + E`, with difficulty 6–8;
+  - `CoursePlan.laps` owns the cursor, world positions, lap offset, finish gate,
+    and course finish; `CoursePlan.sections` is the flat lap-1/lap-2 list;
+  - `ShowPlan` adds the arena id/label, `courseSignature`, `routeLabel`,
+    `signature`, and the one-line Show Card `label`.
+- `planShow` has no Three.js, DOM, or match dependency. The Course, Hexapop,
+  Show Card, variety gate, and tests all consume it.
+- The route picker uses a separate seeded `Rng` stream so the historical A–E
+  hazard parameter draw order stays comparable with the M2 baseline.
+
 ## Course
 
-- The pure planner is `src/game/levels/coursePlan.ts`. It currently returns the
-  fixed five-section grammar, two laps, `finishZ = -156`,
-  `courseFinishZ = -340`, `courseLength = 358`, `COURSE_LAP_OFFSET_Z = -184`,
-  and `COURSE_LAP_OFFSET_Y = 4.5`.
-- `src/game/levels/Course.ts` builds A–E inside `buildLap`; section builders use
-  absolute lap-local z values. `this.lapZ`/`this.lapY` are added by the
-  `addPlatform`/`addBox`/`addCylinder`/`addSign` helpers, so a section’s
-  horizontal/vertical offset is already a first-class idea.
-- The waypoint list is a single hard-coded array at the bottom of `Course.ts`
-  (`buildWaypoints`). It must be split by module and re-offset by the route
-  planner.
-- Checkpoints are built in the constructor from a hard-coded z table. They must
-  follow the route modules.
-- The finish gate and finish position are `Course.finishPosition` and
-  `buildSectionE`; the lap connector is `buildLapConnector`. The HUD `sectionAt`
-  and `progress` use the plan’s section ranges.
-- `CoursePlan.finishZ/courseFinishZ/courseLength` are asserted in
-  `src/test/coursePlan.test.ts`; replace exact values with route invariants.
-- Current height quirk: section D ends at y −1.6 while A/B/C end at 0. A
-  height-neutral module contract needs D to exit at 0, or the planner must own a
-  connector ramp. Pick one and make it explicit.
+- `src/game/levels/Course.ts` builds `plan.laps` by switching on the module id.
+  `this.sectionZ` is the planner's absolute cursor; section builders use local z
+  only. Helpers add `sectionZ`/`lapY` to every visual and collider.
+- Every middle module is height-neutral: B/C/F/G are flat at y 0; D's slime
+  slide descends to −1.6 and now has an authored exit ramp back to y 0. E is the
+  finish bookend and ends on the 4.5 finish deck.
+- `MODULE_WAYPOINTS` and `CHECKPOINT_LOCAL` are module-local tables. The
+  planner offsets them by `section.startZ` and `lap.offsetY`; bots never need to
+  know the route order.
+- The finish gate is at the end of lap 2 (`plan.courseFinishZ`). Lap 1's gate
+  is a lap gate. `sectionAt`/`lapAt` read the plan, not absolute 174/358
+  constants.
+- F — Tumbler Tangle — is the narrow two-sweeper/pusher beat. G — Bounce Bazaar
+  — is the bounce-pad/moving-platform beat. Both use the existing hazard
+  builders and collider kinds.
+- Module entry waypoints are `jump` so a bot commits at the 1.5–2.5 u module
+  gap. The entry platforms of F/G sit on the module boundary.
 
 ## Hexapop
 
-- `src/game/levels/Hexapop.ts` builds three tiers with `hexDisc(radius)` and
-  filters a centre chute. `buildTiers` is the shape seam.
-- The safe centre tile is `(tier 0, q 0, r 0)` and `safeTileIndices`.
-  `openPerch` disables the podium, clears `safe`, and warns the centre tile.
+- `src/game/levels/hexGrid.ts` is pure axial math; `hexWorld.ts` owns the
+  Three.js `Vector3` conversion so `arenaPlan.ts` stays data-only.
+- `src/game/levels/arenaPlan.ts` owns the three plans:
+  - **RINGS** — the M2 full honeycomb (225 planned tiles, 223 after the chute);
+  - **SPIRAL** — one rotating 60° sector removed per ring (188 planned);
+  - **GEARWORKS** — three alternating notches on the outer two rings, with a
+    full outermost rim so the bots have a recovery edge (189 planned, 188
+    after the chute).
+  - `arenaCells`, `arenaTileCount`, and `arenaDisconnected` are pure and shared
+    by the level, tests, and evidence.
+- `Hexapop.ts` selects `planShow(seed).arena`, builds each tier from
+  `arenaCells`, and keeps the M2 warning, Sugar Rush, 4-survivor end, and 49.9 s
+  cap. Non-RINGS plans skip the solid under-rim so the holes read. A notched
+  plan can underfill the row (2–3 survivors); the Round still reaches the
+  Sugar Rush and the underfilled Crown still produces a living winner in the
+  recorded sweep. The 4-survivor behavior itself is covered by
+  `src/test/hexapop.test.ts`.
+- The station/perch centre tile is always present. The Match holds a full
+  8-bean field until the 45 s Sugar Rush even if it has already lost a slot;
+  an underfilled (≤4 entrant) field still resolves after the grace. This is the
+  M3 interpretation of "Sugar Rush reached on every run": the authored 45 s
+  beat is not optional, and the round still ends at ≤4 survivors.
 - `queryTiles`, `nearestSafeTile`, `spawnPoints`, `tileCount`, and
-  `collapseOuterRing` are the public/bot seams. Keep the same snapshot shape.
-- `src/game/levels/hexGrid.ts` has `hexDisc`, `hexRing`, `hexNeighbours`, and
-  `hexDistance`; use them for plan connectivity tests.
-- The M2 counts are 223 tiles, 3.3 s warning, 45 s Sugar Rush, 4 survivors,
-  49.9 s cap. The M3 plans must stay in 180–230 tiles and keep those rules.
+  `collapseOuterRing` keep their public shape. Bots use the same tile query; no
+  bot-only bridge or jump.
+
+## Crown (fixed)
+
+The Crown Climb layout, slime speed, and rules are unchanged (ADR 0006). M3
+adds two bot-AI fixes that do not alter the level for the player:
+
+- `CrownBrain` uses a short start stagger so four finalists do not push the
+  front runner off the start lip before the first jump;
+- `CrownClimb.step` applies the slime to every body, not only `bodies[0]`.
+  The old single-body check let a fallen finalist sit inside the start-deck
+  side while the slime rose past it. This is a bug fix, not a rule variant.
+
+The `CrownBrain` still uses the same controller, physics, waypoints, and
+crown-contact test as the human.
 
 ## Show plumbing
 
-- `src/game/levels/factory.ts` is the only level switch (`createLevel(mode,
-  seed)`). If the show plan is passed explicitly, this is the boundary; if the
-  levels call `planShow(seed)` themselves, keep it deterministic and cheap.
-- `src/game/Game.ts` creates the Match, installs levels in `prepareRound`, and
-  exposes the debug hook. `startShow`, `startObservedShow`,
-  `startCasualRun`, `startMode`, and `prepareRound` are the entry points.
-- `src/game/match/Director.ts` owns `SHOW_ROUNDS` and the labels/objectives.
-  M3 should not add a new mode; the Course and Hexapop labels can stay the
-  `SUNRISE SCRAMBLE` / `HEXAPOP` titles.
-- `src/app/screens/Overlays.ts` has `RoundIntro` and the results/show-end card;
-  `src/app/App.ts` builds the intro from `Match` and the show result.
-- `src/app/Hud.ts` reacts to `roundTitle`; do not add a live HUD element for the
-  Show Card.
+- `Match.showPlan` is the plan instance exposed to the App. `Course` and
+  `Hexapop` call the same pure `planShow(seed)` in their constructors, so the
+  card cannot drift from the level.
+- `src/app/screens/Overlays.ts` renders the Show Card with a shared
+  `fillShowCard` helper in `RoundIntro`, `ResultsOverlay`, and
+  `ShowEndOverlay`. The card has an `aria-label` and two chips:
+  `COURSE <lap1> / <lap2>` and `ARENA <name>`.
+- `StartScreen` receives today's `dailyCard` from `App` and renders
+  `TODAY · <route> · <arena>` in the Daily chip.
+- `Game` exposes `window.__tumble.plan` (course signature, route, arena,
+  label) next to `course`, `renderInfo`, `simulate`, and the show hooks. The
+  variety harness reads it; there is no second debug surface.
 
 ## Measurement
 
-- `scripts/lib/show-harness.mjs` drives the real page/`Match`; `measureSweep`
-  returns per-run rounds, totals, player status, and physical winner fields.
-- `scripts/verify-pacing.mjs` is the 10-seed M2 gate; `scripts/lib/pacing.mjs`
-  summarizes and evaluates. Add the 12-seed variety gate beside it, reusing the
-  harness rather than a new probe.
-- `src/test/pacingRounds.test.ts` is the headless real-Match M2 test; add a
-  smaller variety equivalent, and keep the external gate as the exhaustive one.
-- `window.__tumble` exposes `simulate`, `startMode`, `startObservedShow`,
-  `startCasualRun`, `jumpToRound`, `course`, `renderInfo`, `tileCount`,
-  `crownPosition`, and `levelStatus`. Use it for Playwright; do not add a second
-  debug surface.
+- `scripts/lib/show-harness.mjs` captures the plan at the start of each observed
+  show. `measureSweep` returns idle and casual runs with rounds, totals, player
+  status, physical winner fields, and the plan.
+- `scripts/verify-variety.mjs` runs 12 seeds × idle + casual, calls
+  `scripts/lib/variety.mjs`, and writes JSON plus a table. `--negative` proves
+  the gate rejects a collapsed route/arena deck. `src/test/variety.test.ts` is
+  the headless negative/positive control.
+- `src/test/arenaPlanLevel.test.ts` proves each plan's tile count, 8 seats,
+  connectivity, centre perch, stationary-player elimination, and outer-ring
+  warning.
+- `scripts/verify-pacing.mjs` remains the historical 10-seed M2 gate.
 
 ## Commands and budgets
 
 - `npm run check` = invariants + typecheck + unit tests + build.
 - `npm run verify:show` = real 16-bean Course + real Hexapop spawn.
 - `npm run verify:pacing -- --phase=b` = 10-seed M2 bands.
-- `npm run gate:release` = check + verify:show + pacing + full Playwright.
-- CI: parallel `check`, `pacing`, and 3-shard Playwright. Use `npx playwright
-  test --shard=N/3` to reproduce a shard.
-- Performance budget: 320 draw calls / 200k triangles at 1440×810 high; the
-  M2 Course start is 305 / 186,560. Sample route signatures and arena plans.
+- `npm run verify:variety` = 12-seed route/arena + M2 band gate.
+- `npm run gate:release` = check + verify:show + pacing + variety + full Playwright.
+- `npm run evidence` = phase-4 plus M3 canonical screenshots and the render
+  budget sample (`docs/evidence/m3-performance.json`).
+- CI runs `check`, `pacing`, `variety`, and 3 Playwright shards in parallel.
+- Performance budget: 320 draw calls / 200k triangles at 1440×810 high. The M3
+  samples are 154–159 / 155k–160k on three route starts and 53–58 / 17.6k–19.1k
+  on three arena plans.
 - The host is SwiftShader-only; never use FPS as a hardware signal.

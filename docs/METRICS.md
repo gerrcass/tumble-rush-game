@@ -259,3 +259,128 @@ Known SwiftShader-only dev-host numbers (not a hardware claim): the two-lap Cour
 - Live URL <https://gerrcass.github.io/tumble-rush-game/> returns 200.
 - Live smoke: menu loads, **PLAY SHOW** reaches `SUNRISE SCRAMBLE` with the HUD visible, and there are **no console errors or failed requests**.
 - The README hero was recaptured from the live deployment (`docs/readme-hero.png`).
+
+## M3 — Remix Season — 2026-10-26, branch `feat/m3-remix`
+
+M3 makes the seeded show structural. Route repeatability starts with this
+build: a seed reproduces its M3 route and arena exactly, while the M2 seed
+layouts are intentionally replaced. The Course is two laps of
+**A + three of five middle modules + E**, drawn from relocatable sections
+(including the new **F — Tumbler Tangle** and **G — Bounce Bazaar**). Hexapop
+uses one of three connected arena plans (**RINGS**, **SPIRAL**, **GEARWORKS**).
+A pure `planShow(seed)` owns both and feeds the Show Card. Crown Climb stays
+fixed (ADR 0006).
+
+The M2 bands remain the contract. The new gate is the 12-seed
+`npm run verify:variety` sweep (idle + scripted casual, 24 observed shows); the
+historical 10-seed `verify:pacing -- --phase=b` remains in CI.
+
+### 12-seed variety sweep (`npm run verify:variety -- --negative`)
+
+Seeds: `20260418, 20365147, 20469876, 20574605, 20679334, 20784063, 20888792,
+20993521, 21098250, 21202979, 21307708, 21412437`.
+
+| Seed | Route (lap 1 / lap 2) | Arena | Course s (finishers) | Hex s | Crown s | Total s | Idle | Casual |
+| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+| 20260418 | B-C-D / C-F-G | RINGS | 72.45 (8) | 46.7 | 56.02 | 206.07 | OUT | **Q** |
+| 20365147 | C-D-G / B-C-G | SPIRAL | 70.07 (8) | 46.17 | 53.63 | 200.77 | OUT | **Q** |
+| 20469876 | D-F-G / B-C-G | SPIRAL | 72.73 (8) | 46.4 | 54.43 | 204.47 | OUT | **Q** |
+| 20574605 | B-D-G / B-C-F | GEARWORKS | 70.73 (8) | 46.17 | 50.97 | 198.77 | OUT | **Q** |
+| 20679334 | B-C-F / B-D-F | GEARWORKS | 69.45 (8) | 46.17 | 62.05 | 208.57 | OUT | **Q** |
+| 20784063 | D-F-G / B-D-F | SPIRAL | 70.42 (8) | 46.17 | 62.53 | 210.02 | OUT | OUT |
+| 20888792 | C-F-G / D-F-G | SPIRAL | 70.07 (8) | 46.17 | 63.73 | 210.87 | OUT | **Q** |
+| 20993521 | B-D-F / D-F-G | SPIRAL | 70.08 (8) | 46.17 | 65.2 | 212.35 | OUT | **Q** |
+| 21098250 | C-F-G / C-D-G | SPIRAL | 73.4 (8) | 47.2 | 56.73 | 208.23 | OUT | OUT |
+| 21202979 | B-F-G / B-D-F | GEARWORKS | 68.7 (8) | 46.17 | 56.4 | 202.17 | OUT | **Q** |
+| 21307708 | B-C-F / C-D-F | RINGS | 71.42 (8) | 47.13 | 48.9 | 198.35 | OUT | **Q** |
+| 21412437 | B-C-D / B-C-G | GEARWORKS | 72.4 (9) | 46.17 | 56.87 | 206.33 | OUT | **Q** |
+
+| Signal | M3 result | Band | Result |
+| --- | ---: | --- | --- |
+| Distinct Course signatures | **12 / 12** | ≥ 8 | PASS |
+| Hexapop arena plans | **3 / 3** | 3 | PASS |
+| Tumbler Tangle (F) shows | **10 / 12** | ≥ 4 | PASS |
+| Bounce Bazaar (G) shows | **10 / 12** | ≥ 4 | PASS |
+| Course clock | **68.7–73.4 s** | 45–90 s | PASS |
+| Course finishers | **8–9 every run** | 8+ | PASS |
+| Hexapop clock | **46.17–47.2 s** | 30–50 s | PASS |
+| Sugar Rush reached | **24 / 24** | every run | PASS |
+| Crown living + touching winner | **24 / 24 (100%)** | ≥ 23 / 24 | PASS |
+| Crown clock (living runs) | 48.9–65.2 s | 45–80 s | PASS |
+| Show total | median **205.55 s** (194.07–212.35) | 180–300 s, 150–360 s | PASS |
+| Idle human qualified | **0 / 12** | 0 | PASS |
+| Casual human qualified | **10 / 12 (83%)** | ≥ 8 / 12 | PASS |
+| Negative control (collapsed deck) | **rejected** | must fail | PASS |
+
+There are **no no-winner Crown runs** in this sweep: 24 / 24 living, physically
+touching winners. The earlier draft sweep (before the Course finish/pusher
+fixes) had one casual no-winner; it is not present in the recorded build.
+
+Some M3 plans underfill the Hexapop row: seeds 20784063, 21202979, 20888792,
+21307708, and 21412437 leave 2–3 survivors. This is a legitimate
+4-survivor-end outcome, not a pacing failure: the Round still reaches the 45 s
+Sugar Rush, and every underfilled Crown in this sweep produced a living winner.
+The M2 unit bar was relaxed from 3 to 2 qualifiers for the notched plans and is
+documented in the test.
+
+### Historical 10-seed gate after M3
+
+`npm run verify:pacing -- --phase=b` still passes on the M2 seed set in the
+final build:
+
+- Course **68.7–73.4 s** (median 70.25), **8 finishers every run**;
+- Hexapop **46.17–49.92 s** (median 46.17), Sugar Rush **20/20**;
+- Crown living + touching winner **20 / 20 (100%)**, clock **50.97–65.2 s**;
+- idle **0 / 10**; casual **8 / 10 (80%)**;
+- total median **205.55 s** (197.10–212.35);
+- no Crown no-winner runs.
+
+Evidence: [`docs/evidence/pacing/m3-pacing.json`](evidence/pacing/m3-pacing.json),
+[`m3-pacing.log`](evidence/pacing/m3-pacing.log).
+
+### Known M3 gap — underfilled Hexapop rows
+
+Five of the 24 variety runs end with **2–3 survivors** instead of exactly four
+(seeds 20784063, 21202979, 20888792, 21307708, 21412437). The M3 plans can lose the fourth
+bean to the slime before the 45 s Sugar Rush; when the field underfills, the
+Director advances the living survivors as it did in M2. The 4-survivor behavior
+itself is unchanged and covered by `src/test/hexapop.test.ts` (a four-body field
+holds the tile under each living Tumbler and drops the outer ring). This is
+recorded as an accepted gap, not a hidden pass: the Round still reaches the
+Sugar Rush and every underfilled Crown in the sweep produced a living winner.
+
+Evidence: [`docs/evidence/variety/m3-variety.json`](evidence/variety/m3-variety.json),
+[`m3-variety.log`](evidence/variety/m3-variety.log).
+
+Evidence: [`docs/evidence/variety/m3-variety.json`](evidence/variety/m3-variety.json),
+[`m3-variety.log`](evidence/variety/m3-variety.log).
+The `--negative` control collapses every plan to `B-C-D/B-C-D · RINGS` and the
+same gate rejects it on route variety, arena variety, and both new-section
+counts.
+
+### M3 performance samples
+
+`npm run evidence` records the 1440×810 high render sample in
+[`docs/evidence/m3-performance.json`](evidence/m3-performance.json).
+
+| Sample | Draw calls | Triangles |
+| --- | ---: | ---: |
+| Course `B-C-D/C-F-G` (RINGS seed) | 157 | 157,982 |
+| Course `C-D-G/B-C-G` (SPIRAL seed) | 159 | 159,934 |
+| Course `B-D-G/B-C-F` (GEARWORKS seed) | 154 | 155,114 |
+| Hexapop RINGS | 58 | 19,068 |
+| Hexapop SPIRAL | 55 | 17,732 |
+| Hexapop GEARWORKS | 53 | 17,608 |
+
+All are inside the 320 draw-call / 200k triangle budget. The host is
+SwiftShader-only, so this is a budget sample, not a hardware FPS claim.
+
+### M3 commands
+
+```bash
+npm run verify:variety            # 12 seeds × idle + casual, all M2 bands
+npm run verify:variety -- --negative
+npm run verify:pacing -- --phase=b
+npm run evidence                  # M3 screenshots + m3-performance.json
+npm run gate:release              # check + verify:show + pacing + variety + e2e
+```

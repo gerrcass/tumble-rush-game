@@ -77,15 +77,19 @@ test.describe('M2 Course pacing and fair qualification', () => {
     const course = await page.evaluate(() => window.__tumble?.course ?? null);
     expect(course).not.toBeNull();
     expect(course?.laps).toBe(2);
-    expect(course?.finishZ).toBeCloseTo(-340, 4);
+    // M3 makes the exact finish seed-dependent. Assert the authored Course
+    // envelope and the final-deck height, not the retired 174/358 constants.
+    expect(course?.finishZ).toBeGreaterThan(-352);
+    expect(course?.finishZ).toBeLessThan(-312);
     expect(course?.finishY).toBeCloseTo(9.1, 4);
-    expect(course?.waypointCount).toBe(55);
+    expect(course?.waypointCount).toBeGreaterThan(40);
 
-    // Lap 2's Whirlybird Alley (the same section grammar translated past
-    // lap 1). A static platform keeps the evidence frame off the kill plane.
+    // Lap 2's remixed middle (the route is translated past lap 1). Derive the
+    // framing point from the plan; the exact z is seed-dependent in M3.
     await page.evaluate(() => {
+      const current = window.__tumble?.course;
       window.__tumble?.setQuality('high');
-      window.__tumble?.teleport(0, 4.7, -242);
+      window.__tumble?.teleport(0, 4.7, 18 + (current?.lapOffsetZ ?? -184) - 80);
       window.__tumble?.simulate(0.2);
     });
     await page.waitForTimeout(2400);
@@ -94,7 +98,12 @@ test.describe('M2 Course pacing and fair qualification', () => {
     // The final gate credits the human's finish. The Round keeps running until
     // eight racers finish, so the results table appears after the pack lands.
     await page.evaluate(() => {
-      window.__tumble?.teleport(0, 9.3, -336);
+      const current = window.__tumble?.course;
+      window.__tumble?.teleport(
+        0,
+        (current?.finishY ?? 9.1) + 0.2,
+        (current?.finishZ ?? -340) + 1,
+      );
       window.__tumble?.simulate(0.2);
     });
     await expect
