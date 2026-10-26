@@ -7,16 +7,18 @@ Tumble Rush is a complete single-player 3D battle-royale party game for the brow
 ```bash
 npm ci
 npm run dev          # http://localhost:5173
-npm run check        # typecheck + unit tests + production build
+npm run check        # invariants + typecheck + unit tests + production build
+npm run lint         # invariants + typecheck
+npm run gate:release # check + verify:show + 10-seed pacing + full Playwright
 npm run verify:show  # real 16-bean Course + real Hexapop spawn
 npm run measure:show # pacing baseline; see docs/METRICS.md
-npm run verify:pacing # 10-seed pacing gate (M2)
+npm run verify:pacing # 10-seed pacing gate
 npm run test:e2e     # Playwright smoke + screenshots (set TUMBLE_E2E_PORT if 5173 is occupied)
 npm run evidence     # canonical screenshot set
 npm run ci:local     # clean install with workspace-local npm cache + check
 ```
 
-Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `gerrcass/tumble-rush-game`. The release checklist is [`docs/RELEASE.md`](docs/RELEASE.md); pacing baselines and targets are [`docs/METRICS.md`](docs/METRICS.md).
+Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `gerrcass/tumble-rush-game`. The release checklist is [`docs/RELEASE.md`](docs/RELEASE.md); pacing baselines and targets are [`docs/METRICS.md`](docs/METRICS.md). The agent-environment retro is [`docs/RETRO-M3.md`](docs/RETRO-M3.md).
 
 ## Architecture
 
@@ -24,7 +26,7 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 - `src/game/` — render loop, match/director, physics, beans, bots, levels, FX, audio, profile.
 - `src/test/` — Vitest unit tests. `e2e/` — Playwright specs and screenshot script.
 - `docs/` — spec, tickets, grill, retro, `evidence/` screenshots.
-- `.github/workflows/` — `ci.yml` (checks) and `deploy.yml` (GitHub Pages).
+- `.github/workflows/` — `ci.yml` (parallel check, pacing, and 3-shard e2e) and `deploy.yml` (GitHub Pages).
 
 `Game` owns the renderer, clock, and quality settings. `Match` owns the show state machine and talks to the HUD through events. Levels build geometry and colliders; they never own game state. The physics world is the only place that mutates bean positions during a step.
 

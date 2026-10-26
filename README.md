@@ -123,9 +123,11 @@ docs/                    spec, tickets, decisions, reviews, evidence
 | `npm run measure:show` | Real-Match pacing baseline (see `docs/METRICS.md`) |
 | `npm run verify:pacing -- --phase=b` | 10-seed pacing gate: Course, Hexapop, Crown living winner, show total |
 | `npm run evidence` | Canonical screenshot set |
-| `npm run check:release` | Typecheck, unit tests, build, and focused review specs |
+| `npm run check:release` | Invariants, typecheck, unit tests, build, and focused review specs |
+| `npm run gate:release` | Full release gate: check, `verify:show`, 10-seed pacing, and Playwright |
 | `npm run ci:local` | Clean install with a workspace-local npm cache + check |
-| `npm run check` | Typecheck + unit tests + production build |
+| `npm run check` | Invariants + typecheck + unit tests + production build |
+| `npm run lint` | Invariants + typecheck |
 
 The dev/test-only `window.__tumble` hook exposes show state, contestant statuses, standings, seeded `simulate(seconds)`, round jumps, camera framing, audio state, and render info. It is used by the Playwright suite and is not part of normal play.
 
