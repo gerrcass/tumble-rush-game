@@ -1,6 +1,6 @@
 # AGENTS.md — Tumble Rush
 
-Tumble Rush is a complete single-player 3D battle-royale party game for the browser. Use [`GLOSSARY.md`](GLOSSARY.md) for domain language. The current milestone is **M2 — Show Pacing & Fairness**; read [`docs/m2/SPEC.md`](docs/m2/SPEC.md), [`docs/m2/TICKETS.md`](docs/m2/TICKETS.md), and [`docs/METRICS.md`](docs/METRICS.md). The v1 product spec remains [`docs/SPEC.md`](docs/SPEC.md) for architecture and UX invariants. The decisions behind the design are in [`docs/GRILL.md`](docs/GRILL.md) and [`docs/adr/`](docs/adr/). The issue-label policy is in [`docs/LABELS.md`](docs/LABELS.md).
+Tumble Rush is a complete single-player 3D battle-royale party game for the browser. Use [`GLOSSARY.md`](GLOSSARY.md) for domain language. The current milestone is **M3 — Remix Season**; read [`docs/m3/SPEC.md`](docs/m3/SPEC.md), [`docs/m3/TICKETS.md`](docs/m3/TICKETS.md), and [`docs/METRICS.md`](docs/METRICS.md). The v1 product spec remains [`docs/SPEC.md`](docs/SPEC.md) for architecture and UX invariants. The M2 pacing record is [`docs/RETRO-M2.md`](docs/RETRO-M2.md) and [`docs/METRICS.md`](docs/METRICS.md). The decisions behind the design are in [`docs/GRILL.md`](docs/GRILL.md), [`docs/m2/GRILL.md`](docs/m2/GRILL.md), [`docs/m3/GRILL.md`](docs/m3/GRILL.md), and [`docs/adr/`](docs/adr/). The issue-label policy is in [`docs/LABELS.md`](docs/LABELS.md).
 
 ## First run
 
@@ -34,6 +34,8 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 
 - **Fixed step.** Physics advances at 1/60 s with an accumulator; never scale collision resolution by render delta.
 - **Seeded.** Every layout decision comes from `Rng` using the show seed. The daily seed is `YYYY-MM-DD`. Never call `Math.random()` in level, bot, or cosmetic generation.
+- **Relocatable sections.** Course sections start and end height-neutral, own their checkpoint and waypoints, and are composed by the route planner. A section never owns the route or the finish gate.
+- **Measured variety.** A Course route or Hexapop arena change must pass the M3 variety gate; no variant is exempt from the pacing bands.
 - **Same rules for everyone.** Bots use the same controller and physics as the player. Pacing adjusts target speed only; never teleport or grant free jumps.
 - **Procedural assets.** Geometry, textures, particles, and audio are generated in code. One bundled font (`@fontsource-variable/fredoka`) is allowed. No runtime network requests, CDN links, copied game assets, or trademarked names.
 - **Static host.** The build must work under `/tumble-rush-game/`. Resolve asset URLs through Vite; never hard-code `/`.
