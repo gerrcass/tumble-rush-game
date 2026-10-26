@@ -20,7 +20,12 @@ export interface MatchStamp {
 
 export interface ShowResult {
   won: boolean;
-  winnerName: string;
+  /**
+   * Null only when a Round ended without a champion. The documented case is a
+   * Crown Climb total wipe: nobody touched the crown and every finalist was
+   * eliminated, so the Show ends in defeat with no winner to name.
+   */
+  winnerName: string | null;
   winnerLook: Contestant | null;
   playerPlacement: number;
   roundsQualified: number;
@@ -68,6 +73,13 @@ export interface MatchOptions {
   contestants: readonly Contestant[];
   player: Contestant;
   callbacks: MatchCallbacks;
+  /**
+   * Debug/QA measurement only. When true, an eliminated or non-qualifying
+   * human does not end the Show: the next Round fields the bots that did
+   * qualify. Normal play leaves this false and a missed qualification still
+   * ends the Show immediately.
+   */
+  continueWhenPlayerOut?: boolean;
 }
 
 export interface MatchHud {
@@ -100,6 +112,14 @@ const RESULTS_SECONDS = 5;
 const SPECTATE_SWITCH_SECONDS = 1.5;
 /** Let a tiny Hexapop field play briefly before skipping it. */
 const HEXAPOP_GRACE = 4;
+/**
+ * The Sugar Rush is the survival Round's fourth act, not an optional extra.
+ * When a full four-Tumbler qualifying field is already safe, hold the result
+ * for the 45 s ring drop and its one-second warning, then resolve. A field
+ * that has already lost a slot (< qualifiers alive) still resolves at once.
+ */
+const HEXAPOP_SUGAR_RUSH_SECONDS = 45;
+const HEXAPOP_RUSH_SETTLE_SECONDS = HEXAPOP_SUGAR_RUSH_SECONDS + 1.15;
 
 /**
  * Show Director: owns Rounds, qualification, advancement, spectating and the
@@ -124,6 +144,7 @@ export class Match {
   spectating: Contestant | null = null;
 
   private readonly callbacks: MatchCallbacks;
+  private readonly continueWhenPlayerOut: boolean;
   private entrants: Contestant[] = [];
   private finishers = new Set<string>();
   private winnerId: string | null = null;
@@ -141,6 +162,7 @@ export class Match {
     this.contestants = options.contestants;
     this.player = options.player;
     this.callbacks = options.callbacks;
+    this.continueWhenPlayerOut = options.continueWhenPlayerOut ?? false;
     this.applyDifficulty();
   }
 
@@ -393,7 +415,12 @@ export class Match {
 
     // A follow-cam must never stay on a Tumbler that just fell. Switch on the
     // same step; if nobody is left, resolve the Round instead of staring at slime.
-    if (this.spectating && this.spectating.body.eliminated) {
+    if (
+      this.spectating &&
+      (this.spectating.body.eliminated ||
+        this.spectating.eliminatedAt !== null ||
+        this.spectating.finishTime !== null)
+    ) {
       const leader = this.currentLeader();
       if (!leader) {
         this.resolveRound();
@@ -443,10 +470,13 @@ export class Match {
       const hasElimination = this.entrants.some(
         (contestant) => contestant.body.eliminated || contestant.status === 'eliminated',
       );
+      const fullField = this.entrants.length > definition.qualifiers;
+      const sugarRushSettled = this.roundTime >= HEXAPOP_RUSH_SETTLE_SECONDS;
       if (
         this.roundTime >= HEXAPOP_GRACE &&
         (hasElimination || underfilled) &&
-        alive.length <= definition.qualifiers
+        alive.length <= definition.qualifiers &&
+        (alive.length < definition.qualifiers || !fullField || sugarRushSettled)
       ) {
         this.resolveRound();
       }
@@ -596,26 +626,45 @@ export class Match {
       distanceToCrown: contestant.distanceToCrown,
     }));
     const placements = resolveRound(definition, performances, { timedOut });
-    // Crown Climb always has exactly one winner, even on a timeout or a total
-    // wipe. The Arena Director lifts the highest finalist into the win row so
-    // the ceremony can never name somebody the results still call eliminated.
+    // Crown Climb promotes a champion only when the top row actually earned it:
+    // a finisher who touched the crown, or the highest living finalist on the
+    // timeout-height safety net. A total wipe has no winner; naming the last
+    // eliminated bean would revive it and put "takes the crown" on a corpse.
     if (definition.mode === 'crown-climb' && placements.length > 0) {
       const champion = placements[0]!;
-      champion.won = true;
-      champion.qualified = true;
-      champion.status = 'QUALIFIED';
-      champion.eliminated = false;
-      champion.eliminatedAt = null;
+      if (champion.finishTime !== null || !champion.eliminated) {
+        champion.won = true;
+        champion.qualified = true;
+        champion.status = 'QUALIFIED';
+        if (champion.finishTime !== null) {
+          // A bean that crossed the trigger but was shoved off afterwards is a
+          // finisher, not a wipe casualty. Never do this for a non-finisher.
+          champion.eliminated = false;
+          champion.eliminatedAt = null;
+        }
+      } else {
+        // Resolve the documented no-winner/draw: `resolveRound`'s total-wipe
+        // backfill may have marked a dead bean qualified, so clear it here.
+        // The Show-end UI reads winnerName === null instead of inventing one.
+        for (const placement of placements) {
+          placement.qualified = false;
+          placement.status = 'ELIMINATED';
+        }
+      }
     }
     for (const placement of placements) {
       const contestant = this.entrants.find((entry) => String(entry.id) === placement.id);
       if (!contestant) continue;
       contestant.placement = placement.placement;
       contestant.status = placement.qualified ? 'qualified' : 'eliminated';
-      if (definition.mode === 'crown-climb' && placement.placement === 1) {
-        contestant.eliminatedAt = null;
-        contestant.body.eliminated = false;
-        contestant.body.velocity?.set(0, 0, 0);
+      if (definition.mode === 'crown-climb' && placement.won) {
+        // A living timeout champion is already un-eliminated; only a real
+        // finisher may have its eliminated flag cleared.
+        if (contestant.finishTime !== null || !contestant.body.eliminated) {
+          contestant.eliminatedAt = null;
+          contestant.body.velocity?.set(0, 0, 0);
+        }
+        if (contestant.finishTime !== null) contestant.body.eliminated = false;
       }
       if (!placement.qualified) contestant.body.eliminated = true;
     }
@@ -635,8 +684,12 @@ export class Match {
     if (!last) return;
     const playerEntry = last.placements.find((entry) => entry.isPlayer);
     const playerQualified = Boolean(playerEntry?.qualified);
-    if (!playerQualified || this.roundIndex >= SHOW_ROUNDS.length - 1) {
-      this.finishShow(playerQualified && this.roundIndex >= SHOW_ROUNDS.length - 1, last, playerEntry);
+    const lastRound = this.roundIndex >= SHOW_ROUNDS.length - 1;
+    // Normal play: a missed qualification ends the Show. The pacing harness
+    // opts into an observed show so it can measure all three Rounds even when
+    // its idle human is out of the Course. That switch is debug-only.
+    if (lastRound || (!playerQualified && !this.continueWhenPlayerOut)) {
+      this.finishShow(playerQualified && lastRound, last, playerEntry);
       return;
     }
     this.roundIndex += 1;
@@ -661,20 +714,26 @@ export class Match {
     lastRound: RoundHistory,
     playerEntry: RoundPlacement | undefined,
   ): void {
-    const winnerEntry = lastRound.placements.find((entry) => entry.qualified) ?? lastRound.placements[0];
+    // A Crown Climb with no champion must stay a no-winner result. The other
+    // Rounds keep the historical last-row fallback so a show always has a head
+    // in the results card, but a dead finalist is never named as the crowned
+    // Tumbler.
+    const winnerEntry =
+      lastRound.placements.find((entry) => entry.qualified) ??
+      (lastRound.definition.mode === 'crown-climb' ? undefined : lastRound.placements[0]);
     const winner =
       winnerEntry && won
         ? this.player
         : winnerEntry
           ? (this.contestants.find((contestant) => String(contestant.id) === winnerEntry.id) ??
-            this.player)
-          : this.player;
+            null)
+          : null;
     const roundsQualified = this.history.filter((history) =>
       history.placements.some((entry) => entry.isPlayer && entry.qualified),
     ).length;
     const result: ShowResult = {
       won,
-      winnerName: winner.name,
+      winnerName: winner?.name ?? null,
       winnerLook: winner,
       playerPlacement: playerEntry?.placement ?? this.entrants.length,
       roundsQualified,
@@ -700,7 +759,15 @@ export class Match {
   private currentLeader(): Contestant | null {
     let leader: Contestant | null = null;
     for (const contestant of this.entrants) {
-      if (contestant.body.eliminated) continue;
+      // A finished Course bot is frozen at 100% and must never be followed
+      // while the pack is still racing. Finished/frozen is not "living".
+      if (
+        contestant.body.eliminated ||
+        contestant.eliminatedAt !== null ||
+        contestant.finishTime !== null
+      ) {
+        continue;
+      }
       if (!leader || contestant.progress > leader.progress + 0.02) leader = contestant;
       else if (
         Math.abs(contestant.progress - leader.progress) <= 0.02 &&

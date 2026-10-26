@@ -203,11 +203,18 @@ test.describe('Phase 2 mechanics in debug rounds', () => {
   test('hexapop tile touch starts a collapse and slime eliminates', async ({ page }) => {
     await page.evaluate(() => window.__tumble?.startMode('hexapop'));
     await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
-    await page.evaluate(() => window.__tumble?.teleport(3.5, 0.06, 1.2));
-    await expect
-      .poll(() => page.evaluate(() => window.__tumble?.tileCount ?? 999), { timeout: 5000 })
-      .toBeLessThan(117);
-    await page.evaluate(() => window.__tumble?.teleport(0, -9.4, 0));
+    const initialTiles = await page.evaluate(() => window.__tumble?.tileCount ?? 0);
+    // Advance the fixed loop explicitly. CI runs on SwiftShader at ~3 fps, so a
+    // wall-clock wait would not reach the 3.4 s perch grace + tile warning.
+    await page.evaluate(() => {
+      window.__tumble?.teleport(0, 0.45, 0);
+      window.__tumble?.simulate(6);
+    });
+    await expect.poll(() => page.evaluate(() => window.__tumble?.tileCount ?? 999)).toBeLessThan(initialTiles);
+    await page.evaluate(() => {
+      window.__tumble?.teleport(0, -9.4, 0);
+      window.__tumble?.simulate(1);
+    });
     await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('finished');
     await expect(page.locator('#finish-overlay')).toContainText('ELIMINATED');
   });
@@ -215,7 +222,10 @@ test.describe('Phase 2 mechanics in debug rounds', () => {
   test('course finish gate qualifies and shows the end overlay', async ({ page }) => {
     await page.evaluate(() => window.__tumble?.startMode('course'));
     await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('playing');
-    await page.evaluate(() => window.__tumble?.teleport(0, 4.55, -155));
+    await page.evaluate(() => {
+      const finish = window.__tumble?.course;
+      window.__tumble?.teleport(0, (finish?.finishY ?? 9.1) - 0.05, (finish?.finishZ ?? -340) + 1);
+    });
     await expect.poll(() => page.evaluate(() => window.__tumble?.state)).toBe('finished');
     await expect(page.locator('#finish-overlay')).toContainText('QUALIFIED!');
   });

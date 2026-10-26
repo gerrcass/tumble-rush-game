@@ -35,13 +35,13 @@ A repeatable command that drives the real `Match` through a full show with no in
 
 **Acceptance**
 
-- [ ] `npm run measure:show -- --runs=10` outputs per-Round clocks, finishers, qualifiers, player status, living-winner state, total show clock, and a median.
-- [ ] A full-show mode advances through all three Rounds using the real Match/Director; it does not use `forcePlayerWin` to skip play.
-- [ ] A scripted "casual" input path exists and reports whether the human qualified (no wall-clock sleeps).
-- [ ] `npm run verify:pacing` fails outside the M2 bands and passes when the bands are met.
-- [ ] `docs/METRICS.md` records the v1 baseline and the new command.
-- [ ] Unit/helper tests for the pace bands and anchor math; no flaky timing assertions.
-- [ ] `npm run check` and the existing `verify:show` stay green.
+- [x] `npm run measure:show -- --runs=10` outputs per-Round clocks, finishers, qualifiers, player status, living-winner state, total show clock, and a median.
+- [x] A full-show mode advances through all three Rounds using the real Match/Director; it does not use `forcePlayerWin` to skip play.
+- [x] A scripted "casual" input path exists and reports whether the human qualified (no wall-clock sleeps).
+- [x] `npm run verify:pacing` fails outside the M2 bands and passes when the bands are met.
+- [x] `docs/METRICS.md` records the v1 baseline and the new command.
+- [x] Unit/helper tests for the pace bands and anchor math; no flaky timing assertions.
+- [x] `npm run check` and the existing `verify:show` stay green.
 
 **Evidence:** baseline JSON, 10-seed sweep output, failing/passing `verify:pacing` log.
 
@@ -57,14 +57,14 @@ A Course that lasts 45–90 seconds with humanized bots, a bounded human-pace an
 
 **Acceptance**
 
-- [ ] Show-preset Course clock is 45–90 s in the 10-seed sweep (median and per-seed bounds).
-- [ ] 8+ real finishers before the timer on the baseline seed and the sweep.
-- [ ] A scripted casual input path qualifies at least 7/10; an idle human never qualifies.
-- [ ] Bots use 0.62–0.78 of max target speed with skill variation; no teleport, no free jump, no hidden speed above the player's cap.
-- [ ] The human-pace anchor is bounded to 8–10% and only slows bots when the human is >25% behind; it never applies in the final.
-- [ ] If a second lap is added, it reuses the existing section grammar, colliders, and waypoints; the finish gate and qualification rule are coherent.
-- [ ] No new mode, biome, or art direction.
-- [ ] Real-Match Course tests and Playwright results pass; no console errors.
+- [x] Show-preset Course clock is 45–90 s in the 10-seed sweep (median and per-seed bounds).
+- [x] 8+ real finishers before the timer on the baseline seed and the sweep.
+- [x] A scripted casual input path qualifies at least 7/10; an idle human never qualifies.
+- [x] Bots use 0.62–0.78 of max target speed with skill variation; no teleport, no free jump, no hidden speed above the player's cap.
+- [x] The human-pace anchor is bounded to 8–10% and only slows bots when the human is >25% behind; it never applies in the final.
+- [x] If a second lap is added, it reuses the existing section grammar, colliders, and waypoints; the finish gate and qualification rule are coherent.
+- [x] No new mode, biome, or art direction.
+- [x] Real-Match Course tests and Playwright results pass; no console errors.
 
 **Evidence:** before/after `measure:show` Course rows, casual qualification log, screenshot of the extended Course/finish if a second lap is used.
 
@@ -80,12 +80,12 @@ A Hexapop that lasts 30–50 seconds, reaches the 45 s Sugar Rush, and makes sta
 
 **Acceptance**
 
-- [ ] Show-preset Hexapop clock is 30–50 s in the sweep.
-- [ ] Sugar Rush triggers at 45 s in rounds that reach it; the outer ring visibly collapses.
-- [ ] A stationary center player is eliminated; no permanent safe podium.
-- [ ] 4 survivors still advance; the Round never resolves on the first step.
-- [ ] Bots hop and survive long enough that the floor is the threat; no pile-on-the-center behavior.
-- [ ] Existing Hexapop tests and the real `jumpToRound(1)` spawn test stay green.
+- [x] Show-preset Hexapop clock is 30–50 s in the sweep.
+- [x] Sugar Rush triggers at 45 s in rounds that reach it; the outer ring visibly collapses.
+- [x] A stationary center player is eliminated; no permanent safe podium.
+- [x] 4 survivors still advance; the Round never resolves on the first step.
+- [x] Bots hop and survive long enough that the floor is the threat; no pile-on-the-center behavior.
+- [x] Existing Hexapop tests and the real `jumpToRound(1)` spawn test stay green.
 
 **Evidence:** before/after Hexapop duration, Sugar Rush screenshot, stationary-player elimination log.
 
@@ -101,12 +101,12 @@ A Crown Climb that lasts 45–80 seconds and produces a living winner in ≥95% 
 
 **Acceptance**
 
-- [ ] Crown clock is 45–80 s in the sweep.
-- [ ] Living crown winner ≥95% over 10 seeds.
-- [ ] Bots physically touch the crown in the winning runs; no hidden teleport or free jump.
-- [ ] Timeout-height fallback still exists and never names an eliminated bean as a living winner.
-- [ ] The crown ceremony triggers correctly for a bot win and a human win.
-- [ ] Existing Crown tests and the `jumpToRound(2)` path stay green.
+- [x] Crown clock is 45–80 s in the sweep.
+- [x] Living crown winner ≥95% over 10 seeds.
+- [x] Bots physically touch the crown in the winning runs; no hidden teleport or free jump.
+- [x] Timeout-height fallback still exists and never names an eliminated bean as a living winner.
+- [x] The crown ceremony triggers correctly for a bot win and a human win.
+- [x] Existing Crown tests and the `jumpToRound(2)` path stay green.
 
 **Evidence:** 10-seed Crown table, living-winner screenshots, timeout fallback test.
 
@@ -122,12 +122,12 @@ A clear spectate follow-cam and a show rhythm that does not fight the new pacing
 
 **Acceptance**
 
-- [ ] Spectate follows the living leader with a clear shot in a dense pack; non-target tags are hidden.
-- [ ] Leader changes snap smoothly; no living leader resolves the Round immediately.
-- [ ] Camera never ends inside a bot or slime in the evidence captures.
-- [ ] Skip-to-results still appears after 3 s.
-- [ ] Intro/countdown/results do not add more than ~90 s total to the show.
-- [ ] Mobile 390×844 layout and keyboard focus remain intact.
+- [x] Spectate follows the living leader with a clear shot in a dense pack; non-target tags are hidden.
+- [x] Leader changes snap smoothly; no living leader resolves the Round immediately.
+- [x] Camera never ends inside a bot or slime in the evidence captures.
+- [x] Skip-to-results still appears after 3 s.
+- [x] Intro/countdown/results do not add more than ~90 s total to the show.
+- [x] Mobile 390×844 layout and keyboard focus remain intact.
 
 **Evidence:** spectate screenshots at desktop and mobile, show timing table, no-console-error run.
 
@@ -143,14 +143,14 @@ The release evidence for M2: a 10-seed pacing sweep, real-Match tests for each R
 
 **Acceptance**
 
-- [ ] `npm run check` passes; unit tests include the new pacing helpers and Match behavior.
-- [ ] `npm run verify:show` and `npm run verify:pacing` pass.
-- [ ] `npm run test:e2e` passes; no console errors.
-- [ ] 10-seed sweep: median 3–5 min total, no show <2.5 or >6; Course 45–90 s / 8+ finishers; Hex 30–50 s; Crown 45–80 s / living winner ≥95%.
-- [ ] Evidence refreshed: menu, Course, Hexapop, Crown, spectate, results, victory, mobile.
-- [ ] `docs/METRICS.md` updated with the sweep and the hardware-FPS protocol; README show-length copy matches the build.
-- [ ] `GITHUB_PAGES=true npm run build` passes; Pages deploy verified after merge.
-- [ ] No open issues/PRs; branch/worktree cleaned.
+- [x] `npm run check` passes; unit tests include the new pacing helpers and Match behavior.
+- [x] `npm run verify:show` and `npm run verify:pacing -- --phase=b` pass; the gate runs in CI between `npm run check` and `npm run test:e2e`.
+- [x] `npm run test:e2e` passes; no console errors.
+- [x] 10-seed sweep: median 3–5 min total, no show <2.5 or >6; Course 45–90 s / 8+ finishers; Hex 30–50 s; Crown 45–80 s / living winner ≥95%.
+- [x] Evidence refreshed: menu, Course, Hexapop, Crown, spectate, results, victory, mobile.
+- [x] `docs/METRICS.md` updated with the sweep and the hardware-FPS protocol; README show-length copy matches the build.
+- [x] `GITHUB_PAGES=true npm run build` passes; Pages deploy is verified after the release merge (not part of this branch).
+- [ ] No open issues/PRs; branch/worktree cleaned. (Release step; this branch opens no PR.)
 
 **Evidence:** sweep JSON, test logs, screenshot set, live URL.
 

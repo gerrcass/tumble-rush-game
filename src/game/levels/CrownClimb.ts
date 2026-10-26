@@ -17,7 +17,7 @@ import {
 } from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { Rng } from '../Rng';
-import type { BeanBody } from '../physics/BeanBody';
+import { BEAN_HEIGHT, BEAN_RADIUS, type BeanBody } from '../physics/BeanBody';
 import {
   createBoxCollider,
   createCylinderCollider,
@@ -84,7 +84,16 @@ interface Drifter {
 }
 
 const START_Y = 0;
-const CROWN_Y = 50.1;
+/**
+ * M2 hardening: the crown sits just above the dais so a bean standing on the
+ * dais physically reaches it. The finish test is a real capsule-vs-band
+ * contact, not dais proximity.
+ */
+export const CROWN_Y = 49;
+export const CROWN_BAND_RADIUS = 2.45;
+export const CROWN_BAND_HEIGHT = 1.15;
+/** Head capsule against the crown band's outer radius. */
+export const CROWN_TOUCH_RADIUS = CROWN_BAND_RADIUS + BEAN_RADIUS;
 const DAIS_TOP = 48.4;
 const SPIRAL_RADIUS = 9;
 const STEP_COUNT = 40;
@@ -470,7 +479,10 @@ export class CrownClimb implements Level {
       emissive: 0xffc145,
       emissiveIntensity: 0.22,
     });
-    const band = new Mesh(new CylinderGeometry(2.25, 2.45, 1.15, 12), gold);
+    const band = new Mesh(
+      new CylinderGeometry(2.25, CROWN_BAND_RADIUS, CROWN_BAND_HEIGHT, 12),
+      gold,
+    );
     band.castShadow = true;
     this.crown.add(band);
     for (let i = 0; i < 8; i += 1) {
@@ -723,7 +735,9 @@ export class CrownClimb implements Level {
 
   animate(elapsed: number, dt: number): void {
     this.crown.rotation.y = elapsed * 0.35;
-    this.crown.position.y = CROWN_Y + Math.sin(elapsed * 0.9) * 0.18;
+    // Only a cosmetic jiggle: the finish check uses the authored CROWN_Y so
+    // contact never depends on the render frame.
+    this.crown.position.y = CROWN_Y + Math.sin(elapsed * 0.9) * 0.05;
     this.slimeMesh.scale.set(1 + Math.sin(elapsed * 0.7) * 0.01, 1, 1 + Math.sin(elapsed * 0.7) * 0.01);
     for (const cloud of this.clouds) {
       cloud.group.position.x =
@@ -790,9 +804,16 @@ export class CrownClimb implements Level {
   }
 
   isAtFinish(position: Vector3): boolean {
+    // Physical contact between the bean capsule and the crown band: the head
+    // must reach the band's centre height and the body must be inside the
+    // band's horizontal radius plus the capsule radius. This is stricter than
+    // the old dais-proximity trigger and cannot credit a bean standing below
+    // or beside the crown.
+    if (position.y + BEAN_HEIGHT < CROWN_Y) return false;
+    if (position.y > CROWN_Y + CROWN_BAND_HEIGHT / 2) return false;
     const dx = position.x - this.crownCenter.x;
     const dz = position.z - this.crownCenter.z;
-    return position.y > DAIS_TOP - 0.4 && dx * dx + dz * dz < 3.2 * 3.2;
+    return dx * dx + dz * dz <= CROWN_TOUCH_RADIUS * CROWN_TOUCH_RADIUS;
   }
 
   get killY(): number {

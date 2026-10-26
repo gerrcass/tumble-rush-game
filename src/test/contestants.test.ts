@@ -65,10 +65,10 @@ describe('bot navigation logic', () => {
 
   it('chooses a stable adjacent tile and ignores warned / falling tiles', () => {
     const tiles: LevelTile[] = [
-      { x: 0, y: 0, z: 0, tier: 0, ring: 0, state: 'warning', safe: false },
-      { x: 2, y: 0, z: 0, tier: 0, ring: 1, state: 'idle', safe: false },
-      { x: -2, y: 0, z: 0, tier: 0, ring: 1, state: 'falling', safe: false },
-      { x: 0, y: 0, z: 2, tier: 0, ring: 1, state: 'idle', safe: false },
+      { x: 0, y: 0, z: 0, tier: 0, ring: 0, state: 'warning', warning: 2, safe: false },
+      { x: 2, y: 0, z: 0, tier: 0, ring: 1, state: 'idle', warning: 0, safe: false },
+      { x: -2, y: 0, z: 0, tier: 0, ring: 1, state: 'falling', warning: 0, safe: false },
+      { x: 0, y: 0, z: 2, tier: 0, ring: 1, state: 'idle', warning: 0, safe: false },
     ];
     const chosen = selectHexTarget(tiles, 0, 0, 0, 0);
     expect(chosen?.x).toBe(2);

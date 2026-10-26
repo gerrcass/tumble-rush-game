@@ -40,6 +40,12 @@ describe('Sunrise Scramble course plan', () => {
       ]);
       expect(plan.length).toBeGreaterThanOrEqual(160);
       expect(plan.length).toBeLessThanOrEqual(196);
+      // L-1: the plan must match the authored gate, not the section envelope.
+      expect(plan.finishZ).toBe(-156);
+      expect(plan.length).toBe(174);
+      expect(plan.courseFinishZ).toBe(-340);
+      expect(plan.courseLength).toBe(358);
+      expect(plan.sections[4]?.endZ).toBe(-156);
       expect(plan.laneScale).toBeGreaterThanOrEqual(0.85);
       expect(plan.laneScale).toBeLessThanOrEqual(1.15);
       expect(plan.platformOffset).toBeGreaterThanOrEqual(-0.75);

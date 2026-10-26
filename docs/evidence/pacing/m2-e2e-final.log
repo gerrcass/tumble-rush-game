@@ -1,0 +1,68 @@
+
+> tumble-rush@1.0.0 test:e2e
+> playwright test
+
+[WebServer] (node:43) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 49 tests using 1 worker
+
+(node:76) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+M2_CASUAL_E2E {"finishers":8,"qualified":8,"playerQualified":true,"playerStatus":"QUALIFIED","phase":"results","clock":74.21666666666374}
+  ✓   1 [chromium] › e2e/m2.spec.ts:31:3 › M2 Course pacing and fair qualification › scripted casual path qualifies and the results row is visibly QUALIFIED (7.3s)
+  ✓   2 [chromium] › e2e/m2.spec.ts:67:3 › M2 Course pacing and fair qualification › the extended Course shows the second lap and the final gate (14.8s)
+M2_IDLE_E2E {"finishers":8,"playerQualified":false,"playerStatus":"ELIMINATED","clock":73.23333333333046}
+  ✓   3 [chromium] › e2e/m2.spec.ts:114:3 › M2 Course pacing and fair qualification › the idle human never qualifies and the results row is visibly ELIMINATED (7.1s)
+  ✓   4 [chromium] › e2e/m2.spec.ts:147:3 › M2 Phase B show feel › spectate follows the living leader, hides other tags and stays clear of bodies (11.2s)
+  ✓   5 [chromium] › e2e/m2.spec.ts:211:3 › M2 Phase B show feel › a Crown total wipe shows a no-winner card and never crowns a dead bean (4.7s)
+  ✓   6 [chromium] › e2e/m2.spec.ts:257:3 › M2 Phase B show feel › captures the Hexapop floor, the 45 s Sugar Rush and the Crown ascent (20.1s)
+FPS report: {"viewport":"1440x810","showSeed":"20260418","renderer":"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)","high":{"avgFps":7.8,"frames":155,"avgMs":128.7,"p95Ms":183.3},"low":{"avgFps":9.2,"frames":73,"avgMs":109.1,"p95Ms":133.3},"note":"Software WebGL (no /dev/dri in this container). Hardware target is 55 fps; this environment cannot represent it."}
+  ✓   7 [chromium] › e2e/performance.spec.ts:15:1 › measures average FPS in a full show at 1440x810 (36.7s)
+  ✓   8 [chromium] › e2e/phase4.spec.ts:18:3 › Phase 4 front-end, profile and economy › menu, customize, equip, name edit and reload persistence (34.7s)
+  ✓   9 [chromium] › e2e/phase4.spec.ts:69:3 › Phase 4 front-end, profile and economy › settings apply immediately and persist across reload (11.3s)
+  ✓  10 [chromium] › e2e/phase4.spec.ts:104:3 › Phase 4 front-end, profile and economy › how to play explains the controls, Rounds and crown economy (6.8s)
+  ✓  11 [chromium] › e2e/phase4.spec.ts:117:3 › Phase 4 front-end, profile and economy › round results pay kudos and the final victory awards a crown (16.3s)
+  ✓  12 [chromium] › e2e/phase4.spec.ts:164:3 › Phase 4 front-end, profile and economy › settings from pause returns to pause and resumes the show (9.9s)
+  ✓  13 [chromium] › e2e/phase4.spec.ts:184:3 › Phase 4 mobile layout › menu and customize fit a phone without horizontal scroll (4.0s)
+  ✓  14 [chromium] › e2e/phase4b.spec.ts:18:3 › Phase 4B audio, show polish and mobile › audio waits for a gesture, then music, SFX and the voice cap go live (6.5s)
+  ✓  15 [chromium] › e2e/phase4b.spec.ts:54:3 › Phase 4B audio, show polish and mobile › music and SFX sliders apply live and persist across reload (11.6s)
+  ✓  16 [chromium] › e2e/phase4b.spec.ts:95:3 › Phase 4B audio, show polish and mobile › spectate camera compacts the HUD, hides tags and skip reaches results (9.1s)
+  ✓  17 [chromium] › e2e/phase4b.spec.ts:114:3 › Phase 4B audio, show polish and mobile › a full show still reaches the crown ceremony and victory card (11.2s)
+  ✓  18 [chromium] › e2e/phase4b.spec.ts:138:3 › Phase 4B audio, show polish and mobile › pause ducks the mix and resume restores it (6.4s)
+  ✓  19 [chromium] › e2e/phase4b.spec.ts:155:3 › Phase 4B mobile 390x844 › menu, settings and customize fit without clipping (5.8s)
+  ✓  20 [chromium] › e2e/phase4b.spec.ts:190:3 › Phase 4B final tuning › a bot can reach or nearly reach the crown in Crown Climb (3.7s)
+  ✓  21 [chromium] › e2e/review1.spec.ts:12:3 › Review 1 — pause restart, audio and results › desktop restart leaves pause, plays a fresh intro/results and unducks audio (7.6s)
+  ✓  22 [chromium] › e2e/review1.spec.ts:37:3 › Review 1 — pause restart, audio and results › practice restart from pause returns to play without a dead overlay (9.0s)
+  ✓  23 [chromium] › e2e/review1.spec.ts:53:5 › Review 1 — pause restart, audio and results › 390x844 restart › pause restart works from the touch HUD (7.1s)
+  ✓  24 [chromium] › e2e/review1.spec.ts:68:3 › Review 1 — keyboard ownership › Space activates the focused Play button (3.6s)
+  ✓  25 [chromium] › e2e/review1.spec.ts:75:3 › Review 1 — keyboard ownership › Space types in the name input and ArrowLeft steps a slider (10.3s)
+  ✓  26 [chromium] › e2e/review1.spec.ts:97:3 › Review 1 — keyboard ownership › Space still jumps while the canvas owns gameplay (6.6s)
+  ✓  27 [chromium] › e2e/review1.spec.ts:118:3 › Review 1 — copy, seeds, focus and leaks › a Round 1 defeat says the pack moves on, not that a bot takes the crown (6.7s)
+  ✓  28 [chromium] › e2e/review1.spec.ts:135:3 › Review 1 — copy, seeds, focus and leaks › each Quick Show gets a fresh seed, while ?seed= stays deterministic (14.6s)
+  ✓  29 [chromium] › e2e/review1.spec.ts:158:3 › Review 1 — copy, seeds, focus and leaks › equipping a cosmetic keeps keyboard focus on the same swatch (16.5s)
+  ✓  30 [chromium] › e2e/review1.spec.ts:177:3 › Review 1 — copy, seeds, focus and leaks › geometry count stays flat across three Shows and repeated Customize changes (52.5s)
+COURSE_RENDER_INFO {"calls":305,"triangles":186560,"geometries":108,"textures":50,"particles":0}
+  ✓  31 [chromium] › e2e/review1.spec.ts:238:3 › Review 1 — copy, seeds, focus and leaks › Course start stays inside the draw-call and triangle budgets (7.8s)
+REAL_PACK_E2E seed=20260418 {"finishers":8,"qualified":8,"playerQualified":false,"playerStatus":"ELIMINATED","phase":"results"}
+REAL_PACK_E2E seed=7 {"finishers":8,"qualified":8,"playerQualified":false,"playerStatus":"ELIMINATED","phase":"results"}
+  ✓  32 [chromium] › e2e/review2.spec.ts:12:3 › Review 2 — real pack and real spawn › no-input Course pack reaches eight real finishers and never qualifies the idle human (11.1s)
+  ✓  33 [chromium] › e2e/review2.spec.ts:49:3 › Review 2 — real pack and real spawn › jumpToRound(1) puts the human on the centre perch and only drops them after the grace (7.5s)
+  ✓  34 [chromium] › e2e/review2.spec.ts:85:3 › Review 2 — real pack and real spawn › Skip to results reveals the banner immediately but the action after three seconds (6.3s)
+  ✓  35 [chromium] › e2e/screenshots.spec.ts:8:1 › captures the phase 4 front-end and refreshed show evidence (37.4s)
+  ✓  36 [chromium] › e2e/screenshots.spec.ts:108:1 › captures the 390x844 phone layout (3.0s)
+  ✓  37 [chromium] › e2e/smoke.spec.ts:26:3 › Show desktop › PLAY SHOW opens the intro, countdown, gameplay and movement (10.0s)
+  ✓  38 [chromium] › e2e/smoke.spec.ts:54:3 › Show desktop › jump leaves the ground and lands again (9.5s)
+  ✓  39 [chromium] › e2e/smoke.spec.ts:73:3 › Show desktop › quality toggles without breaking the scene (5.2s)
+  ✓  40 [chromium] › e2e/smoke.spec.ts:84:3 › Show desktop › shows the contestant roster and spread start positions (6.7s)
+  ✓  41 [chromium] › e2e/smoke.spec.ts:99:3 › Show desktop › finishes a round, shows results, and advances (10.1s)
+  ✓  42 [chromium] › e2e/smoke.spec.ts:112:3 › Show desktop › an eliminated human spectates, can skip, and then loses (11.3s)
+  ✓  43 [chromium] › e2e/smoke.spec.ts:126:3 › Show desktop › forces a final victory and offers replay/menu (7.9s)
+  ✓  44 [chromium] › e2e/smoke.spec.ts:140:3 › Show desktop › a full show advances through all three Rounds to a crown (10.5s)
+  ✓  45 [chromium] › e2e/smoke.spec.ts:183:3 › Phase 2 mechanics in debug rounds › starts every Round through the debug hook (8.8s)
+  ✓  46 [chromium] › e2e/smoke.spec.ts:203:3 › Phase 2 mechanics in debug rounds › hexapop tile touch starts a collapse and slime eliminates (12.5s)
+  ✓  47 [chromium] › e2e/smoke.spec.ts:216:3 › Phase 2 mechanics in debug rounds › course finish gate qualifies and shows the end overlay (3.6s)
+  ✓  48 [chromium] › e2e/smoke.spec.ts:227:3 › Phase 2 mechanics in debug rounds › crown touch wins Crown Climb (3.4s)
+  ✓  49 [chromium] › e2e/smoke.spec.ts:242:3 › Show mobile › renders the show intro and touch controls (5.4s)
+
+  49 passed (9.3m)

@@ -421,21 +421,34 @@ export class ShowEndOverlay {
     // A crown can only be claimed when the Show actually reached Crown Climb.
     // Losing Round 1 or 2 means the pack moves on, not that a bot was crowned.
     const crownEnding = result.finalRoundMode === 'crown-climb';
+    const noCrown = crownEnding && !result.winnerName;
     this.card.classList.toggle('is-victory', won);
     this.card.classList.toggle('is-defeat', !won);
-    this.sticker.textContent = won ? 'CROWN CEREMONY' : crownEnding ? 'CROWN MISSED' : 'SHOW OVER';
+    this.sticker.textContent = won
+      ? 'CROWN CEREMONY'
+      : noCrown
+        ? 'NO CROWN'
+        : crownEnding
+          ? 'CROWN MISSED'
+          : 'SHOW OVER';
     this.sticker.className = `sticker sticker--${won ? 'mango' : 'coral'}`;
-    this.title.textContent = won ? 'CROWNED!' : 'ELIMINATED';
+    this.title.textContent = won ? 'CROWNED!' : noCrown ? 'CROWN MISSED' : 'ELIMINATED';
     this.winner.textContent = won
       ? `${profile.name} takes the crown!`
-      : crownEnding
-        ? `${result.winnerName} takes the crown.`
-        : `${result.winnerName} leads the pack.`;
+      : noCrown
+        ? 'Nobody touched the crown.'
+        : crownEnding
+          ? `${result.winnerName} takes the crown.`
+          : result.winnerName
+            ? `${result.winnerName} leads the pack.`
+            : 'The Show ended without a winner.';
     this.copy.textContent = won
       ? 'Sixteen Tumblers entered. You are the one with the crown and the confetti in your hair.'
-      : crownEnding
-        ? `You placed #${result.playerPlacement}. The crown stays on the dais.`
-        : `You placed #${result.playerPlacement}. The pack moves on without you.`;
+      : noCrown
+        ? `You placed #${result.playerPlacement}. The slime took every finalist, so the crown was never awarded.`
+        : crownEnding
+          ? `You placed #${result.playerPlacement}. The crown stays on the dais.`
+          : `You placed #${result.playerPlacement}. The pack moves on without you.`;
     this.replayButton.textContent = won ? 'PLAY AGAIN' : 'TRY AGAIN';
     this.stats.replaceChildren();
     for (const [label, value] of [

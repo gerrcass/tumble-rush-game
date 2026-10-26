@@ -1,0 +1,6484 @@
+{
+  "command": "verify:pacing",
+  "generatedAt": "2026-10-25T19:45:31.841Z",
+  "seed": 20260418,
+  "seeds": [
+    20260418,
+    20365147,
+    20469876,
+    20574605,
+    20679334,
+    20784063,
+    20888792,
+    20993521,
+    21098250,
+    21202979
+  ],
+  "runs": 10,
+  "phase": "a",
+  "idle": [
+    {
+      "seed": 20260418,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 74.88,
+          "finishers": 9,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.21666666666408,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.58333333333056,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.51666666666384,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.54999999999711,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.54999999999711,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.84999999999704,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.88333333333037,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": 74.88333333333037,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9846058784794064,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6214744265380494,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.3923155394616011,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.3925510820787548,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.4004695726639613,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.395538383636181,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 8.53,
+          "finishers": 0,
+          "qualified": 3,
+          "eliminated": 5,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8137299271029043,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7454911508784122,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.46069385964912285,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.002210907698357844,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.006849999999999088,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 36.2,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 2,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Tumbleweed",
+          "placements": [
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 36.19999999999923,
+              "progress": 0.9761693126770761,
+              "won": true
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9675949471271288,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.946741724975612,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 150.52,
+      "roundSeconds": 119.61,
+      "finalWinner": "Tumbleweed",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 80.5,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 20365147,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 72.22,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.19999999999742,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.21666666666408,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.21666666666403,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.84999999999727,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.88333333333054,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.88333333333054,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.976300678415057,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9538834383716711,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.25035054957358815,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 9.18,
+          "finishers": 0,
+          "qualified": 3,
+          "eliminated": 5,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7766745614035087,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5419377192982455,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.12317788479676563,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.00682275071847951,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.0013304381226865228,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.006747416819643573,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 32.15,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 2,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Wobble Watson",
+          "placements": [
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 32.14999999999946,
+              "progress": 0.9807156673190336,
+              "won": true
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9009995009980042,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.7951263810173095,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 144.45,
+      "roundSeconds": 113.55,
+      "finalWinner": "Wobble Watson",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 77.5,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 20469876,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 75.88,
+          "finishers": 9,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.54999999999728,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.54999999999723,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.81666666666382,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.98333333333048,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.18333333333047,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.54999999999711,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.21666666666374,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 75.88333333333031,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": 75.88333333333031,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.981551036061665,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9809597321742841,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6908122889098777,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 8.6,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5507096491228068,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.44541730872190594,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.4092538923089897,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.374569298245614,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 39.78,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Wobble Watson",
+          "placements": [
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 39.78333333333236,
+              "progress": 0.9806727494571601,
+              "won": true
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.060878735117744,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.05423369182014546,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.045576545229892546,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 155.17,
+      "roundSeconds": 124.26,
+      "finalWinner": "Wobble Watson",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 81.5,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 20574605,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 73.22,
+          "finishers": 9,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 67.51666666666412,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.5499999999974,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.54999999999728,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.56666666666395,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.88333333333054,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.99999999999714,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9766504054254095,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9765128828286629,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9745592541034919,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9650588320633495,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6932371340833249,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 8.47,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8353726700732441,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5448966469737487,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5173763157894735,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5173763157894735,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.007912149040370315,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 31.5,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Marshmallow Drop",
+          "placements": [
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 31.499999999999492,
+              "progress": 0.9660693612774449,
+              "won": true
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9710552736013864,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 144.08,
+      "roundSeconds": 113.19,
+      "finalWinner": "Marshmallow Drop",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 78.5,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 20679334,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 73.87,
+          "finishers": 9,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.18333333333075,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.21666666666403,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.1999999999973,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.21666666666391,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.21666666666391,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.84999999999715,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.54999999999711,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.86666666666376,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": 73.86666666666376,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9841363584217232,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6779918805859271,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6773676864988013,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.394822162663176,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.39204424414434086,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 9.77,
+          "finishers": 0,
+          "qualified": 3,
+          "eliminated": 5,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8353880116959064,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8353880116959064,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.1958998784755364,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 31.25,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 2,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Tumbleweed",
+          "placements": [
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 31.249999999999506,
+              "progress": 0.9660693612774449,
+              "won": true
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9744530296023572,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.11955564495529228,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 145.78,
+      "roundSeconds": 114.89,
+      "finalWinner": "Tumbleweed",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 79.5,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 20784063,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 74.22,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.21666666666391,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.54999999999723,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.8999999999972,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.9999999999972,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.89999999999715,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.14999999999714,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.88333333333043,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.21666666666374,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.7880510079353341,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.23203440779524995,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 9.15,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8190722222222222,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8121131578947367,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8068328326795787,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.49193771929824537,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 12.58,
+          "finishers": 0,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Gummy Bearwin",
+          "placements": [
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.050969433521751685,
+              "won": true
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.050477403219052655,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 126.85,
+      "roundSeconds": 95.95,
+      "finalWinner": "Gummy Bearwin",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 79.5,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 20888792,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 72.32,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 67.21666666666414,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.5499999999974,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.88333333333065,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.18333333333058,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.54999999999723,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.18333333333052,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.31666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.977969270726488,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9723151553705357,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636736570015616,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.963643618252727,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.961824559017192,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.16289111318406213,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 9.83,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8121131578947367,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.438582258554953,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.3791009927187236,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.07239572130290084,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 33.12,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Gummy Bearwin",
+          "placements": [
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 33.11666666666607,
+              "progress": 0.9806155484292616,
+              "won": true
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.12206539903502979,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.04834851222927717,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 146.17,
+      "roundSeconds": 115.27,
+      "finalWinner": "Gummy Bearwin",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 78,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 20993521,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 75.88,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.21666666666397,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.54999999999728,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.54999999999723,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.54999999999706,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 75.84999999999698,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 75.88333333333031,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.3969738359837434,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.39400299543012157,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.16200288012534897,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 7.73,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8230987626829463,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.814335380116959,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5195985380116959,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5121131578947369,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.01546548215545435,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 13.18,
+          "finishers": 0,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Mochi Mayhem",
+          "placements": [
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.052268485074330406,
+              "won": true
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.05879139471808512,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.052480084654295635,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.051566234469431295,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 127.7,
+      "roundSeconds": 96.79,
+      "finalWinner": "Mochi Mayhem",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 81.5,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 21098250,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 75.55,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.21666666666397,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.86666666666387,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.88333333333048,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.18333333333047,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.21666666666374,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.54999999999706,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 75.549999999997,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9819198224198094,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9817043574091642,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6746762601626637,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6772833668140013,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 8.38,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8473763157894737,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8473763157894737,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8473763157894737,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7459728070175439,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 37.4,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Jelly Jolene",
+          "placements": [
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 37.39999999999916,
+              "progress": 0.9660693612774449,
+              "won": true
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9743912257676639,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.12298071809751458,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 152.23,
+      "roundSeconds": 121.33,
+      "finalWinner": "Jelly Jolene",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 81,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    },
+    {
+      "seed": 21202979,
+      "mode": "idle",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 74.85,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.53333333333073,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.41666666666401,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.566666666664,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.58333333333067,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.84999999999704,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9857479804335353,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984047028300289,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9645462848106553,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9533731004531134,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.000558659217877093,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.914415723283217,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 9.18,
+          "finishers": 0,
+          "qualified": 3,
+          "eliminated": 5,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8432827485380118,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5445692982456138,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.02018333333333282,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.006849999999999088,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.006759323984352393,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 36.92,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 2,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Slip n' Slide",
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 36.916666666665854,
+              "progress": 0.9757196259903451,
+              "won": true
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.14728464791446613,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.04765337103595537,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 151.85,
+      "roundSeconds": 120.95,
+      "finalWinner": "Slip n' Slide",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 80.5,
+        "progress": 0.001,
+        "x": 0,
+        "y": 0,
+        "z": 17.8,
+        "round": 1
+      }
+    }
+  ],
+  "casual": [
+    {
+      "seed": 20260418,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 73.22,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.5499999999974,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.88333333333071,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.91666666666399,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 70.8833333333306,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.88333333333054,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.18333333333047,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9846639514395503,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9697446828258102,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.963636573424358,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.963276943642174,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9524578910614525,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6209222587592997,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.5875275392229059,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.3942879779166377,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 8.13,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8101675438596491,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.577493274853801,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5406511695906431,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.23286677118611113,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 31.68,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Gummy Bearwin",
+          "placements": [
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 31.683333333332815,
+              "progress": 0.9805213203640752,
+              "won": true
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.7916481153554594,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.06813143474738657,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 143.93,
+      "roundSeconds": 113.03,
+      "finalWinner": "Gummy Bearwin",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 95,
+        "progress": 0.65,
+        "x": 0,
+        "y": -9.9,
+        "z": 0,
+        "round": 2
+      }
+    },
+    {
+      "seed": 20365147,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 72.52,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.21666666666408,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.56666666666406,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 69.54999999999734,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.84999999999727,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.84999999999727,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.84999999999721,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.88333333333054,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.51666666666384,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9813656918633359,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9533731004531134,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.908473452240199,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 9.18,
+          "finishers": 0,
+          "qualified": 3,
+          "eliminated": 5,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8120963462478433,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5419377192982455,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5419377192982455,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.006778946879051106,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 33.37,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 2,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Wobble Watson",
+          "placements": [
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 33.366666666666056,
+              "progress": 0.9807151042070028,
+              "won": true
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.8373919744707976,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.08133468825642211,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 145.97,
+      "roundSeconds": 115.07,
+      "finalWinner": "Wobble Watson",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 94.5,
+        "progress": 0.624,
+        "x": 0,
+        "y": -9.9,
+        "z": 0,
+        "round": 2
+      }
+    },
+    {
+      "seed": 20469876,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 73.98,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 68.5499999999974,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.18333333333058,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.19999999999725,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.19999999999719,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.19999999999719,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.5333333333305,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.98333333333042,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9524578910614525,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.7670126615462134,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6763632045158258,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.16269644308806316,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 8.52,
+          "finishers": 0,
+          "qualified": 3,
+          "eliminated": 5,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7331657894736843,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.6164991228070174,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5129546690312194,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.013579436319503015,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 13.02,
+          "finishers": 0,
+          "qualified": 1,
+          "eliminated": 2,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Puddin' Pop",
+          "placements": [
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.05044316262098997,
+              "won": true
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.057613718153109256,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.05479234508441574,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 126.42,
+      "roundSeconds": 95.52,
+      "finalWinner": "Puddin' Pop",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 96,
+        "progress": 0.658,
+        "x": 0,
+        "y": -9.9,
+        "z": 0,
+        "round": 2
+      }
+    },
+    {
+      "seed": 20574605,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 72.55,
+          "finishers": 9,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 66.8499999999975,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 68.51666666666407,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.51666666666407,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.54999999999734,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.566666666664,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.86666666666393,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.24999999999724,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.54999999999717,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": 72.54999999999717,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9821152571473633,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9762298070867549,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9706215870735971,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9637150339138925,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9625792590661642,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.16251735004342324,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 7.88,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8121131578947367,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8121131578947367,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7543938596491226,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.013238741749640215,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 31.67,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Tumbleweed",
+          "placements": [
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 31.66666666666615,
+              "progress": 0.976564936005518,
+              "won": true
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9209169844563269,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.7245523952095809,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.06909183497482466,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 143,
+      "roundSeconds": 112.1,
+      "finalWinner": "Tumbleweed",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 94.5,
+        "progress": 0.547,
+        "x": 0,
+        "y": -9.9,
+        "z": 0,
+        "round": 2
+      }
+    },
+    {
+      "seed": 20679334,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 75.2,
+          "finishers": 9,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.18333333333064,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 71.21666666666391,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.21666666666391,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.86666666666382,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.88333333333048,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.18333333333041,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.18333333333041,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 75.19999999999702,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": 75.19999999999702,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.986004863928954,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9843872152488856,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9834255677168752,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9702621010274055,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.29529073148115587,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.07111160554431593,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 8.58,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8446306314219644,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7195985380116959,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5507096491228068,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.5507096491228068,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.006849999999999088,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 31.12,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Flip McChip",
+          "placements": [
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 31.11666666666618,
+              "progress": 0.980751540908063,
+              "won": true
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9052132956309604,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.7038109201670479,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.08478922283266742,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 145.8,
+      "roundSeconds": 114.9,
+      "finalWinner": "Flip McChip",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 97,
+        "progress": 0.667,
+        "x": 0,
+        "y": -9.9,
+        "z": 0,
+        "round": 2
+      }
+    },
+    {
+      "seed": 20784063,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 73.88,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.21666666666403,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 69.54999999999734,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.54999999999728,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.19999999999719,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.84999999999715,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.86666666666382,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.88333333333043,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.88333333333043,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9819512422755478,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9752658390146213,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9749100500572021,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9731595040465372,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.97169396963401,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.3897323509528387,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.16202238021871618,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 10.35,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7896249199522676,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7195857595939212,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.47456929824561406,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.4632827485380117,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.006849999999999088,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 20.23,
+          "finishers": 0,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Jelly Jolene",
+          "placements": [
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.10946474222195128,
+              "won": true
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.058060994796500204,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.0508561940485378,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.050227153328451186,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 135.37,
+      "roundSeconds": 104.46,
+      "finalWinner": "Jelly Jolene",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 16.5,
+        "progress": 0.162,
+        "x": 3.4,
+        "y": -14.4,
+        "z": -40,
+        "round": 1
+      }
+    },
+    {
+      "seed": 20888792,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 74.22,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 67.21666666666414,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.68333333333072,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.21666666666397,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.49999999999723,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.11666666666386,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.86666666666382,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.2166666666638,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.21666666666374,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9850276797046719,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9829984750973035,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9823618059370249,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.980722577218061,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9762298070867549,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9707662998392779,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9144886584576168,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 6.13,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7331657894736843,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7331657894736843,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7331657894736843,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.00303323565209368,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.005286727627965641,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.00670834390494073,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 37.63,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Jiggle Jim",
+          "placements": [
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 37.63333333333248,
+              "progress": 0.9757860117638012,
+              "won": true
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.12164858339380256,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.0664907783390012,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.04637332480353931,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 148.88,
+      "roundSeconds": 117.98,
+      "finalWinner": "Jiggle Jim",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 96,
+        "progress": 0.53,
+        "x": 0,
+        "y": -9.9,
+        "z": 0,
+        "round": 2
+      }
+    },
+    {
+      "seed": 20993521,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 77.87,
+          "finishers": 9,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.54999999999728,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.8833333333306,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.21666666666385,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.88333333333043,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.88333333333037,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 75.88333333333031,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 77.86666666666353,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": 77.86666666666353,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9840778097829538,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9759607686364766,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9131925767864123,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.6756270980460988,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.39415084972481473,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.3966209342717754,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 9.08,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8473792401784266,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7543909352601696,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.6348616959064325,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.3039032617602339,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.002082413554061708,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.005016572932003153,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 22.93,
+          "finishers": 0,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Marshmallow Drop",
+          "placements": [
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.1233041104784573,
+              "won": true
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.08320912867333075,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.05689229858680016,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.053843764144033246,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 140.78,
+      "roundSeconds": 109.88,
+      "finalWinner": "Marshmallow Drop",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 100,
+        "progress": 0.684,
+        "x": 0,
+        "y": -9.9,
+        "z": 0,
+        "round": 2
+      }
+    },
+    {
+      "seed": 21098250,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 74.88,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.51666666666395,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.5166666666639,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 71.53333333333056,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.84999999999715,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.88333333333048,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.88333333333048,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 73.88333333333043,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 74.88333333333037,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.984860125698324,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9709612063062739,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9673090070668722,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.7875841834167758,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.071163979542377,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 7.43,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8454464912280703,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.8068500000000001,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.772916081871345,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.669306140350877,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 30.95,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Bounce Barry",
+          "placements": [
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 30.949999999999523,
+              "progress": 0.9807606217269959,
+              "won": true
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.1313696708979474,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.09982795940277348,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 144.17,
+      "roundSeconds": 113.26,
+      "finalWinner": "Bounce Barry",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 97,
+        "progress": 0.641,
+        "x": 0,
+        "y": -9.9,
+        "z": 0,
+        "round": 2
+      }
+    },
+    {
+      "seed": 21202979,
+      "mode": "casual",
+      "rounds": [
+        {
+          "roundIndex": 0,
+          "round": 1,
+          "title": "SUNRISE SCRAMBLE",
+          "mode": "course",
+          "seconds": 73.67,
+          "finishers": 8,
+          "qualified": 8,
+          "eliminated": 8,
+          "playerStatus": "QUALIFIED",
+          "playerQualified": true,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "QUALIFIED",
+              "finishTime": 67.21666666666414,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 68.88333333333071,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 70.56666666666395,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.5333333333305,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 72.5333333333305,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.53333333333045,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.54999999999711,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 73.66666666666377,
+              "progress": 1,
+              "won": false
+            },
+            {
+              "id": "3",
+              "name": "Tumbleweed",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9845653805197061,
+              "won": false
+            },
+            {
+              "id": "11",
+              "name": "Puddin' Pop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9826275009027422,
+              "won": false
+            },
+            {
+              "id": "10",
+              "name": "Custard Cobra",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "15",
+              "name": "Marshmallow Drop",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9748042597765363,
+              "won": false
+            },
+            {
+              "id": "5",
+              "name": "Beanadette",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.967076458931989,
+              "won": false
+            },
+            {
+              "id": "1",
+              "name": "Mochi Mayhem",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9636310754189944,
+              "won": false
+            },
+            {
+              "id": "9",
+              "name": "Dizzy Dottie",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.9524578910614525,
+              "won": false
+            },
+            {
+              "id": "6",
+              "name": "Flip McChip",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.693202283704547,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 1,
+          "round": 2,
+          "title": "HEXAPOP",
+          "mode": "hexapop",
+          "seconds": 8.6,
+          "finishers": 0,
+          "qualified": 4,
+          "eliminated": 4,
+          "playerStatus": "ELIMINATED",
+          "playerQualified": false,
+          "livingWinner": false,
+          "winner": null,
+          "placements": [
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.825271052631579,
+              "won": false
+            },
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.825271052631579,
+              "won": false
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.7766745614035087,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": null,
+              "progress": 0.755884093376133,
+              "won": false
+            },
+            {
+              "id": "14",
+              "name": "Jiggle Jim",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "4",
+              "name": "Wobble Watson",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "0",
+              "name": "Pip",
+              "isPlayer": true,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0,
+              "won": false
+            },
+            {
+              "id": "8",
+              "name": "Bounce Barry",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.006849999999999088,
+              "won": false
+            }
+          ]
+        },
+        {
+          "roundIndex": 2,
+          "round": 3,
+          "title": "CROWN CLIMB",
+          "mode": "crown-climb",
+          "seconds": 31.72,
+          "finishers": 1,
+          "qualified": 1,
+          "eliminated": 3,
+          "playerStatus": "NOT_IN_ROUND",
+          "playerQualified": false,
+          "livingWinner": true,
+          "winner": "Gummy Bearwin",
+          "placements": [
+            {
+              "id": "13",
+              "name": "Gummy Bearwin",
+              "isPlayer": false,
+              "status": "QUALIFIED",
+              "finishTime": 31.716666666666146,
+              "progress": 0.9807116204479746,
+              "won": true
+            },
+            {
+              "id": "2",
+              "name": "Sir Flopsalot",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.5929016774972644,
+              "won": false
+            },
+            {
+              "id": "12",
+              "name": "Slip n' Slide",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.07634599085097184,
+              "won": false
+            },
+            {
+              "id": "7",
+              "name": "Jelly Jolene",
+              "isPlayer": false,
+              "status": "ELIMINATED",
+              "finishTime": null,
+              "progress": 0.04613819751708558,
+              "won": false
+            }
+          ]
+        }
+      ],
+      "totalSeconds": 144.88,
+      "roundSeconds": 113.99,
+      "finalWinner": "Gummy Bearwin",
+      "finalState": "finished",
+      "playerDown": {
+        "time": 95.5,
+        "progress": 0.556,
+        "x": -0.7,
+        "y": -9.9,
+        "z": 0.4,
+        "round": 2
+      }
+    }
+  ],
+  "summary": {
+    "runs": 10,
+    "casualRuns": 10,
+    "seeds": [
+      20260418,
+      20365147,
+      20469876,
+      20574605,
+      20679334,
+      20784063,
+      20888792,
+      20993521,
+      21098250,
+      21202979
+    ],
+    "total": {
+      "count": 10,
+      "median": 145.98,
+      "min": 126.85,
+      "max": 155.17
+    },
+    "roundSeconds": {
+      "count": 10,
+      "median": 115.08,
+      "min": 95.95,
+      "max": 124.26
+    },
+    "course": {
+      "count": 10,
+      "median": 74.54,
+      "min": 72.22,
+      "max": 75.88,
+      "finishers": {
+        "count": 10,
+        "median": 8,
+        "min": 8,
+        "max": 9
+      },
+      "qualifiers": {
+        "count": 10,
+        "median": 8,
+        "min": 8,
+        "max": 8
+      }
+    },
+    "hexapop": {
+      "count": 10,
+      "median": 8.88,
+      "min": 7.73,
+      "max": 9.83
+    },
+    "crown": {
+      "count": 10,
+      "median": 32.64,
+      "min": 12.58,
+      "max": 39.78,
+      "livingWinners": 10,
+      "livingWinnerRate": 1
+    },
+    "idleQualified": 0,
+    "casualQualified": 9,
+    "casualRate": 0.9
+  },
+  "checks": [
+    {
+      "id": "course-clock",
+      "label": "Course clock 45–90 s (median + every seed)",
+      "value": "72.22–75.88 s (median 74.54 s)",
+      "pass": true,
+      "pending": false,
+      "target": "45–90 s",
+      "detail": ""
+    },
+    {
+      "id": "course-finishers",
+      "label": "Course 8+ real finishers",
+      "value": "8–9 (median 8)",
+      "pass": true,
+      "pending": false,
+      "target": "8+ finishers every seed",
+      "detail": ""
+    },
+    {
+      "id": "idle-never-qualifies",
+      "label": "Idle human never qualifies",
+      "value": "0 / 10 runs qualified",
+      "pass": true,
+      "pending": false,
+      "target": "0",
+      "detail": ""
+    },
+    {
+      "id": "casual-qualifies",
+      "label": "Scripted casual path qualifies 7/10",
+      "value": "9 / 10 (90%)",
+      "pass": true,
+      "pending": false,
+      "target": "≥ 70%",
+      "detail": ""
+    },
+    {
+      "id": "hexapop-clock",
+      "label": "Hexapop clock 30–50 s",
+      "value": "7.73–9.83 s (median 8.88 s)",
+      "pass": false,
+      "pending": true,
+      "target": "30–50 s",
+      "detail": "M2-003 owns the Hexapop tuning"
+    },
+    {
+      "id": "crown-clock",
+      "label": "Crown clock 45–80 s",
+      "value": "12.58–39.78 s (median 32.64 s)",
+      "pass": false,
+      "pending": true,
+      "target": "45–80 s",
+      "detail": "M2-004 owns the Crown tuning"
+    },
+    {
+      "id": "crown-living-winner",
+      "label": "Living crown winner ≥95%",
+      "value": "10 / 10 (100%)",
+      "pass": true,
+      "pending": true,
+      "target": "≥ 95%",
+      "detail": "M2-004 owns the Crown tuning"
+    },
+    {
+      "id": "show-total-target",
+      "label": "Median show 3–5 min",
+      "value": "145.98 s (median)",
+      "pass": false,
+      "pending": true,
+      "target": "180–300 s",
+      "detail": "depends on M2-003/004 Round clocks"
+    },
+    {
+      "id": "show-total-bounds",
+      "label": "No show <2.5 or >6 min",
+      "value": "126.85–155.17 s",
+      "pass": false,
+      "pending": true,
+      "target": "150–360 s",
+      "detail": "depends on M2-003/004 Round clocks"
+    }
+  ],
+  "pass": true,
+  "failed": [],
+  "pending": [
+    "hexapop-clock",
+    "crown-clock",
+    "crown-living-winner",
+    "show-total-target",
+    "show-total-bounds"
+  ]
+}

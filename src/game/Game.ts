@@ -29,7 +29,7 @@ import {
   type StampTone,
 } from './match/Match';
 import { Contestant, createBotProfiles } from './match/Contestant';
-import { createBotBrain } from './bots/BotBrain';
+import { createBotBrain, createCasualPilot, type BotBrain } from './bots/BotBrain';
 import {
   MODE_CATALOGUE,
   type Level,
@@ -39,11 +39,12 @@ import {
   type Quality,
 } from './levels/Level';
 import { createLevel } from './levels/factory';
+import type { Course } from './levels/Course';
 import { startPositionsFor } from './levels/startPositions';
 import { Rng, formatSeed } from './Rng';
 import { AudioEngine, type SfxName } from './audio/AudioEngine';
 import { Bursts, particleBudget } from './fx/Bursts';
-import type { TumbleDebugApi } from '../types/debug';
+import type { DebugSpectate, TumbleDebugApi } from '../types/debug';
 import { clamp } from './util/math';
 import { DEFAULT_LOOK, type BeanLook } from './cosmetics';
 
@@ -84,6 +85,11 @@ export interface StartShowOptions {
   difficulty?: DifficultyId;
   practice?: boolean;
   practiceMode?: LevelMode;
+  /**
+   * Debug/QA only: keep measuring all three Rounds after the human is out.
+   * Normal shows still end on a missed qualification.
+   */
+  observe?: boolean;
 }
 
 const PRACTICE_BOTS = 3;
@@ -157,6 +163,8 @@ export class Game {
   private practice = false;
   private spectateBody: BeanBody | null = null;
   private menuMode = true;
+  private autopilotMode: 'off' | 'casual' = 'off';
+  private casualPilot: BotBrain | null = null;
 
   constructor(options: GameOptions) {
     this.mount = options.mount;
@@ -321,6 +329,7 @@ export class Game {
             roundIndex: 0,
             roundNumber: 1,
             roundTitle: MODE_CATALOGUE[game.mode].label,
+            roundMode: game.mode,
             time: game.elapsed,
             qualified: 0,
             qualifiers: 0,
@@ -338,6 +347,7 @@ export class Game {
           roundIndex: match.roundIndex,
           roundNumber: hud.roundNumber,
           roundTitle: hud.roundTitle,
+          roundMode: match.definition.mode,
           time: hud.time,
           qualified: hud.qualified,
           qualifiers: hud.qualifiers,
@@ -377,6 +387,83 @@ export class Game {
       get roundPlacements(): readonly RoundPlacement[] {
         return game.match?.finalPlacements ?? [];
       },
+      get autopilot() {
+        return game.autopilotMode;
+      },
+      get spectate(): DebugSpectate {
+        const match = game.match;
+        const leader = match?.spectating ?? null;
+        const camera = game.camera.position;
+        let nearest = Infinity;
+        let nonTargets = 0;
+        for (const contestant of match?.entrantsList ?? []) {
+          if (contestant.body.eliminated || contestant.status === 'eliminated') continue;
+          const centerY = contestant.body.position.y + 0.75;
+          nearest = Math.min(
+            nearest,
+            Math.hypot(
+              camera.x - contestant.body.position.x,
+              camera.y - centerY,
+              camera.z - contestant.body.position.z,
+            ),
+          );
+          if (
+            contestant !== leader &&
+            contestant.bean.nameTagVisible &&
+            game.nameTagsVisible
+          ) {
+            nonTargets += 1;
+          }
+        }
+        return {
+          active: leader !== null,
+          name: leader?.name ?? '',
+          seconds: match ? match.hud(game.level).spectateSeconds : 0,
+          camera: { x: camera.x, y: camera.y, z: camera.z },
+          leader: leader
+            ? {
+                x: leader.body.position.x,
+                y: leader.body.position.y,
+                z: leader.body.position.z,
+              }
+            : null,
+          leaderDistance: leader
+            ? Number(
+                Math.hypot(
+                  camera.x - leader.body.position.x,
+                  camera.y - (leader.body.position.y + 0.75),
+                  camera.z - leader.body.position.z,
+                ).toFixed(2),
+              )
+            : 0,
+          leaderTagVisible: leader?.bean.nameTagVisible ?? false,
+          nonTargetTagsVisible: nonTargets,
+          nearestBeanClearance: Number.isFinite(nearest) ? Number(nearest.toFixed(2)) : 99,
+          slimeClearance: Number((camera.y - (game.level.slimeHeight ?? -10)).toFixed(2)),
+        };
+      },
+      get course() {
+        if (game.level.mode !== 'course') return null;
+        const level = game.level as Course;
+        return {
+          laps: level.plan.lapCount,
+          lapOffsetZ: level.plan.lapOffsetZ,
+          lapOffsetY: level.plan.lapOffsetY,
+          length: level.plan.courseLength,
+          finishZ: level.finishPosition.z,
+          finishY: level.finishPosition.y,
+          waypointCount: level.waypoints.length,
+        };
+      },
+      isAtFinish: (x: number, y: number, z: number) =>
+        game.level.isAtFinish(new Vector3(x, y, z)),
+      setPlayerAutopilot: (mode: 'off' | 'casual') => this.setPlayerAutopilot(mode),
+      eliminateContestant: (name: string) => {
+        const target = game.match?.entrantsList.find((contestant) => contestant.name === name);
+        if (target) target.body.eliminated = true;
+      },
+      startCasualRun: (difficulty?: DifficultyId) => this.startCasualRun(difficulty),
+      startObservedShow: (difficulty?: DifficultyId) => this.startObservedShow(difficulty),
       setQuality: (quality: Quality) => this.setQuality(quality),
       teleport: (x: number, y: number, z: number) => this.teleport(x, y, z),
       startMode: (mode: LevelMode) => this.startMode(mode),
@@ -436,6 +523,7 @@ export class Game {
     this.leavePause();
     this.blurControls();
     this.ensureIdentity();
+    this.setPlayerAutopilot('off');
     this.disposeBots();
     this.match = null;
     this.practice = false;
@@ -450,13 +538,19 @@ export class Game {
       difficulty: this.difficulty,
       contestants: this.contestants,
       player: this.player,
+      continueWhenPlayerOut: options.observe ?? false,
       callbacks: {
         prepareRound: (index, entrants) => this.prepareRound(index, entrants),
         onStamp: (stamp) => this.callbacks.onStamp?.(stamp.text, stamp.tone),
         onPhase: (phase) => this.callbacks.onShowPhase?.(phase),
         onSpectate: (leader) => {
-          this.spectateBody = leader?.body ?? null;
-          if (leader) this.rig.snapSpectate(leader.body);
+          const next = leader?.body ?? null;
+          const first = next !== null && this.spectateBody === null;
+          this.spectateBody = next;
+          // Establish the wide shot once, then let the rig lerp to a new
+          // leader over a few frames. A hard cut on every lead change broke
+          // the dense-pack read and could land the lens inside a rival.
+          if (next && first) this.rig.snapSpectate(next);
         },
         onFx: (event) => this.handleShowFx(event),
         onCountdown: (value) => this.handleCountdown(value),
@@ -467,9 +561,29 @@ export class Game {
           this.input.reset();
           this.audio.setMusicMode('menu');
           this.audio.play(result.won ? 'crown' : 'eliminate');
-          if (result.won) {
-            const crown = this.level.crownPosition;
-            const winner = result.winnerLook;
+          const crownEnding = result.finalRoundMode === 'crown-climb';
+          const winner = result.winnerLook;
+          const crown = this.level.crownPosition;
+          if (crownEnding && winner) {
+            // Both a human and a bot crown win get the same ceremony: frame
+            // the dais, celebrate the actual winner, and confetti the crown.
+            this.spectateBody = winner.body;
+            winner.body.frozen = true;
+            winner.bean.setVisible(true);
+            winner.bean.setCelebrating(true);
+            if (crown) {
+              this.rig.lookAt(crown.x, crown.y + 0.2, crown.z);
+              this.rig.setCamera(this.rig.yaw, (20 * Math.PI) / 180, 11.2);
+            }
+            this.bursts.spawn(
+              'crown',
+              crown?.x ?? winner.body.position.x,
+              crown?.y ?? winner.body.position.y + 1,
+              crown?.z ?? winner.body.position.z,
+              1.15,
+            );
+            this.rig.addShake(0.16);
+          } else if (result.won) {
             if (crown) {
               this.rig.lookAt(crown.x, crown.y + 0.2, crown.z);
               this.rig.setCamera(this.rig.yaw, (18 * Math.PI) / 180, 10.5);
@@ -496,6 +610,28 @@ export class Game {
     this.accumulator = 0;
     this.input.reset();
     this.callbacks.onStateChange?.(this.currentState);
+  }
+
+  /**
+   * Debug/QA only. Installs (or removes) a scripted player brain that fills the
+   * same ControllerFrame as human input. It never runs in normal play; the
+   * default is off and `startShow` always resets it.
+   */
+  setPlayerAutopilot(mode: 'off' | 'casual'): void {
+    this.autopilotMode = mode;
+    this.casualPilot =
+      mode === 'casual' && this.match ? createCasualPilot(this.player, this.currentSeed) : null;
+  }
+
+  /** Debug/QA: a full observed show played by the scripted casual brain. */
+  startCasualRun(difficulty: DifficultyId = 'show'): void {
+    this.startShow({ difficulty, observe: true });
+    this.setPlayerAutopilot('casual');
+  }
+
+  /** Debug/QA: a full observed show with no player input. */
+  startObservedShow(difficulty: DifficultyId = 'show'): void {
+    this.startShow({ difficulty, observe: true });
   }
 
   /** Course or Training Deck with respawns and no elimination. */
@@ -716,22 +852,21 @@ export class Game {
 
   /** Debug accelerator: run the fixed loop without waiting wall-clock time. */
   simulate(seconds: number): { steps: number; phase: string; round: number } {
-    if (!this.match) return { steps: 0, phase: 'none', round: 0 };
     if (this.currentState === 'paused') this.currentState = 'playing';
     const total = Math.min(60 * 60 * 8, Math.max(1, Math.floor(seconds / FIXED_STEP)));
     let steps = 0;
     for (let i = 0; i < total; i += 1) {
       this.stepFixed(FIXED_STEP, steps === 0);
       steps += 1;
-      if (this.match.phase === 'victory' || this.match.phase === 'defeat') break;
+      if (this.match?.phase === 'victory' || this.match?.phase === 'defeat') break;
       if (this.currentState === 'finished') break;
     }
     this.accumulator = 0;
     this.input.reset();
     return {
       steps,
-      phase: this.match.phase,
-      round: this.match.roundIndex,
+      phase: this.match?.phase ?? this.currentState,
+      round: this.match?.roundIndex ?? 0,
     };
   }
 
@@ -967,6 +1102,11 @@ export class Game {
     for (const collider of this.level.colliders) this.world.addCollider(collider);
     this.level.setQuality(this.quality);
     this.rig.setFloor(this.level.cameraFloor);
+    this.rig.setSpectateArena(
+      mode === 'hexapop',
+      this.level.startPosition.x,
+      this.level.startPosition.z,
+    );
     this.world.killY = this.level.killY;
   }
 
@@ -1172,9 +1312,30 @@ export class Game {
       (max, contestant) => (contestant.body.eliminated ? max : Math.max(max, contestant.progress)),
       0,
     );
+    const humanProgress = active.includes(this.player)
+      ? this.player.body.eliminated
+        ? null
+        : this.player.progress
+      : null;
     for (const contestant of active) {
       if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
+        if (this.autopilotMode === 'casual' && this.level.mode === 'course') {
+          const pilot = this.casualPilot ?? createCasualPilot(contestant, this.currentSeed);
+          this.casualPilot = pilot;
+          contestant.controller.update(
+            dt,
+            pilot.think({
+              level: this.level,
+              body: contestant.body,
+              contestants: active,
+              leaderProgress,
+              humanProgress,
+              dt,
+            }),
+          );
+          continue;
+        }
         this.controllerFrame.cameraYaw = this.rig.yaw;
         const input = this.input.readFrame();
         this.controllerFrame.moveX = input.moveX;
@@ -1196,6 +1357,7 @@ export class Game {
           body: contestant.body,
           contestants: active,
           leaderProgress,
+          humanProgress,
           dt,
         });
         contestant.controller.update(dt, frame);
@@ -1220,6 +1382,7 @@ export class Game {
       (max, contestant) => (contestant.body.eliminated ? max : Math.max(max, contestant.progress)),
       0,
     );
+    const humanProgress = this.player.body.eliminated ? null : this.player.progress;
     for (const contestant of active) {
       if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
@@ -1244,6 +1407,7 @@ export class Game {
           body: contestant.body,
           contestants: active,
           leaderProgress,
+          humanProgress,
           dt,
         });
         contestant.controller.update(dt, frame);

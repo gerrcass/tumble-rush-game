@@ -101,8 +101,11 @@ test.describe('Review 1 — keyboard ownership', () => {
     await page.waitForTimeout(250);
     await page.locator('canvas.game-canvas').click({ position: { x: 400, y: 300 } });
     await page.keyboard.press('Space');
+    // SwiftShader can take a few hundred ms to present the jump; poll instead
+    // of sampling a fixed 700 ms window, otherwise the assertion measures the
+    // GPU, not the keyboard route.
     let peak = 0;
-    for (let i = 0; i < 14; i += 1) {
+    for (let i = 0; i < 60 && peak <= 0.9; i += 1) {
       await page.waitForTimeout(50);
       const y = await page.evaluate(() => window.__tumble?.playerPos.y ?? 0);
       peak = Math.max(peak, y);
@@ -246,7 +249,12 @@ test.describe('Review 1 — copy, seeds, focus and leaks', () => {
     const info = await page.evaluate(() => window.__tumble?.renderInfo);
     console.log(`COURSE_RENDER_INFO ${JSON.stringify(info)}`);
     expect(info).toBeTruthy();
-    expect(info?.calls).toBeLessThanOrEqual(250);
-    expect(info?.triangles).toBeLessThanOrEqual(120_000);
+    // M2 doubles the authored Course with a second lap of the same five
+    // sections, so the start-of-Course view now contains ~25% more draw calls
+    // and ~60% more triangles than the v1 243/117k baseline. The budget is
+    // scaled once for the longer course (see docs/METRICS.md); it is still a
+    // hard gate against accidental duplication or new scenery.
+    expect(info?.calls).toBeLessThanOrEqual(320);
+    expect(info?.triangles).toBeLessThanOrEqual(200_000);
   });
 });

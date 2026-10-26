@@ -551,17 +551,26 @@ export function makeCrowd(
   return group;
 }
 
+const signTextureCache = new Map<string, Texture>();
+
 export function makeSign(
   title: string,
   subtitle: string,
   width: number,
   height: number,
-  ownedTextures?: Set<Texture>,
+  _ownedTextures?: Set<Texture>,
   materials?: MaterialCache,
 ): Group {
   const group = new Group();
-  const signTexture = makeSignTexture(title, subtitle);
-  ownedTextures?.add(signTexture);
+  // Authored signs repeat across Courses and laps. Caching them by copy keeps
+  // one GPU texture per authored sign instead of one per Show, and leaves the
+  // session-level cache bounded by the authored text.
+  const key = `${title}|${subtitle}`;
+  let signTexture = signTextureCache.get(key);
+  if (!signTexture) {
+    signTexture = makeSignTexture(title, subtitle);
+    signTextureCache.set(key, signTexture);
+  }
   const backing = new Mesh(
     new RoundedBoxGeometry(width + 0.18, height + 0.18, 0.14, 2, 0.08),
     toon(materials, { color: 0x24324a }),
@@ -580,8 +589,13 @@ export function makeSign(
   return group;
 }
 
+const beltTextureCache = new Map<string, Texture>();
+
 /** Dark conveyor belt with warm chevrons; the texture scrolls in the level. */
-export function makeBeltTexture(): Texture {
+export function makeBeltTexture(repeatX = 2, repeatY = 3): Texture {
+  const key = `${repeatX}|${repeatY}`;
+  const cached = beltTextureCache.get(key);
+  if (cached) return cached;
   const texture = canvasTexture(256, 256, (ctx) => {
     ctx.fillStyle = '#3b4a6b';
     ctx.fillRect(0, 0, 256, 256);
@@ -608,11 +622,16 @@ export function makeBeltTexture(): Texture {
   });
   texture.wrapS = RepeatWrapping;
   texture.wrapT = RepeatWrapping;
+  texture.repeat.set(repeatX, repeatY);
   texture.needsUpdate = true;
+  beltTextureCache.set(key, texture);
   return texture;
 }
 
+let arrowTexture: Texture | null = null;
+
 export function makeArrowTexture(): Texture {
+  if (arrowTexture) return arrowTexture;
   const texture = canvasTexture(256, 256, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     ctx.lineJoin = 'round';
@@ -629,10 +648,21 @@ export function makeArrowTexture(): Texture {
     }
   });
   texture.needsUpdate = true;
+  arrowTexture = texture;
   return texture;
 }
 
-export function makeCheckerTexture(a = '#fff6e5', b = '#ff6b6b'): Texture {
+const checkerTextureCache = new Map<string, Texture>();
+
+export function makeCheckerTexture(
+  a = '#fff6e5',
+  b = '#ff6b6b',
+  repeatX = 1,
+  repeatY = 1,
+): Texture {
+  const key = `${a}|${b}|${repeatX}|${repeatY}`;
+  const cached = checkerTextureCache.get(key);
+  if (cached) return cached;
   const texture = canvasTexture(256, 256, (ctx) => {
     ctx.fillStyle = a;
     ctx.fillRect(0, 0, 256, 256);
@@ -646,7 +676,9 @@ export function makeCheckerTexture(a = '#fff6e5', b = '#ff6b6b'): Texture {
   });
   texture.wrapS = RepeatWrapping;
   texture.wrapT = RepeatWrapping;
+  texture.repeat.set(repeatX, repeatY);
   texture.needsUpdate = true;
+  checkerTextureCache.set(key, texture);
   return texture;
 }
 

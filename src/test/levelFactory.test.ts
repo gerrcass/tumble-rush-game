@@ -59,7 +59,7 @@ describe('Level factory', () => {
 
   it('exposes the mode-specific phase-two debug data', () => {
     const hex = createLevel('hexapop', 9);
-    expect(hex.tileCount).toBe(117);
+    expect(hex.tileCount).toBe(223);
     expect(hex.slimeHeight).toBe(-9.5);
     hex.dispose();
 

@@ -381,7 +381,7 @@ export class App {
     this.showNewBest = finish.newBest;
     this.persistProfile();
     this.startScreen.setProfile(this.profile);
-    if (result.won) {
+    if (result.won && result.winnerName) {
       this.ceremonyName.textContent = `${result.winnerName} takes the crown!`;
       this.ceremony.hidden = false;
       this.ceremony.classList.add('is-visible');
