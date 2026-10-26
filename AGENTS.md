@@ -56,19 +56,19 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 - Unit tests cover physics rest/jump/slide/platform/kill-plane, RNG determinism, director ties/qualifiers, and profile migration.
 - Playwright must prove: menu renders with no console errors, a show starts and reaches gameplay, mobile touch controls exist, settings toggle persists.
 - `window.__tumble` is the test hook. Keep it available in dev/test builds; do not ship a debug overlay enabled in production.
-- Each PR needs visual evidence captured from the real build: menu, course, Hexapop, final, victory. Store them in `docs/evidence/` and attach them to the PR with `gh`.
+- Each PR needs visual evidence captured from the real build: menu, both Course route beats, all three Hexapop arenas, final, victory, and the Show Card. Store them in `docs/evidence/` and attach them to the PR with `gh --attach`.
 - Performance gate: ≥55 fps at 1080p high on real hardware; low quality must preserve playability. **This host is SwiftShader-only (no `/dev/dri`), so FPS is not a hardware signal.** Use `window.__tumble.renderInfo` draw calls/triangles and report the hardware-FPS gap instead of optimizing for software FPS.
-- Release gate: `npm run check:release` runs the unit/build gate plus the focused review specs. `npm run verify:show` runs the real 16-bean Course and Hexapop spawn gate.
+- Release gate: `npm run gate:release` runs invariants/typecheck/unit/build, `verify:show`, the pacing gate, and the full Playwright suite. `npm run check:release` is the focused review loop. M3 adds the 12-seed variety gate; it runs in CI and is authoritative for route/arena variety.
 - Real-Match probes beat isolated unit setups for show bugs. `docs/REVIEW-*.md` records the independent review rounds; add a new review file when a round finds blockers.
 - Use `window.__tumble.simulate(seconds)` for deterministic test time. Wall-clock waits fail on SwiftShader (the fixed loop advances ~0.15× real time at 3 fps).
 
 ## Delivery workflow
 
-1. Work on `feat/tumble-rush-v1`, one commit (or a small coherent series) per ticket.
-2. Keep the ticket list in `docs/TICKETS.md` updated only when scope genuinely changes.
-3. Run `npm run check` and the Playwright smoke before pushing.
-4. Open one PR into `main` with the live URL, test plan, and attached screenshots. Use the `pr` skill for the body; link and close every ticket issue.
-5. After merge, wait for the Pages deploy, load the public URL, and capture the README screenshot from it.
+1. Work on `feat/m3-remix`, one commit (or a small coherent series) per ticket in [`docs/m3/TICKETS.md`](docs/m3/TICKETS.md).
+2. Keep the ticket list in `docs/m3/TICKETS.md` updated only when scope genuinely changes.
+3. Run `npm run check` and the focused Playwright spec while iterating; run `npm run gate:release` before pushing the release commit.
+4. Open one PR into `main` with the live URL, test plan, and attached screenshots. Use the `pr` skill for the body; link and close every ticket issue with `Closes #N`.
+5. After merge, wait for the Pages deploy, load the public URL, capture the README screenshot from it, and close the milestone.
 6. Remove branches/worktrees and leave no open PR or issue without a documented reason.
 
 Live target: <https://gerrcass.github.io/tumble-rush-game/>. The canonical deployment is GitHub Pages from `main` through Actions.

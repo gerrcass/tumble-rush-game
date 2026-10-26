@@ -63,7 +63,7 @@ Area labels describe where the work lives, not who owns it. A ticket can carry m
 1. **One kind.** Every issue is either `spec` or `ticket` (or a triage-only kind such as `bug`/`documentation`/`question`). Do not stack `spec` and `ticket`.
 2. **One priority per ticket.** `p0`, `p1`, or `p2`. A spec has no priority; its tickets do.
 3. **At least one area per ticket.** Use the smallest set that describes the change.
-4. **The milestone is the release train.** The current train is `Tumble Rush v1`; a ticket belongs to exactly one milestone. Post-release work gets a new milestone, not a relabeled v1 ticket.
+4. **The milestone is the release train.** The current train is `Tumble Rush M3 — Remix Season`; the v1 and M2 trains are closed. A ticket belongs to exactly one milestone. Post-release work gets a new milestone, not a relabeled old ticket.
 5. **`Blocked by` is authoritative.** Labels are for filtering; the native sub-issue/blocking edges (or the `## Blocked by` section) decide the frontier.
 6. **`ready-for-agent` means "no human decision needed."** It does not mean "small" or "important." An agent can grab it, read the spec/ticket, and implement without asking a question.
 7. **No dangling work.** A ticket is closed by the PR that implements it, using `Closes #N`, or by a written `wontfix`/`duplicate` decision. The milestone closes only when every ticket is closed and the release evidence exists.
