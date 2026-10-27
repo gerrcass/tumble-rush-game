@@ -1,4 +1,5 @@
 import { Rng } from '../Rng';
+import { twistForSeed, type TwistPlan } from '../twist';
 import {
   ARENA_LABELS,
   ARENA_PLAN_IDS,
@@ -133,15 +134,17 @@ export interface ShowPlan {
   arena: ArenaPlanId;
   arenaLabel: string;
   arenaTileCount: number;
+  /** The seeded qualifier-rule twist. The Crown always plays classic. */
+  twist: TwistPlan;
   /** `B-D-G/C-F-G` — the two lap routes, stable and human-readable. */
   courseSignature: string;
   /** Structured lap routes; the UI/gate do not need to parse the label. */
   lapRoutes: readonly [readonly MiddleSectionId[], readonly MiddleSectionId[]];
   /** `B-D-G / C-F-G` — the compact card line. */
   routeLabel: string;
-  /** `B-D-G/C-F-G · SPIRAL` — the show identity. */
+  /** `B-D-G/C-F-G · SPIRAL · MOON` — the show identity. */
   signature: string;
-  /** `COURSE B-D-G / C-F-G · ARENA SPIRAL` — the one-line Show Card. */
+  /** `COURSE B-D-G / C-F-G · ARENA SPIRAL · TWIST MOON GRAVITY` — the card. */
   label: string;
 }
 
@@ -317,17 +320,21 @@ export function planShow(seed: number): ShowPlan {
 
   const courseSignature = `${firstRoute.route.join('-')}/${secondRoute.route.join('-')}`;
   const routeLabel = `${firstRoute.route.join('-')} / ${secondRoute.route.join('-')}`;
+  // Independent salted hash: never drawn from routeRng, so the M3 route and
+  // arena sequence stays identical for every seed.
+  const twist = twistForSeed(normalizedSeed);
   return {
     seed: normalizedSeed,
     course,
     arena,
     arenaLabel: arenaName,
     arenaTileCount: arenaTileCount(arena),
+    twist,
     courseSignature,
     lapRoutes: [firstRoute.route, secondRoute.route],
     routeLabel,
-    signature: `${courseSignature} · ${arenaName}`,
-    label: `COURSE ${routeLabel} · ARENA ${arenaName}`,
+    signature: `${courseSignature} · ${arenaName} · ${twist.short}`,
+    label: `COURSE ${routeLabel} · ARENA ${arenaName} · TWIST ${twist.label}`,
   };
 }
 

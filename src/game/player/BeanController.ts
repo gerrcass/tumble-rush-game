@@ -51,6 +51,19 @@ const STUMBLE_TIME = 0.5;
 const STUMBLE_THRESHOLD = 11.5;
 
 /**
+ * The M3 movement constants. `CLASSIC_RULES` in `twist.ts` is the identity
+ * multiplier over these values; `twist.test.ts` asserts they cannot drift.
+ */
+export const MOVEMENT_BASE = Object.freeze({
+  maxRunSpeed: MAX_RUN_SPEED,
+  groundAccel: GROUND_ACCEL,
+  airControl: AIR_CONTROL,
+  groundFriction: GROUND_FRICTION,
+  airDrag: AIR_DRAG,
+  jumpVelocity: JUMP_VELOCITY,
+});
+
+/**
  * Bean movement controller.
  *
  * Run, jump (coyote time + input buffer), dive, grab/shove and emote. There is
