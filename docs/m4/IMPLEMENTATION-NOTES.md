@@ -107,7 +107,9 @@ implementation agent, not a second spec. The spec is the contract.
   - The slippery stop is longer; give the steer a lead based on the stopping
     distance. Do not add a hidden speed or teleport.
   - The casual pilot (`createCasualPilot`) uses the same rules; its jump
-    commitment may need its own tuning within the spec.
+    commitment may need its own tuning within the spec. The pilot persists
+    across Rounds, so it must resolve the rules for the **current mode** rather
+    than capturing the show twist once; the Crown is classic.
 - `createBotBrain(mode, contestant, seed)` can read `planShow(seed).twist` or
   receive the rules from `Game`. Prefer passing the rules so the brain cannot
   disagree with the physics.
