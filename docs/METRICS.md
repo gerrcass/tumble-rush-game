@@ -381,3 +381,36 @@ npm run verify:pacing -- --phase=b
 npm run evidence                  # M3 screenshots + m3-performance.json
 npm run gate:release              # check + verify:show + pacing + variety + e2e
 ```
+
+## M4 — Twist Season (planned)
+
+M4 adds one seeded **qualifier-rule twist** per Show: **MOON GRAVITY**,
+**SLIPPERY**, or **RUSH HOUR**. The Crown Climb stays classic (ADR 0007). The
+M3 variety sweep is the baseline; M4 must not lose route or arena variety, and
+the 12-seed twist sweep must add twist coverage without moving the M2 bands.
+
+Initial tuning (the implementation may move any multiplier by ±15% to pass the
+gate; the final values are recorded here):
+
+| Twist | Initial rules |
+| --- | --- |
+| MOON GRAVITY | gravity ×0.78, jump ×0.90, air control ×1.10, air drag ×0.90 |
+| SLIPPERY | friction ×0.55, accel ×0.90, air drag ×0.85 |
+| RUSH HOUR | hazard ×1.10, Course 105 s, Hexapop cap 42.9 s, Sugar Rush 38 s |
+
+Targets:
+
+| Signal | M4 target |
+| --- | --- |
+| Twist coverage | each twist ≥3 of 12 seeds |
+| Applied probe | plan rules match the live gravity/friction/Sugar Rush clock |
+| Course clock | 45–90 s, 8+ finishers on every run |
+| Hexapop clock | 30–50 s, Sugar Rush on every run |
+| Crown clock | 45–80 s, living physical touch |
+| Total show | 3–5 min, no run below 150 s or above 360 s |
+| Idle human qualified | 0 / 12 |
+| Casual human qualified | ≥8 / 12 |
+| Living crown winner | ≥23 / 24 |
+| Twist gate negative control | rejected |
+
+The measured M4 sweep will be appended after `npm run verify:twists` passes.

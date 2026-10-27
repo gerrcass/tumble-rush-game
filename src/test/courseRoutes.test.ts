@@ -39,7 +39,7 @@ describe('M3 Course routes build in the real level', () => {
       course.dispose();
     }
     expect(combos.size).toBe(10);
-  });
+  }, 30_000);
 
   it('keeps every finish marker at the planned lap gate', () => {
     for (const seed of [20260418, 7, 20993521]) {

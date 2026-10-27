@@ -1,6 +1,6 @@
 # AGENTS.md — Tumble Rush
 
-Tumble Rush is a complete single-player 3D battle-royale party game for the browser. Use [`GLOSSARY.md`](GLOSSARY.md) for domain language. The current milestone is **M3 — Remix Season**; read [`docs/m3/SPEC.md`](docs/m3/SPEC.md), [`docs/m3/TICKETS.md`](docs/m3/TICKETS.md), and [`docs/METRICS.md`](docs/METRICS.md). Current code seams are mapped in [`docs/m3/IMPLEMENTATION-NOTES.md`](docs/m3/IMPLEMENTATION-NOTES.md). The v1 product spec remains [`docs/SPEC.md`](docs/SPEC.md) for architecture and UX invariants. The M2 pacing record is [`docs/RETRO-M2.md`](docs/RETRO-M2.md) and [`docs/METRICS.md`](docs/METRICS.md). The decisions behind the design are in [`docs/GRILL.md`](docs/GRILL.md), [`docs/m2/GRILL.md`](docs/m2/GRILL.md), [`docs/m3/GRILL.md`](docs/m3/GRILL.md), and [`docs/adr/`](docs/adr/). The issue-label policy is in [`docs/LABELS.md`](docs/LABELS.md).
+Tumble Rush is a complete single-player 3D battle-royale party game for the browser. Use [`GLOSSARY.md`](GLOSSARY.md) for domain language. The current milestone is **M4 — Twist Season**; read [`docs/m4/SPEC.md`](docs/m4/SPEC.md), [`docs/m4/TICKETS.md`](docs/m4/TICKETS.md), and [`docs/METRICS.md`](docs/METRICS.md). Current code seams are mapped in [`docs/m4/IMPLEMENTATION-NOTES.md`](docs/m4/IMPLEMENTATION-NOTES.md). The v1 product spec remains [`docs/SPEC.md`](docs/SPEC.md) for architecture and UX invariants. The M3 remix record is [`docs/m3/SPEC.md`](docs/m3/SPEC.md) and [`docs/METRICS.md`](docs/METRICS.md). The M2 pacing record is [`docs/RETRO-M2.md`](docs/RETRO-M2.md). The decisions behind the design are in [`docs/GRILL.md`](docs/GRILL.md), [`docs/m2/GRILL.md`](docs/m2/GRILL.md), [`docs/m3/GRILL.md`](docs/m3/GRILL.md), [`docs/m4/GRILL.md`](docs/m4/GRILL.md), and [`docs/adr/`](docs/adr/). The issue-label policy is in [`docs/LABELS.md`](docs/LABELS.md).
 
 ## First run
 
@@ -16,6 +16,7 @@ npm run verify:show  # real 16-bean Course + real Hexapop spawn
 npm run measure:show # pacing baseline; see docs/METRICS.md
 npm run verify:pacing # historical 10-seed pacing gate
 npm run verify:variety # 12-seed route/arena + M2 band gate
+npm run verify:twists  # 12-seed twist coverage, applied probe, and M2 bands
 npm run test:e2e     # Playwright smoke + screenshots (set TUMBLE_E2E_PORT if 5173 is occupied)
 npm run evidence     # canonical screenshot set
 npm run ci:local     # clean install with workspace-local npm cache + check
@@ -69,9 +70,9 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 - Unit tests cover physics rest/jump/slide/platform/kill-plane, RNG determinism, director ties/qualifiers, and profile migration.
 - Playwright must prove: menu renders with no console errors, a show starts and reaches gameplay, mobile touch controls exist, settings toggle persists.
 - `window.__tumble` is the test hook. Keep it available in dev/test builds; do not ship a debug overlay enabled in production.
-- Each PR needs visual evidence captured from the real build: menu, both Course route beats, all three Hexapop arenas, final, victory, and the Show Card. Store them in `docs/evidence/` and attach them to the PR with `gh --attach`.
+- Each PR needs visual evidence captured from the real build: menu, both Course route beats, all three Hexapop arenas, the three twist cards/HUD chips/signs, the `FINAL · CLASSIC` card, final, victory, and the Show Card. Store them in `docs/evidence/` and attach them to the PR with `gh --attach`.
 - Performance gate: ≥55 fps at 1080p high on real hardware; low quality must preserve playability. **This host is SwiftShader-only (no `/dev/dri`), so FPS is not a hardware signal.** Use `window.__tumble.renderInfo` draw calls/triangles and report the hardware-FPS gap instead of optimizing for software FPS.
-- Release gate: `npm run gate:release` runs invariants/docs/typecheck/unit/build, `verify:show`, the 10-seed pacing gate, the 12-seed variety gate, and the full Playwright suite. `npm run check:release` is the focused review loop. M3 adds the 12-seed variety gate; it runs in CI and is authoritative for route/arena variety.
+- Release gate: `npm run gate:release` runs invariants/docs/typecheck/unit/build, `verify:show`, the 10-seed pacing gate, the 12-seed variety gate, the 12-seed twist gate, and the full Playwright suite. `npm run check:release` is the focused review loop. M4 adds the twist gate; it runs in CI and is authoritative for twist coverage, the applied probe, and twist fairness.
 - `npm run docs:check` resolves every documented `npm run` and relative link. It runs inside `check`/`lint`; a stale command or evidence path fails before typecheck.
 - `npm run release:audit -- --strict` is the post-deploy cleanup gate: dirty tree, open PRs/issues, merged remote branches, and extra worktrees.
 - Real-Match probes beat isolated unit setups for show bugs. `docs/REVIEW-*.md` records the independent review rounds; add a new review file when a round finds blockers.
@@ -79,8 +80,8 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 
 ## Delivery workflow
 
-1. Work on `feat/m3-remix`, one commit (or a small coherent series) per ticket in [`docs/m3/TICKETS.md`](docs/m3/TICKETS.md).
-2. Keep the ticket list in `docs/m3/TICKETS.md` updated only when scope genuinely changes.
+1. Work on `feat/m4-twist-season`, one commit (or a small coherent series) per ticket in [`docs/m4/TICKETS.md`](docs/m4/TICKETS.md).
+2. Keep the ticket list in [`docs/m4/TICKETS.md`](docs/m4/TICKETS.md) updated only when scope genuinely changes.
 3. Run `npm run check` and the focused Playwright spec while iterating; run `npm run gate:release` before pushing the release commit.
 4. Open one PR into `main` with the live URL, test plan, and attached screenshots. Use the `pr` skill for the body; link and close every ticket issue with `Closes #N`.
 5. After merge, wait for the Pages deploy, load the public URL, capture the README screenshot from it, and close the milestone.

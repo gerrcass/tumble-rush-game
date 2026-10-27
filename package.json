@@ -22,6 +22,7 @@
     "measure:show": "node scripts/measure-show.mjs",
     "verify:pacing": "node scripts/verify-pacing.mjs",
     "verify:variety": "node scripts/verify-variety.mjs",
+    "verify:twists": "node scripts/verify-twists.mjs",
     "evidence": "playwright test e2e/screenshots.spec.ts e2e/m3-evidence.spec.ts",
     "ci:local": "bash scripts/ci-local.sh"
   },

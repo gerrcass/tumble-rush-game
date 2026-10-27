@@ -88,9 +88,24 @@ own the Route.
 _Avoid_: Chunk, block
 
 **Show Card**:
-The seeded label that names a Show's Course Routes and Hexapop Arena Plan,
-shown in the Round intro, results, and Daily chip.
+The seeded label that names a Show's Course Routes, Hexapop Arena Plan, and
+Twist, shown in the Round intro, results, and Daily chip.
 _Avoid_: Seed card, summary
+
+**Twist**:
+The seeded qualifier rule for a Show: MOON GRAVITY, SLIPPERY, or RUSH HOUR. It
+applies to the Course and Hexapop; the Crown Climb stays classic.
+_Avoid_: Modifier, mutator, event
+
+**Twist Rules**:
+The numeric multipliers and clocks a Twist applies to gravity, jump, grip,
+hazard speed, and the qualifier-round clocks.
+_Avoid_: Modifier data, buff
+
+**Twist Gate**:
+The 12-seed measurement that proves every Twist appears and is applied while
+still meeting the pacing and fairness bands.
+_Avoid_: Twist check, seed test
 
 **Hazard**:
 A moving or static Course object that can knock a Tumbler off.
