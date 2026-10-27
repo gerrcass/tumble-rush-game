@@ -351,9 +351,6 @@ Sugar Rush and every underfilled Crown in the sweep produced a living winner.
 
 Evidence: [`docs/evidence/variety/m3-variety.json`](evidence/variety/m3-variety.json),
 [`m3-variety.log`](evidence/variety/m3-variety.log).
-
-Evidence: [`docs/evidence/variety/m3-variety.json`](evidence/variety/m3-variety.json),
-[`m3-variety.log`](evidence/variety/m3-variety.log).
 The `--negative` control collapses every plan to `B-C-D/B-C-D · RINGS` and the
 same gate rejects it on route variety, arena variety, and both new-section
 counts.

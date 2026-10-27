@@ -213,6 +213,10 @@ export class Course implements Level {
   readonly plan: CoursePlan;
   readonly checkpoints: readonly Checkpoint[];
   readonly waypoints: readonly Waypoint[];
+  /** World-space z of each lap's checker strip, for marker-placement tests. */
+  readonly finishLineZs: number[] = [];
+  /** World-space z of each lap's finish-gate trigger line. */
+  readonly finishGateZs: number[] = [];
 
   private readonly seed: number;
   private readonly ownedTextures = new Set<Texture>();
@@ -697,6 +701,7 @@ export class Course implements Level {
   private buildFinishGate(width: number): void {
     const gold = this.materials.toon({ color: 0xffc145 });
     const gateZ = this.sectionZ - 23.2;
+    this.finishGateZs.push(gateZ);
     for (const side of [-1, 1]) {
       const post = new Mesh(new CylinderGeometry(0.26, 0.34, 4.4, 12), gold);
       post.position.set(side * (width / 2 - 0.4), 6.7 + this.lapY, gateZ);
@@ -744,6 +749,7 @@ export class Course implements Level {
     line.position.set(0, 4.53 + this.lapY, this.sectionZ - 20.4);
     line.receiveShadow = true;
     this.staticVisuals.add(line);
+    this.finishLineZs.push(line.position.z);
   }
 
   private buildScenery(rng: Rng): void {

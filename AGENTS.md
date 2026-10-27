@@ -7,8 +7,10 @@ Tumble Rush is a complete single-player 3D battle-royale party game for the brow
 ```bash
 npm ci
 npm run dev          # http://localhost:5173
-npm run check        # invariants + typecheck + unit tests + production build
-npm run lint         # invariants + typecheck
+npm run check        # invariants + docs + typecheck + unit tests + production build
+npm run lint         # invariants + docs + typecheck
+npm run docs:check   # npm scripts and relative links in the docs resolve
+npm run release:audit # dirty tree, open PRs/issues, stale branches, worktrees
 npm run gate:release # check + verify:show + 10-seed pacing + 12-seed variety + full Playwright
 npm run verify:show  # real 16-bean Course + real Hexapop spawn
 npm run measure:show # pacing baseline; see docs/METRICS.md
@@ -19,7 +21,17 @@ npm run evidence     # canonical screenshot set
 npm run ci:local     # clean install with workspace-local npm cache + check
 ```
 
-Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `gerrcass/tumble-rush-game`. The release checklist is [`docs/RELEASE.md`](docs/RELEASE.md); pacing baselines and targets are [`docs/METRICS.md`](docs/METRICS.md). The agent-environment retro is [`docs/RETRO-M3.md`](docs/RETRO-M3.md).
+Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `gerrcass/tumble-rush-game`. The release checklist is [`docs/RELEASE.md`](docs/RELEASE.md); pacing baselines and targets are [`docs/METRICS.md`](docs/METRICS.md). The agent-environment retro is [`docs/RETRO-M4.md`](docs/RETRO-M4.md).
+
+## Tool discipline
+
+- Shell calls run at the repo root. Pass `workdir` for another directory; never
+  prefix `cd /home/gerrcass/.t3/projects/tumble-rush-game &&`.
+- Use `read`/`grep`/`glob` for file access; use the shell for commands.
+- Run suites that outlast the turn with `background: true` and continue with
+  independent work. Polling a running suite with `sleep` wastes turns.
+- `npm run release:audit` is read-only. Delete merged remote branches only after
+  the audit names them; `--strict` is the post-deploy gate.
 
 ## Architecture
 
@@ -59,7 +71,9 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 - `window.__tumble` is the test hook. Keep it available in dev/test builds; do not ship a debug overlay enabled in production.
 - Each PR needs visual evidence captured from the real build: menu, both Course route beats, all three Hexapop arenas, final, victory, and the Show Card. Store them in `docs/evidence/` and attach them to the PR with `gh --attach`.
 - Performance gate: ≥55 fps at 1080p high on real hardware; low quality must preserve playability. **This host is SwiftShader-only (no `/dev/dri`), so FPS is not a hardware signal.** Use `window.__tumble.renderInfo` draw calls/triangles and report the hardware-FPS gap instead of optimizing for software FPS.
-- Release gate: `npm run gate:release` runs invariants/typecheck/unit/build, `verify:show`, the 10-seed pacing gate, the 12-seed variety gate, and the full Playwright suite. `npm run check:release` is the focused review loop. M3 adds the 12-seed variety gate; it runs in CI and is authoritative for route/arena variety.
+- Release gate: `npm run gate:release` runs invariants/docs/typecheck/unit/build, `verify:show`, the 10-seed pacing gate, the 12-seed variety gate, and the full Playwright suite. `npm run check:release` is the focused review loop. M3 adds the 12-seed variety gate; it runs in CI and is authoritative for route/arena variety.
+- `npm run docs:check` resolves every documented `npm run` and relative link. It runs inside `check`/`lint`; a stale command or evidence path fails before typecheck.
+- `npm run release:audit -- --strict` is the post-deploy cleanup gate: dirty tree, open PRs/issues, merged remote branches, and extra worktrees.
 - Real-Match probes beat isolated unit setups for show bugs. `docs/REVIEW-*.md` records the independent review rounds; add a new review file when a round finds blockers.
 - Use `window.__tumble.simulate(seconds)` for deterministic test time. Wall-clock waits fail on SwiftShader (the fixed loop advances ~0.15× real time at 3 fps).
 
@@ -70,6 +84,6 @@ Node 22. Use the committed lockfile. GitHub CLI is authenticated; the repo is `g
 3. Run `npm run check` and the focused Playwright spec while iterating; run `npm run gate:release` before pushing the release commit.
 4. Open one PR into `main` with the live URL, test plan, and attached screenshots. Use the `pr` skill for the body; link and close every ticket issue with `Closes #N`.
 5. After merge, wait for the Pages deploy, load the public URL, capture the README screenshot from it, and close the milestone.
-6. Remove branches/worktrees and leave no open PR or issue without a documented reason.
+6. Run `npm run release:audit -- --strict`; delete merged local/remote branches and remove worktrees until it is clean. Leave no open PR or issue without a documented reason.
 
 Live target: <https://gerrcass.github.io/tumble-rush-game/>. The canonical deployment is GitHub Pages from `main` through Actions.
