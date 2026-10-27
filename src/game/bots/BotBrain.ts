@@ -6,6 +6,7 @@ import type { Collider } from '../physics/Collider';
 import type { Contestant } from '../match/Contestant';
 import { Rng } from '../Rng';
 import { clamp } from '../util/math';
+import { CLASSIC_RULES, type TwistRules } from '../twist';
 
 export interface BotContext {
   level: Level;
@@ -75,6 +76,8 @@ export abstract class BotBrain {
   protected readonly owner: Contestant;
   protected readonly rng: Rng;
   protected readonly frame: ControllerFrame = { ...IDLE_FRAME };
+  /** The same rule value the physics world and the human controller use. */
+  rules: TwistRules;
   protected elapsed = 0;
   protected decisionTimer = 0;
   protected staleTimer = 0;
@@ -88,9 +91,15 @@ export abstract class BotBrain {
   private lastProbeX = 0;
   private lastProbeZ = 0;
 
-  constructor(owner: Contestant, seed: number, salt: number) {
+  constructor(owner: Contestant, seed: number, salt: number, rules: TwistRules = CLASSIC_RULES) {
     this.owner = owner;
     this.rng = new Rng((seed ^ (salt * 0x9e3779b1) ^ (owner.id * 0x85ebca6b)) >>> 0);
+    this.rules = rules;
+  }
+
+  /** Re-resolve the public rules when the Show changes Round. */
+  setRules(rules: TwistRules): void {
+    this.rules = rules;
   }
 
   reset(): void {
@@ -536,8 +545,14 @@ export class CourseBrain extends BotBrain {
   private pusherLane = 0;
   private readonly tuning: Required<CourseBrainOptions>;
 
-  constructor(owner: Contestant, seed: number, salt = 1, options: CourseBrainOptions = {}) {
-    super(owner, seed, salt);
+  constructor(
+    owner: Contestant,
+    seed: number,
+    salt = 1,
+    options: CourseBrainOptions = {},
+    rules: TwistRules = CLASSIC_RULES,
+  ) {
+    super(owner, seed, salt, rules);
     this.tuning = { ...COURSE_TUNING, ...options };
   }
 
@@ -1127,15 +1142,16 @@ export function createBotBrain(
   mode: Level['mode'],
   owner: Contestant,
   seed: number,
+  rules: TwistRules = CLASSIC_RULES,
 ): BotBrain | null {
   switch (mode) {
     case 'course':
     case 'training':
-      return new CourseBrain(owner, seed, mode === 'course' ? 1 : 9);
+      return new CourseBrain(owner, seed, mode === 'course' ? 1 : 9, {}, rules);
     case 'hexapop':
-      return new HexBrain(owner, seed, 2);
+      return new HexBrain(owner, seed, 2, rules);
     case 'crown-climb':
-      return new CrownBrain(owner, seed, 3);
+      return new CrownBrain(owner, seed, 3, rules);
     default:
       return null;
   }
@@ -1168,6 +1184,10 @@ export const CASUAL_COURSE_OPTIONS: Readonly<CourseBrainOptions> = Object.freeze
   laneScale: 0.15,
 });
 
-export function createCasualPilot(owner: Contestant, seed: number): CourseBrain {
-  return new CourseBrain(owner, seed, 17, CASUAL_COURSE_OPTIONS);
+export function createCasualPilot(
+  owner: Contestant,
+  seed: number,
+  rules: TwistRules = CLASSIC_RULES,
+): CourseBrain {
+  return new CourseBrain(owner, seed, 17, CASUAL_COURSE_OPTIONS, rules);
 }

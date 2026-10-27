@@ -1,6 +1,7 @@
 import { Vector3 } from 'three';
 import type { BeanBody } from '../physics/BeanBody';
 import type { PhysicsWorld } from '../physics/PhysicsWorld';
+import { CLASSIC_RULES, type TwistRules } from '../twist';
 
 export type BeanMotionState = 'idle' | 'run' | 'air' | 'dive' | 'stumble' | 'grab' | 'emote';
 
@@ -94,10 +95,21 @@ export class BeanController {
   private readonly scratch = new Vector3();
   private lastStumbleAt = -10;
   private elapsed = 0;
+  /** The current Round's qualifier rules. Classic by default. */
+  private rules: TwistRules = CLASSIC_RULES;
 
   constructor(body: BeanBody, world: PhysicsWorld) {
     this.body = body;
     this.world = world;
+  }
+
+  /** Install the same rule value the level and the bots receive. */
+  setRules(rules: TwistRules): void {
+    this.rules = rules;
+  }
+
+  get ruleSet(): TwistRules {
+    return this.rules;
   }
 
   get motionState(): BeanMotionState {
@@ -236,12 +248,12 @@ export class BeanController {
       this.body.velocity.x += this.body.support.velocity.x * 0.85;
       this.body.velocity.z += this.body.support.velocity.z * 0.85;
     }
-    this.body.velocity.y = JUMP_VELOCITY;
+    this.body.velocity.y = JUMP_VELOCITY * this.rules.jumpScale;
     this.body.grounded = false;
     this.body.support = null;
     this.jumpBufferTimer = 0;
     this.coyoteTimer = 0;
-    this.emit('jump', JUMP_VELOCITY);
+    this.emit('jump', this.body.velocity.y);
     return true;
   }
 
@@ -299,8 +311,12 @@ export class BeanController {
       targetZ = surfaceZ;
     }
 
-    const accel = this.body.grounded ? GROUND_ACCEL : GROUND_ACCEL * AIR_CONTROL;
-    const friction = this.body.grounded ? GROUND_FRICTION : AIR_DRAG;
+    const accel = this.body.grounded
+      ? GROUND_ACCEL * this.rules.accelScale
+      : GROUND_ACCEL * AIR_CONTROL * this.rules.airControlScale;
+    const friction = this.body.grounded
+      ? GROUND_FRICTION * this.rules.frictionScale
+      : AIR_DRAG * this.rules.airDragScale;
     const rate = hasInput ? accel : friction;
 
     this.body.velocity.x = moveToward(this.body.velocity.x, targetX, rate * dt);

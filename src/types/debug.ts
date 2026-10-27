@@ -97,6 +97,32 @@ export interface DebugShowPlan {
   arenaLabel: string;
   signature: string;
   label: string;
+  twist: DebugTwistPlan;
+}
+
+export interface DebugTwistPlan {
+  id: 'moon' | 'slippery' | 'rush';
+  label: string;
+  short: string;
+  rule: string;
+  accent: number;
+}
+
+/**
+ * Live twist probe. `applied` is derived from the world's gravity and the
+ * controller rule values, never from the plan alone, so a plan label cannot
+ * silently lie about the physics.
+ */
+export interface DebugTwist {
+  id: 'moon' | 'slippery' | 'rush' | 'classic';
+  label: string;
+  short: string;
+  rule: string;
+  gravity: number;
+  frictionScale: number;
+  sugarRushSeconds: number;
+  applied: boolean;
+  classic: boolean;
 }
 
 /** M2-005 spectate evidence: who the camera follows and what it can see. */
@@ -148,6 +174,7 @@ export interface TumbleDebugApi {
   readonly autopilot: 'off' | 'casual';
   readonly course: DebugCourse | null;
   readonly plan: DebugShowPlan;
+  readonly twist: DebugTwist;
   readonly spectate: DebugSpectate;
   setQuality: (quality: Quality) => void;
   teleport: (x: number, y: number, z: number) => void;

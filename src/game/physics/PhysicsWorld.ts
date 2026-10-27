@@ -45,9 +45,10 @@ export interface PhysicsWorldOptions {
 export class PhysicsWorld {
   readonly colliders: Collider[] = [];
   readonly bodies: BeanBody[] = [];
-  readonly gravity: number;
   killY: number;
   killPlaneId = 'kill-plane';
+
+  private currentGravity: number;
 
   private readonly scratchA = new Vector3();
   private readonly localCenter = new Vector3();
@@ -67,8 +68,24 @@ export class PhysicsWorld {
   private readonly hitNormal = new Vector3();
 
   constructor(options: PhysicsWorldOptions = {}) {
-    this.gravity = options.gravity ?? GRAVITY;
+    this.currentGravity = options.gravity ?? GRAVITY;
     this.killY = options.killY ?? -14;
+  }
+
+  /** The live gravity used by the next fixed step. */
+  get gravity(): number {
+    return this.currentGravity;
+  }
+
+  /**
+   * Install a Round's gravity before its first fixed step. Additive: the
+   * integration path is unchanged, so `GRAVITY` is still the classic value.
+   */
+  setGravity(value: number): void {
+    if (!Number.isFinite(value) || value >= 0) {
+      throw new Error(`PhysicsWorld.setGravity expects a negative finite value, got ${value}`);
+    }
+    this.currentGravity = value;
   }
 
   addCollider(collider: Collider): Collider {
