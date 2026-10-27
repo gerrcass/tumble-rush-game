@@ -5,9 +5,10 @@ Use this before merging any feature branch into `main`. It is deliberately short
 ## Pre-flight
 
 - [ ] Branch is based on the current `main` and the working tree is clean.
-- [ ] `npm run check` passes (invariants, typecheck, unit tests, production build).
+- [ ] `npm run check` passes (invariants, docs, typecheck, unit tests, production build).
 - [ ] `npm run verify:show` passes (real 16-bean Course + real Hexapop spawn).
 - [ ] `npm run test:e2e` passes (full show, mobile, review, evidence).
+- [ ] `npm run docs:check` passes; every documented command and relative link resolves.
 - [ ] `npm run measure:show` recorded and compared with [`docs/METRICS.md`](METRICS.md); the change has a stated pacing effect.
 - [ ] `npm run verify:pacing -- --phase=b` passes all hard bands on the 10-seed sweep (Course, Hexapop, Crown living winner, show total).
 - [ ] `npm run evidence` refreshed the canonical screenshots.
@@ -19,13 +20,13 @@ Use this before merging any feature branch into `main`. It is deliberately short
 
 ```bash
 # Create the PR and upload the canonical evidence in one command.
-gh pr create --base main --title "M3 — <milestone>" --body-file /tmp/pr-body.md \
-  --attach docs/evidence/m3-menu.png \
-  --attach docs/evidence/m3-course-a.png \
-  --attach docs/evidence/m3-hexapop.png
+gh pr create --base main --title "M4 — <milestone>" --body-file /tmp/pr-body.md \
+  --attach docs/evidence/m3-show-card.png \
+  --attach docs/evidence/m3-tumbler-tangle.png \
+  --attach docs/evidence/m2-hexapop.png
 
 # Add or replace evidence on an existing PR.
-gh pr comment <number> --attach docs/evidence/m3-victory.png
+gh pr comment <number> --attach docs/evidence/phase3-victory.png
 ```
 
 `gh --attach` supports up to 50 files per command. Add `#alt text` after a path
@@ -45,6 +46,7 @@ when the filename is not descriptive.
 - [ ] Public URL returns 200 and the menu loads without console/request errors.
 - [ ] README hero/screenshot updated if the UI changed; live link still works.
 - [ ] All milestone issues closed; milestone closed.
+- [ ] `npm run release:audit -- --strict` reports clean (no dirty tree, open PRs/issues, merged remote branches, or extra worktrees).
 - [ ] No open issues or PRs without a documented reason.
 - [ ] No stale local/remote branches or worktrees.
 

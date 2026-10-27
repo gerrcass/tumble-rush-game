@@ -41,6 +41,29 @@ describe('M3 Course routes build in the real level', () => {
     expect(combos.size).toBe(10);
   });
 
+  it('keeps every finish marker at the planned lap gate', () => {
+    for (const seed of [20260418, 7, 20993521]) {
+      const course = createLevel('course', seed) as Course;
+      const plan = course.plan;
+      expect(course.finishGateZs).toHaveLength(plan.laps.length);
+      expect(course.finishLineZs).toHaveLength(plan.laps.length);
+      plan.laps.forEach((lap, index) => {
+        const gateZ = course.finishGateZs[index]!;
+        const lineZ = course.finishLineZs[index]!;
+        const sectionE = lap.sections.find((section) => section.id === 'E')!;
+        // The gate and the checker strip must sit on the lap's authored finish
+        // deck, not at a double-counted module cursor.
+        expect(gateZ).toBeGreaterThanOrEqual(sectionE.endZ - 0.01);
+        expect(gateZ).toBeLessThanOrEqual(sectionE.startZ + 0.01);
+        expect(lineZ).toBeGreaterThanOrEqual(sectionE.endZ - 0.01);
+        expect(lineZ).toBeLessThanOrEqual(sectionE.startZ + 0.01);
+        expect(Math.abs(gateZ - lap.finishZ)).toBeLessThan(1);
+        expect(Math.abs(lineZ - lap.finishZ)).toBeLessThan(5);
+      });
+      course.dispose();
+    }
+  });
+
   it('keeps every moving hazard at its authored module after a step', () => {
     for (const seed of [20260418, 7]) {
       const course = createLevel('course', seed) as Course;
