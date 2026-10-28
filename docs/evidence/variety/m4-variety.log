@@ -1,6 +1,6 @@
 
 > tumble-rush@1.0.0 verify:variety
-> node scripts/verify-variety.mjs --negative --out=docs/evidence/variety/m3-variety.json
+> node scripts/verify-variety.mjs --negative --out=docs/evidence/variety/m4-variety.json
 
 [1/24] idle seed=20260418 B-C-D/C-F-G/RINGS total=210.38s course=74.75s finishers=8 player=ELIMINATED hex=48.38s crown=56.35s living=true touch=true
 [2/24] casual seed=20260418 B-C-D/C-F-G/RINGS total=204.1s course=71.73s finishers=8 player=QUALIFIED hex=49.92s crown=51.55s living=true touch=true
@@ -60,4 +60,4 @@ RESULT: PASS
 
 Negative control: PASS — collapsed deck rejected by distinct-routes, arena-variety, new-section-f, new-section-g
 
-JSON evidence: docs/evidence/variety/m3-variety.json
+JSON evidence: docs/evidence/variety/m4-variety.json

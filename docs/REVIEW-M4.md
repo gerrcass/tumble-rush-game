@@ -180,7 +180,10 @@ JSON exactly. The M4 samples live only in `m4-performance.json`.
 
 ## Release verdict
 
-**Ready to merge with the documented H-1 measurement gap.** The final
-`gate:release`, Pages deploy, live smoke, README hero refresh, milestone close,
-and `release:audit -- --strict` are the remaining M4-007 steps; they are release
-work, not optional polish.
+**Ready to merge with the documented H-1 measurement gap.** The final local
+`TUMBLE_E2E_PORT=5190 npm run gate:release` passed: check (161 unit tests,
+typecheck, invariants, docs, production build), `verify:show` 3/3, pacing PASS,
+variety PASS, twists PASS, and Playwright **59 passed with the archived M3
+evidence test skipped**. The Pages deploy, live smoke, README hero refresh,
+milestone close, and `release:audit -- --strict` remain as release work; they
+are not optional polish.

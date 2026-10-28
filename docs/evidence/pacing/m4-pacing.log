@@ -40,7 +40,7 @@ Checks:
   [PASS   ] Idle human never qualifies: 0 / 10 runs qualified (target 0)
   [PASS   ] Scripted casual path meets the 70% qualification target: 9 / 10 (90%) (target ≥ 70%)
   [PASS   ] Hexapop clock 30–50 s (idle + casual, every seed): 41.22–49.92 s (median 47.5 s) (target 30–50 s)
-  [PASS   ] Sugar Rush reached at 45 s: 20 / 20 (100%) (target ≥ 70% of seeds)
+  [PASS   ] Sugar Rush reached (45 s classic, 38 s on RUSH HOUR): 20 / 20 (100%) (target ≥ 70% of seeds)
   [PASS   ] Crown clock 45–80 s (living-winner runs, every seed): 47.27–74.28 s (median 53.89 s, 20 runs) (target 45–80 s)
   [PASS   ] Living crown winner ≥95% (idle + casual, 20 runs): 20 / 20 (100%) (target ≥ 19 / 20)
   [PASS   ] At most one no-winner Crown run, and it is reported: 0 no-winner run(s) (target ≤ 1, listed in docs/METRICS.md)
