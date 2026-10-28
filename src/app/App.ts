@@ -141,7 +141,7 @@ export class App {
     this.startScreen = new StartScreen({
       seedLabel: formatSeed(seed),
       dailyLabel: this.daily.label,
-      dailyCard: `${dailyPlan.routeLabel} · ${dailyPlan.arenaLabel}`,
+      dailyCard: `${dailyPlan.routeLabel} · ${dailyPlan.arenaLabel} · ${dailyPlan.twist.short}`,
       touch: this.touchDevice,
       initialDifficulty: 'show',
       profile: this.profile,
@@ -614,7 +614,7 @@ export class App {
       this.endKey = '';
       if (state === 'playing') {
         this.hud.show();
-        this.hud.setPractice(this.game.level.status());
+        this.hud.setPractice(this.game.level.status(), this.game.twistSummary);
       }
       return;
     }

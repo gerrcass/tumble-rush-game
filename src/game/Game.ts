@@ -506,7 +506,7 @@ export class Game {
           rule: classic ? 'The fixed final. Same classic rules for everyone.' : plan.twist.blurb,
           gravity,
           frictionScale,
-          sugarRushSeconds: rules.hexSugarRush,
+          sugarRushSeconds: game.level.sugarRushSeconds ?? rules.hexSugarRush,
           applied,
           classic,
         };
@@ -561,6 +561,18 @@ export class Game {
 
   get hud(): MatchHud | null {
     return this.match?.hud(this.level) ?? null;
+  }
+
+  /** The live twist for Practice/free-play HUD copy (same value as the show). */
+  get twistSummary(): { label: string; short: string; rule: string; classic: boolean } {
+    const plan = this.match?.showPlan ?? planShow(this.currentSeed);
+    const classic = this.currentRules.id === 'classic';
+    return {
+      label: classic ? 'CLASSIC' : plan.twist.label,
+      short: classic ? 'CLASSIC' : plan.twist.short,
+      rule: classic ? 'The fixed final. Same classic rules for everyone.' : plan.twist.blurb,
+      classic,
+    };
   }
 
   get isPractice(): boolean {
@@ -701,9 +713,9 @@ export class Game {
     this.match = null;
     this.practice = true;
     this.menuMode = false;
+    this.buildBots(this.currentSeed, true);
     this.installLevel(mode, this.currentSeed);
     this.audio.setMusicMode(mode === 'crown-climb' ? 'final' : 'round');
-    this.buildBots(this.currentSeed, true);
     this.practiceContestants.length = 0;
     this.practiceContestants.push(this.player, ...this.contestants.filter((c) => !c.isPlayer));
     this.resetWorldFor([...this.practiceContestants]);
