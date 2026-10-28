@@ -16,7 +16,7 @@
 
 ![Tumble Rush main menu, captured from the live GitHub Pages deployment](docs/readme-hero.png)
 
-Tumble Rush is an original, single-player 3D party battle royale. You are one of 16 jelly-bean **Tumblers** in a sunrise-carnival game show: race a seeded obstacle course, survive a collapsing honeycomb arena, then climb a rising-slime tower to take the crown. Every model, texture, particle, and note of music is generated in code.
+Tumble Rush is an original, single-player 3D party battle royale. You are one of 16 jelly-bean **Tumblers** in a sunrise-carnival game show: race a seeded obstacle course, survive a collapsing honeycomb arena, then climb a rising-slime tower to take the crown. Every Show also carries a seeded **twist** — MOON GRAVITY, SLIPPERY, or RUSH HOUR — that changes the qualifier rules while the Crown Climb stays classic. Every model, texture, particle, and note of music is generated in code.
 
 **No installs. No accounts. No network calls at runtime.** Open the link and play.
 
@@ -24,17 +24,18 @@ Tumble Rush is an original, single-player 3D party battle royale. You are one of
 
 | Round | Mode | Field | Advance | The idea |
 | --- | --- | --- | --- | --- |
-| 1 | **Sunrise Scramble** | 16 | Top 8 finishers | Two laps of a seeded route: a start deck, three of five obstacle sections, and the Crown Gate. The mix includes Tumbler Tangle and Bounce Bazaar. |
-| 2 | **Hexapop** | 8 | Last 4 standing | Three honeycomb tiers over pink slime, shaped as **RINGS**, **SPIRAL**, or **GEARWORKS**. Every tile warns, then drops; the Sugar Rush eats the arena from the outside in. |
-| 3 | **Crown Climb** | 4 | First to the crown | A vertical spiral of rotating beams, rising donuts and pendulums while candy slime climbs below. |
+| 1 | **Sunrise Scramble** | 16 | Top 8 finishers | Two laps of a seeded route: a start deck, three of five obstacle sections, and the Crown Gate. The mix includes Tumbler Tangle and Bounce Bazaar. The show twist changes hazard speed, grip, or gravity. |
+| 2 | **Hexapop** | 8 | Last 4 standing | Three honeycomb tiers over pink slime, shaped as **RINGS**, **SPIRAL**, or **GEARWORKS**. Every tile warns, then drops; the Sugar Rush eats the arena from the outside in. RUSH HOUR starts it earlier. |
+| 3 | **Crown Climb** | 4 | First to the crown | A vertical spiral of rotating beams, rising donuts and pendulums while candy slime climbs below. **FINAL · CLASSIC** on every Show. |
 
-A full show runs **3–5 minutes**, with a two-minute clock on the Course and final. The Round intro and results carry a **Show Card** with the route and arena, so a seed has a name: `COURSE B-D-G / C-F-G · ARENA SPIRAL`. Route repeatability starts with M3: the same seed reproduces the same remix, while M2 seeds now generate the new routes by design. Qualifying earns **kudos**; winning earns a **crown**. Kudos unlock colors, patterns, hats, and emotes in the live 3D Customize screen. Everything is stored locally in your browser.
+A full show runs **3–5 minutes**, with a Course clock of 105 s on RUSH HOUR or 120 s otherwise, and a two-minute final. The Round intro and results carry a **Show Card** with the route, arena, and twist, so a seed has a name: `COURSE B-D-G / C-F-G · ARENA SPIRAL · TWIST MOON GRAVITY`. The same seed reproduces the same remix and twist; M2 seeds now generate the M3/M4 layout and rule by design. Qualifying earns **kudos**; winning earns a **crown**. Kudos unlock colors, patterns, hats, and emotes in the live 3D Customize screen. Everything is stored locally in your browser.
 
 ## Features
 
 - **16-contestant show** — 15 named AI Tumblers with their own looks, skill, reaction time, mistakes, and shoves. Bots use the same controller and physics as you; they can qualify and win.
 - **Seeded remix** — every show composes a fresh two-lap Course route from five relocatable section modules and picks one of three connected Hexapop arena plans. Two new sections, **Tumbler Tangle** and **Bounce Bazaar**, extend the same hazard vocabulary without new physics.
-- **Show Card** — the Round intro, results, and Daily chip name the two routes and the arena, derived from the same pure `planShow(seed)` the levels use.
+- **Twist Season** — each show carries one seeded qualifier rule: **MOON GRAVITY** (floatier jumps), **SLIPPERY** (longer slides), or **RUSH HOUR** (faster hazards, 38 s Sugar Rush, 105 s Course clock). The Crown Climb stays classic, and bots use the same public rules as the player.
+- **Show Card** — the Round intro and results name the routes, arena, and twist; the compact HUD chip and the start-deck sign keep the twist in view; the Daily chip names today's plan. All of it derives from the same pure `planShow(seed)` the levels use. The Crown card says `FINAL · CLASSIC`.
 - **Three distinct rounds** — a seeded obstacle race, a collapsing-tile survival arena, and a vertical final that stays fixed as the championship test.
 - **Physical comedy** — coyote time, jump buffering, committed dives, grabs and shoves, stumble wobbles, splats, confetti, and a crown ceremony.
 - **Designed front-end** — main menu, live customization, settings, how-to-play, round intros, countdown, HUD, pause, results, spectate, victory, defeat, and error states.
@@ -42,7 +43,7 @@ A full show runs **3–5 minutes**, with a two-minute clock on the Course and fi
 - **Desktop and touch** — keyboard + mouse, gamepad, and a touch joystick with jump/dive/grab/emote buttons. Responsive down to 390×844.
 - **Accessible by default** — keyboard routes, visible focus, ARIA live announcements, reduced motion, name-tag toggle, and independent audio controls.
 - **Local progression** — versioned profile, safe corrupt-data recovery, kudos economy, cosmetic unlocks, best finish, and a daily seeded show.
-- **Tested and deployed** — Vitest unit tests, Playwright show/mobile/evidence checks, a 10-seed pacing gate and a 12-seed variety gate in CI, and GitHub Pages deployment from `main`.
+- **Tested and deployed** — Vitest unit tests, Playwright show/mobile/evidence checks, a 10-seed pacing gate, a 12-seed variety gate, and a 12-seed twist gate in CI, and GitHub Pages deployment from `main`.
 
 ## Play
 
@@ -81,6 +82,18 @@ Coyote time and jump buffering make the platforming forgiving; dives are committ
 | --- | --- |
 | ![Show Card](docs/evidence/m3-show-card.png) | ![Hexapop](docs/evidence/m2-hexapop.png) |
 
+| Twist: MOON GRAVITY | Twist: SLIPPERY |
+| --- | --- |
+| ![Moon twist card](docs/evidence/m4-twist-moon-intro.png) | ![Slippery twist card](docs/evidence/m4-twist-slippery-intro.png) |
+
+| Twist: RUSH HOUR | FINAL · CLASSIC |
+| --- | --- |
+| ![Rush twist card](docs/evidence/m4-twist-rush-intro.png) | ![Final classic card](docs/evidence/m4-final-classic.png) |
+
+| Twist start sign | Hexapop twist sign |
+| --- | --- |
+| ![Moon start sign](docs/evidence/m4-twist-moon-sign.png) | ![Moon Hexapop sign](docs/evidence/m4-twist-moon-hex-sign.png) |
+
 | Tumbler Tangle | Bounce Bazaar |
 | --- | --- |
 | ![Tumbler Tangle](docs/evidence/m3-tumbler-tangle.png) | ![Bounce Bazaar](docs/evidence/m3-bounce-bazaar.png) |
@@ -108,6 +121,7 @@ src/
 │   ├── physics/         fixed-step capsule world and colliders
 │   ├── player/          bean, controller, camera rig
 │   ├── profile.ts       versioned localStorage profile/economy
+│   ├── twist.ts         pure TwistRules / twistForSeed / twistRulesFor
 │   └── Game.ts          renderer, loop, input, show lifecycle
 ├── test/                Vitest unit tests
 e2e/                     Playwright show, mobile, evidence and review tests
@@ -116,9 +130,9 @@ docs/                    spec, tickets, decisions, reviews, evidence
 
 - **Vite 8 + TypeScript 5 (strict) + Three.js 0.186.**
 - **Custom fixed-step physics** at 1/60 s: capsule-vs-OBB/cylinder, collide-and-slide, moving-platform carry, conveyor surfaces, bounce pads, hazard impulses, and bean-vs-bean capsule collision. No general rigid-body engine.
-- **Deterministic content** — every layout decision comes from a seeded mulberry32 RNG; the daily show uses the date. `planShow(seed)` is pure and owns the Course routes, arena plan, labels, and signature.
+- **Deterministic content** — every layout decision comes from a seeded mulberry32 RNG; the daily show uses the date. `planShow(seed)` is pure and owns the Course routes, arena plan, twist, labels, and signature. The twist uses its own salted hash so it never shifts the route/arena draw.
 - **Original assets only** — geometry, canvas textures, particles, and audio are generated at runtime. The only external asset is the bundled open-license Fredoka variable font.
-- **Quality budgets** — at 1440×810 high, three sampled route starts measure **154–159 draw calls / 155k–160k triangles**, and three arena plans measure **53–58 draw calls / 17.6k–19.1k triangles**, inside the 320 / 200k budget. The development host is SwiftShader-only, so the 55 fps hardware target is validated by draw-call/triangle budgets here and must be checked on real hardware. See [`docs/evidence/m3-performance.json`](docs/evidence/m3-performance.json).
+- **Quality budgets** — at 1440×810 high, the three M4 twist samples measure **155–161 draw calls / 157.9k–159.9k triangles** on the Course start and **56–65 draw calls / 17.2k–19.5k triangles** on the Hexapop start, inside the 320 / 200k budget. The development host is SwiftShader-only, so the 55 fps hardware target is validated by draw-call/triangle budgets here and must be checked on real hardware. See [`docs/evidence/m4-performance.json`](docs/evidence/m4-performance.json).
 
 ## Development
 
@@ -133,9 +147,10 @@ docs/                    spec, tickets, decisions, reviews, evidence
 | `npm run measure:show` | Real-Match pacing baseline (see `docs/METRICS.md`) |
 | `npm run verify:pacing -- --phase=b` | Historical 10-seed pacing gate: Course, Hexapop, Crown living winner, show total |
 | `npm run verify:variety` | 12-seed variety gate: route/arena variety plus every M2 pacing and fairness band |
+| `npm run verify:twists` | 12-seed twist gate: coverage, the live applied probe, every M2 band, and a negative control |
 | `npm run evidence` | Canonical screenshot and render-budget set |
 | `npm run check:release` | Invariants, typecheck, unit tests, build, and focused review specs |
-| `npm run gate:release` | Full release gate: check, `verify:show`, 10-seed pacing, 12-seed variety, and Playwright |
+| `npm run gate:release` | Full release gate: check, `verify:show`, 10-seed pacing, 12-seed variety, 12-seed twists, and Playwright |
 | `npm run ci:local` | Clean install with a workspace-local npm cache + check |
 | `npm run check` | Invariants + typecheck + unit tests + production build |
 | `npm run lint` | Invariants + typecheck |

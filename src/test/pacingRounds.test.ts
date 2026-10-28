@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { Scene } from 'three';
 import { createLevel } from '../game/levels/factory';
-import { FIXED_STEP, PhysicsWorld } from '../game/physics/PhysicsWorld';
+import { FIXED_STEP, GRAVITY, PhysicsWorld } from '../game/physics/PhysicsWorld';
 import { createBotBrain, createCasualPilot } from '../game/bots/BotBrain';
 import { Contestant, createBotProfiles, playerLook } from '../game/match/Contestant';
 import { Match } from '../game/match/Match';
 import type { Level } from '../game/levels/Level';
 import type { ControllerFrame } from '../game/player/BeanController';
 import { startPositionsFor } from '../game/levels/startPositions';
+import { planShow } from '../game/levels/coursePlan';
+import { twistRulesFor } from '../game/twist';
 import { CROWN_PHYSICAL, sweepSeeds, touchesCrown } from '../../scripts/lib/pacing.mjs';
 
 const IDLE_FRAME: ControllerFrame = {
@@ -104,6 +106,8 @@ function runObservedShow(seed: number, casual = false): ShowReport {
       prepareRound: (index, entrants) => {
         const roundMode = index === 0 ? 'course' : index === 1 ? 'hexapop' : 'crown-climb';
         level = createLevel(roundMode, seed);
+        const rules = twistRulesFor(roundMode, planShow(seed).twist);
+        world.setGravity(GRAVITY * rules.gravityScale);
         world.clearColliders();
         for (const collider of level.colliders) world.addCollider(collider);
         world.bodies.length = 0;
@@ -116,10 +120,12 @@ function runObservedShow(seed: number, casual = false): ShowReport {
         for (let i = 0; i < entrants.length; i += 1) {
           const contestant = entrants[i]!;
           contestant.resetForRound(positions[i]!, i % 3, 'racing');
+          contestant.controller.setRules(rules);
           if (!contestant.isPlayer) {
-            contestant.brain = createBotBrain(roundMode, contestant, seed);
+            contestant.brain = createBotBrain(roundMode, contestant, seed, rules);
           }
         }
+        casualPilot?.setRules(rules);
         rushRingWarnings = 0;
         rushRingAfter = 0;
         rushRingOccupied = 0;
@@ -134,7 +140,9 @@ function runObservedShow(seed: number, casual = false): ShowReport {
     },
   });
 
-  const casualPilot = casual ? createCasualPilot(player, seed) : null;
+  const casualPilot = casual
+    ? createCasualPilot(player, seed, twistRulesFor('course', planShow(seed).twist))
+    : null;
   match.startShow();
   let elapsed = 0;
   let captured = -1;
@@ -165,7 +173,7 @@ function runObservedShow(seed: number, casual = false): ShowReport {
               : IDLE_FRAME,
           );
         } else {
-          const brain = contestant.brain ?? createBotBrain(level.mode, contestant, seed);
+          const brain = contestant.brain ?? createBotBrain(level.mode, contestant, seed, contestant.controller.ruleSet);
           if (!brain) continue;
           contestant.brain = brain;
           contestant.controller.update(

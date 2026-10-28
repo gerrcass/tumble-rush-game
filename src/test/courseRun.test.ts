@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Scene, Vector3 } from 'three';
 import { createLevel } from '../game/levels/factory';
-import { FIXED_STEP, PhysicsWorld } from '../game/physics/PhysicsWorld';
+import { FIXED_STEP, GRAVITY, PhysicsWorld } from '../game/physics/PhysicsWorld';
 import { BeanBody } from '../game/physics/BeanBody';
 import { createBotBrain, createCasualPilot } from '../game/bots/BotBrain';
 import {
@@ -14,6 +14,8 @@ import type { Level } from '../game/levels/Level';
 import type { Course } from '../game/levels/Course';
 import type { ControllerFrame } from '../game/player/BeanController';
 import { startPositionsFor } from '../game/levels/startPositions';
+import { planShow } from '../game/levels/coursePlan';
+import { twistRulesFor } from '../game/twist';
 
 const IDLE_FRAME: ControllerFrame = {
   moveX: 0,
@@ -97,6 +99,8 @@ function runShow(
       prepareRound: (index, entrants) => {
         const roundMode = index === 0 ? 'course' : index === 1 ? 'hexapop' : 'crown-climb';
         level = createLevel(roundMode, seed);
+        const rules = twistRulesFor(roundMode, planShow(seed).twist);
+        world.setGravity(GRAVITY * rules.gravityScale);
         world.clearColliders();
         for (const collider of level.colliders) world.addCollider(collider);
         world.bodies.length = 0;
@@ -109,10 +113,12 @@ function runShow(
         for (let i = 0; i < entrants.length; i += 1) {
           const contestant = entrants[i]!;
           contestant.resetForRound(positions[i]!, i % 3, 'racing');
+          contestant.controller.setRules(rules);
           if (!contestant.isPlayer) {
-            contestant.brain = createBotBrain(roundMode, contestant, seed);
+            contestant.brain = createBotBrain(roundMode, contestant, seed, rules);
           }
         }
+        casualPilot?.setRules(rules);
       },
       onStamp: () => undefined,
       onPhase: () => undefined,
@@ -121,7 +127,9 @@ function runShow(
     },
   });
 
-  const casualPilot = casual ? createCasualPilot(player, seed) : null;
+  const casualPilot = casual
+    ? createCasualPilot(player, seed, twistRulesFor('course', planShow(seed).twist))
+    : null;
   match.startShow();
   if (mode === 'hexapop') match.jumpToRound(1);
   match.beginRound();
@@ -160,7 +168,8 @@ function runShow(
         );
       } else {
         const brain =
-          contestant.brain ?? createBotBrain(level.mode, contestant, seed);
+          contestant.brain ??
+          createBotBrain(level.mode, contestant, seed, contestant.controller.ruleSet);
         if (!brain) continue;
         contestant.brain = brain;
         const frame = brain.think({

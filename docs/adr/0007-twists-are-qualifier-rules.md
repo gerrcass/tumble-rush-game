@@ -16,13 +16,14 @@ product promise, not an accident.
 ## Decision
 
 A twist is a **qualifier rule**. It applies to the Course and Hexapop only.
-The Crown Climb, the Training Deck, the menu preview, and any non-Show Course
-use `CLASSIC_RULES`: the exact M3 gravity, friction, jump, hazard speed, slime
-speed, and crown contact.
+The Crown Climb, the Training Deck, and the menu diorama use `CLASSIC_RULES`:
+the exact M3 gravity, friction, jump, hazard speed, slime speed, and crown
+contact.
 
 The Show Card and HUD name the show twist on Rounds 1–2 and say
 `FINAL · CLASSIC` on Round 3. Practice on the Course uses the seeded twist;
-Training Deck stays classic.
+Training Deck stays classic. The menu diorama is a classic preview and hides
+its start-deck twist sign; the Daily chip names today's twist.
 
 ## Consequences
 

@@ -18,12 +18,12 @@
     "release:audit": "node scripts/release-audit.mjs",
     "verify:show": "playwright test e2e/review2.spec.ts",
     "check:release": "npm run check && playwright test e2e/review1.spec.ts e2e/review2.spec.ts",
-    "gate:release": "npm run check && npm run verify:show && npm run verify:pacing -- --phase=b && npm run verify:variety && npm run test:e2e",
+    "gate:release": "npm run check && npm run verify:show && npm run verify:pacing -- --phase=b && npm run verify:variety && npm run verify:twists && npm run test:e2e",
     "measure:show": "node scripts/measure-show.mjs",
     "verify:pacing": "node scripts/verify-pacing.mjs",
     "verify:variety": "node scripts/verify-variety.mjs",
     "verify:twists": "node scripts/verify-twists.mjs",
-    "evidence": "playwright test e2e/screenshots.spec.ts e2e/m3-evidence.spec.ts",
+    "evidence": "playwright test e2e/screenshots.spec.ts e2e/m4-evidence.spec.ts",
     "ci:local": "bash scripts/ci-local.sh"
   },
   "dependencies": {

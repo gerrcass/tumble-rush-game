@@ -1,0 +1,66 @@
+{
+  "capturedAt": "2026-10-28T01:58:05.093Z",
+  "viewport": "1440x810",
+  "quality": "high",
+  "host": "SwiftShader (software rasteriser; not a hardware FPS claim)",
+  "budget": {
+    "calls": 320,
+    "triangles": 200000
+  },
+  "samples": [
+    {
+      "mode": "course",
+      "seed": 20469876,
+      "twist": "moon",
+      "calls": 155,
+      "triangles": 157898,
+      "geometries": 98,
+      "textures": 26
+    },
+    {
+      "mode": "hexapop",
+      "seed": 20469876,
+      "twist": "moon",
+      "calls": 56,
+      "triangles": 17192,
+      "geometries": 40,
+      "textures": 27
+    },
+    {
+      "mode": "course",
+      "seed": 20260418,
+      "twist": "slippery",
+      "calls": 161,
+      "triangles": 159926,
+      "geometries": 102,
+      "textures": 27
+    },
+    {
+      "mode": "hexapop",
+      "seed": 20260418,
+      "twist": "slippery",
+      "calls": 65,
+      "triangles": 19500,
+      "geometries": 46,
+      "textures": 28
+    },
+    {
+      "mode": "course",
+      "seed": 20888792,
+      "twist": "rush",
+      "calls": 159,
+      "triangles": 158582,
+      "geometries": 101,
+      "textures": 25
+    },
+    {
+      "mode": "hexapop",
+      "seed": 20888792,
+      "twist": "rush",
+      "calls": 56,
+      "triangles": 17208,
+      "geometries": 44,
+      "textures": 26
+    }
+  ]
+}

@@ -243,7 +243,7 @@ export function evaluatePacing(summary, { phase = 'a' } = {}) {
   checks.push(
     check(
       'hexapop-sugar-rush',
-      'Sugar Rush reached at 45 s',
+      'Sugar Rush reached (45 s classic, 38 s on RUSH HOUR)',
       `${hexapop.sugarRushReached} / ${hexapop.count} (${Math.round(hexapop.sugarRushRate * 100)}%)`,
       hexapop.sugarRushRate >= 0.7,
       { target: '≥ 70% of seeds', pending, detail: checkDetail },

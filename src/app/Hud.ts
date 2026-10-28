@@ -32,6 +32,7 @@ export class Hud {
   private readonly phase: HTMLElement;
   private readonly metricLabel: HTMLElement;
   private readonly metricValue: HTMLElement;
+  private readonly twistChip: HTMLElement;
   private readonly progressFill: HTMLElement;
   private readonly progressText: HTMLElement;
   private readonly progressTrack: HTMLElement;
@@ -57,6 +58,7 @@ export class Hud {
   private lastRemaining = -1;
   private lastPlayerState = '';
   private lastSpectating = false;
+  private lastTwist = '';
   private toastTimer = 0;
   private stampTimer = 0;
 
@@ -124,6 +126,12 @@ export class Hud {
     this.metricValue = el('strong', 'hud-metric__value', '0%');
     metric.appendChild(this.metricValue);
     bar.appendChild(metric);
+
+    this.twistChip = el('div', 'hud-twist', 'TWIST MOON');
+    this.twistChip.dataset.twist = 'moon';
+    this.twistChip.tabIndex = 0;
+    this.twistChip.setAttribute('role', 'status');
+    bar.appendChild(this.twistChip);
 
     this.element.appendChild(bar);
 
@@ -239,6 +247,30 @@ export class Hud {
       this.playerState.dataset.status = hud.playerStatus;
     }
 
+    const twistText = hud.twistFinal
+      ? 'FINAL · CLASSIC'
+      : hud.twistClassic
+        ? 'CLASSIC'
+        : `TWIST ${hud.twistShort}`;
+    if (twistText !== this.lastTwist) {
+      this.lastTwist = twistText;
+      this.twistChip.textContent = twistText;
+      this.twistChip.dataset.twist = hud.twistFinal
+        ? 'final'
+        : hud.twistClassic
+          ? 'classic'
+          : hud.twistShort.toLowerCase();
+      this.twistChip.setAttribute(
+        'aria-label',
+        hud.twistFinal
+          ? 'Final round. Classic rules. The fixed championship.'
+          : hud.twistClassic
+            ? `Classic rules. ${hud.twistRule}`
+            : `Twist: ${hud.twistLabel}. ${hud.twistRule}`,
+      );
+      this.twistChip.setAttribute('title', hud.twistRule);
+    }
+
     const percent = Math.round(hud.progress * 100);
     if (percent !== this.lastProgress || hud.progressLabel !== this.lastProgressLabel) {
       this.lastProgress = percent;
@@ -275,7 +307,22 @@ export class Hud {
   }
 
   /** Practice/free-play fallback: no Show record, just the Level numbers. */
-  setPractice(status: LevelStatus): void {
+  setPractice(
+    status: LevelStatus,
+    twist: {
+      label: string;
+      short: string;
+      rule: string;
+      classic: boolean;
+      final?: boolean;
+    } = {
+      label: 'CLASSIC',
+      short: 'CLASSIC',
+      rule: 'Classic rules.',
+      classic: true,
+      final: false,
+    },
+  ): void {
     this.setShow({
       phase: 'playing',
       roundNumber: 1,
@@ -297,6 +344,11 @@ export class Hud {
       spectateSeconds: 0,
       playerStatus: 'RACING',
       seedLabel: '',
+      twistLabel: twist.label,
+      twistShort: twist.short,
+      twistRule: twist.rule,
+      twistClassic: twist.classic,
+      twistFinal: twist.final ?? false,
     });
     this.qualifiedSlots.textContent = '';
   }

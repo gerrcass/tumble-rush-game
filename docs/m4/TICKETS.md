@@ -44,19 +44,19 @@ show still plays with classic rules until M4-002/003 land.
 
 **Acceptance**
 
-- [ ] `twistForSeed(seed)` is deterministic and returns `moon`, `slippery`, or
+- [x] `twistForSeed(seed)` is deterministic and returns `moon`, `slippery`, or
       `rush`.
-- [ ] A 300-seed sweep has each twist between 20% and 45%.
-- [ ] `CLASSIC_RULES` equals the current gravity, jump, air control, air drag,
+- [x] A 300-seed sweep has each twist between 20% and 45%.
+- [x] `CLASSIC_RULES` equals the current gravity, jump, air control, air drag,
       accel, friction, hazard speed, and clock constants.
-- [ ] Every twist has a non-empty label, short, blurb, accent, and rules.
-- [ ] `planShow(seed).twist` is stable; `signature` and `label` include it; the
+- [x] Every twist has a non-empty label, short, blurb, accent, and rules.
+- [x] `planShow(seed).twist` is stable; `signature` and `label` include it; the
       route and arena for the same seed are unchanged from M3.
-- [ ] `twistRulesFor('course' | 'hexapop', plan)` returns the plan twist;
+- [x] `twistRulesFor('course' | 'hexapop', plan)` returns the plan twist;
       `twistRulesFor('crown-climb' | 'training', plan)` returns
       `CLASSIC_RULES`.
-- [ ] Unit tests cover determinism, coverage, labels, and the classic baseline.
-- [ ] `npm run check` is green; no visible behavior change yet.
+- [x] Unit tests cover determinism, coverage, labels, and the classic baseline.
+- [x] `npm run check` is green; no visible behavior change yet.
 
 **Evidence:** plan JSON for the 12-seed set, selection distribution, test
 output.
@@ -79,22 +79,22 @@ use `CLASSIC_RULES`.
 
 **Acceptance**
 
-- [ ] `CLASSIC_RULES` reproduces the current jump apex, run speed, air drag,
+- [x] `CLASSIC_RULES` reproduces the current jump apex, run speed, air drag,
       and stopping distance within the existing test tolerances.
-- [ ] `PhysicsWorld.setGravity` changes a fall over one fixed step; classic is
+- [x] `PhysicsWorld.setGravity` changes a fall over one fixed step; classic is
       unchanged.
-- [ ] A moon jump has a longer airtime and a slightly higher apex than classic.
-- [ ] A slippery stop is longer than classic; the maximum run speed is
+- [x] A moon jump has a longer airtime and a slightly higher apex than classic.
+- [x] A slippery stop is longer than classic; the maximum run speed is
       unchanged.
-- [ ] The controller never exceeds `MAX_RUN_SPEED`, the dive impulse, the grab
+- [x] The controller never exceeds `MAX_RUN_SPEED`, the dive impulse, the grab
       range, the coyote time, or the jump buffer.
-- [ ] The player and every bot receive the same `TwistRules` object for a
+- [x] The player and every bot receive the same `TwistRules` object for a
       Round.
-- [ ] Course/Hexapop use the plan twist; Crown/Training/menu use classic.
-- [ ] Practice on the Course uses the seeded twist; Training Deck stays classic.
-- [ ] Switching from a twisted Round to the Crown resets gravity, friction,
+- [x] Course/Hexapop use the plan twist; Crown/Training/menu use classic.
+- [x] Practice on the Course uses the seeded twist; Training Deck stays classic.
+- [x] Switching from a twisted Round to the Crown resets gravity, friction,
       and jump to classic; no rule leaks between Rounds.
-- [ ] `npm run check` is green; the M2 Course/Hexpop unit probes are green.
+- [x] `npm run check` is green; the M2 Course/Hexpop unit probes are green.
 
 **Evidence:** physics/controller test output, a debug probe of gravity and
 friction per mode, before/after jump arc numbers.
@@ -117,20 +117,20 @@ and steer lead from the same rules.
 
 **Acceptance**
 
-- [ ] Course status limit is 105 s on `rush`, 120 s on `moon`/`slippery`.
-- [ ] Course hazard speeds are multiplied by 1.10 on `rush`; geometry, routes,
+- [x] Course status limit is 105 s on `rush`, 120 s on `moon`/`slippery`.
+- [x] Course hazard speeds are multiplied by 1.10 on `rush`; geometry, routes,
       waypoints, checkpoints, and qualification are unchanged.
-- [ ] Hexapop reaches the Sugar Rush at 38 s on `rush`; the 3.3 s warning and
+- [x] Hexapop reaches the Sugar Rush at 38 s on `rush`; the 3.3 s warning and
       the no-warn-under-a-living-Tumbler rule are unchanged.
-- [ ] Crown status is 120 s and `CLASSIC_RULES` on every twist.
-- [ ] The twist sign is visible on the Course and Hexapop starts, uses the
+- [x] Crown status is 120 s and `CLASSIC_RULES` on every twist.
+- [x] The twist sign is visible on the Course and Hexapop starts, uses the
       existing sign path, and adds no new texture family.
-- [ ] Bots use the same controller and physics; their jump/steer adaptation is
+- [x] Bots use the same controller and physics; their jump/steer adaptation is
       derived from `TwistRules`, never a hidden stat.
-- [ ] The real-Match 10-seed probe still has 8+ Course finishers, the Sugar
+- [x] The real-Match 10-seed probe still has 8+ Course finishers, the Sugar
       Rush on every run, and a living crown winner on every run.
-- [ ] No wall-clock pacing assertion; use `simulate` / fixed steps.
-- [ ] `npm run check` is green; the focused Course/Hexapop specs are green.
+- [x] No wall-clock pacing assertion; use `simulate` / fixed steps.
+- [x] `npm run check` is green; the focused Course/Hexapop specs are green.
 
 **Evidence:** time-limit/hazard tests, Sugar Rush probe, start-sign screenshots
 for all three twists, bot adaptation diff.
@@ -153,18 +153,18 @@ qualifier count, or play area.
 
 **Acceptance**
 
-- [ ] Round 1/2 intro shows the full twist label and rule.
-- [ ] Round 3 intro shows `FINAL · CLASSIC`.
-- [ ] Results/show-end repeats the show twist.
-- [ ] Daily chip names today's twist.
-- [ ] HUD chip is `TWIST <short>` on Course/Hexapop and `FINAL · CLASSIC` on
+- [x] Round 1/2 intro shows the full twist label and rule.
+- [x] Round 3 intro shows `FINAL · CLASSIC`.
+- [x] Results/show-end repeats the show twist.
+- [x] Daily chip names today's twist.
+- [x] HUD chip is `TWIST <short>` on Course/Hexapop and `FINAL · CLASSIC` on
       Crown.
-- [ ] The chip and card are keyboard/screen-reader reachable and have an
+- [x] The chip and card are keyboard/screen-reader reachable and have an
       accessible label.
-- [ ] Mobile 390×844: the chip and card do not cover the countdown, clock,
+- [x] Mobile 390×844: the chip and card do not cover the countdown, clock,
       qualifier count, or touch controls.
-- [ ] No new screen, no new control, no dead button.
-- [ ] Playwright covers the intro, HUD, results, Daily chip, and mobile layout.
+- [x] No new screen, no new control, no dead button.
+- [x] Playwright covers the intro, HUD, results, Daily chip, and mobile layout.
 
 **Evidence:** desktop and mobile screenshots of all three twist cards and the
 `FINAL · CLASSIC` card, accessibility assertions, Playwright output.
@@ -188,21 +188,21 @@ into CI and `gate:release`.
 
 **Acceptance**
 
-- [ ] `npm run verify:twists` runs 12 seeds × idle + casual and emits JSON and a
+- [x] `npm run verify:twists` runs 12 seeds × idle + casual and emits JSON and a
       table.
-- [ ] Each twist appears in at least 3 of 12 seeds.
-- [ ] The applied probe matches the plan for Course and Hexapop; the Crown
+- [x] Each twist appears in at least 3 of 12 seeds.
+- [x] The applied probe matches the plan for Course and Hexapop; the Crown
       reports `classic` on every run.
-- [ ] Every run meets the M2 bands: Course 45–90 s and 8+ finishers, Hexapop
+- [x] Every run meets the M2 bands: Course 45–90 s and 8+ finishers, Hexapop
       30–50 s with the Sugar Rush, Crown 45–80 s with a living physical touch,
       total 3–5 min; no show below 150 s or above 360 s.
-- [ ] Idle 0/12; casual ≥8/12; living crown winner ≥23/24.
-- [ ] The negative control is rejected.
-- [ ] `npm run verify:variety` remains green with the twist active.
-- [ ] `npm run verify:pacing -- --phase=b` remains green, or the difference is
+- [x] Idle 0/12; casual ≥8/12; living crown winner ≥23/24.
+- [x] The negative control is rejected.
+- [x] `npm run verify:variety` remains green with the twist active.
+- [x] `npm run verify:pacing -- --phase=b` remains green, or the difference is
       documented and inside the bands.
-- [ ] CI runs the twist gate in parallel and `gate:release` includes it.
-- [ ] `docs/METRICS.md` records the sweep, the per-twist table, the final
+- [x] CI runs the twist gate in parallel and `gate:release` includes it.
+- [x] `docs/METRICS.md` records the sweep, the per-twist table, the final
       multipliers, and the command.
 
 **Evidence:** twist JSON/table, failing/passing negative control, METRICS diff,
@@ -224,19 +224,19 @@ public claim matches the build.
 
 **Acceptance**
 
-- [ ] `npm run evidence` captures the M4 canonical set; files live in
+- [x] `npm run evidence` captures the M4 canonical set; files live in
       `docs/evidence/`.
-- [ ] Draw calls ≤320 and triangles ≤200k at 1440×810 high on the Course and
+- [x] Draw calls ≤320 and triangles ≤200k at 1440×810 high on the Course and
       Hexapop starts for all three twists; the values are recorded.
-- [ ] README describes the twist, the Show Card line, the fixed final, and the
+- [x] README describes the twist, the Show Card line, the fixed final, and the
       new gate; no fixed test count that will drift.
-- [ ] GLOSSARY adds **Twist**, **Twist Rules**, and **Twist Gate**.
-- [ ] ADR 0007 records "twists are qualifier rules; the Crown is classic".
-- [ ] METRICS records the 12-seed twist sweep and the performance samples.
-- [ ] `docs/m4/IMPLEMENTATION-NOTES.md` maps the twist seams for the next agent.
-- [ ] `GITHUB_PAGES=true npm run build` passes; no runtime network or external
+- [x] GLOSSARY adds **Twist**, **Twist Rules**, and **Twist Gate**.
+- [x] ADR 0007 records "twists are qualifier rules; the Crown is classic".
+- [x] METRICS records the 12-seed twist sweep and the performance samples.
+- [x] `docs/m4/IMPLEMENTATION-NOTES.md` maps the twist seams for the next agent.
+- [x] `GITHUB_PAGES=true npm run build` passes; no runtime network or external
       asset is introduced.
-- [ ] Accessibility: the chip/card is screen-reader reachable and the mobile
+- [x] Accessibility: the chip/card is screen-reader reachable and the mobile
       layout is intact.
 
 **Evidence:** screenshot set, performance table, docs diff, Pages build log.

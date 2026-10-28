@@ -14,6 +14,10 @@ function sectionStart(seed: number, id: string, lap = 0): number {
 }
 
 test.describe('M3 evidence', () => {
+  // The M3 capture is the historical baseline now that M4 refreshes the same
+  // UI. Normal `test:e2e`/`evidence` runs must not overwrite it; set
+  // M3_EVIDENCE=1 to recapture the M3 set deliberately.
+  test.skip(process.env.M3_EVIDENCE !== '1', 'M3 evidence is archived; set M3_EVIDENCE=1 to recapture');
   test('captures the M3 canonical set and samples the render budget', async ({ page }) => {
     test.setTimeout(180_000);
     const errors: string[] = [];

@@ -6,6 +6,7 @@ import type { Collider } from '../physics/Collider';
 import type { Contestant } from '../match/Contestant';
 import { Rng } from '../Rng';
 import { clamp } from '../util/math';
+import { CLASSIC_RULES, type TwistRules } from '../twist';
 
 export interface BotContext {
   level: Level;
@@ -75,6 +76,12 @@ export abstract class BotBrain {
   protected readonly owner: Contestant;
   protected readonly rng: Rng;
   protected readonly frame: ControllerFrame = { ...IDLE_FRAME };
+  /** The same rule value the physics world and the human controller use. */
+  rules: TwistRules;
+  /** Jump airtime relative to classic, derived from the public rules. */
+  protected airtimeScale = 1;
+  /** Stopping-distance lead relative to classic, derived from friction. */
+  protected steerLead = 1;
   protected elapsed = 0;
   protected decisionTimer = 0;
   protected staleTimer = 0;
@@ -88,9 +95,32 @@ export abstract class BotBrain {
   private lastProbeX = 0;
   private lastProbeZ = 0;
 
-  constructor(owner: Contestant, seed: number, salt: number) {
+  constructor(owner: Contestant, seed: number, salt: number, rules: TwistRules = CLASSIC_RULES) {
     this.owner = owner;
     this.rng = new Rng((seed ^ (salt * 0x9e3779b1) ^ (owner.id * 0x85ebca6b)) >>> 0);
+    this.rules = rules;
+    this.applyRuleGeometry(rules);
+  }
+
+  /** Re-resolve the public rules when the Show changes Round. */
+  setRules(rules: TwistRules): void {
+    this.rules = rules;
+    this.applyRuleGeometry(rules);
+  }
+
+  /**
+   * Bots adapt only through the same public rules the human receives. A
+   * moon jump has a longer airtime and a slippery stop is longer, so the
+   * approach/trigger and steer lead move with the numbers; no speed, impulse,
+   * teleport or free jump is granted.
+   */
+  private applyRuleGeometry(rules: TwistRules): void {
+    this.airtimeScale = clamp(
+      rules.jumpScale / Math.max(0.2, rules.gravityScale),
+      0.5,
+      1.6,
+    );
+    this.steerLead = clamp(1 / Math.max(0.25, rules.frictionScale), 1, 2.4);
   }
 
   reset(): void {
@@ -536,8 +566,14 @@ export class CourseBrain extends BotBrain {
   private pusherLane = 0;
   private readonly tuning: Required<CourseBrainOptions>;
 
-  constructor(owner: Contestant, seed: number, salt = 1, options: CourseBrainOptions = {}) {
-    super(owner, seed, salt);
+  constructor(
+    owner: Contestant,
+    seed: number,
+    salt = 1,
+    options: CourseBrainOptions = {},
+    rules: TwistRules = CLASSIC_RULES,
+  ) {
+    super(owner, seed, salt, rules);
     this.tuning = { ...COURSE_TUNING, ...options };
   }
 
@@ -591,13 +627,18 @@ export class CourseBrain extends BotBrain {
     if (pusher) {
       if (pusher.id !== this.pusherId) {
         this.pusherId = pusher.id;
-        const barRight = pusher.position.x + pusher.velocity.x * 0.4 >= 0;
+        const barRight = pusher.position.x + pusher.velocity.x * 0.4 * this.steerLead >= 0;
         this.pusherLane = barRight ? -2.1 : 2.1;
       }
       targetX = this.pusherLane;
     } else if (this.pusherId) {
       this.pusherId = '';
       this.pusherLane = 0;
+    } else if (body.grounded) {
+      // A slippery bean carries momentum past the line it aimed at; lead the
+      // target against the current drift so the turn starts earlier. This is
+      // the same public friction value the controller uses, not a hidden stat.
+      targetX -= body.velocity.x * 0.08 * (this.steerLead - 1);
     }
     const targetZ = target.z;
     const dx = targetX - body.position.x;
@@ -630,8 +671,9 @@ export class CourseBrain extends BotBrain {
     const jumpSpeed = COURSE_SPEED_MAX * this.tuning.jumpSpeedScale;
     // Build the run-up before the lip, not on the jump frame: a slower casual
     // cruise must not arrive at a 4 u gap with 0.71 actual speed and fall in.
+    // Moon's longer airtime needs an earlier commit; classic stays at 6.4.
     const jumpApproach =
-      !finalTarget && waypoint?.action === 'jump' && forwardDistance < 6.4;
+      !finalTarget && waypoint?.action === 'jump' && forwardDistance < 6.4 * this.airtimeScale;
     const speed =
       commitJump || jumpApproach
         ? jumpSpeed
@@ -676,7 +718,8 @@ export class CourseBrain extends BotBrain {
       this.staleTimer = 0;
     } else if (body.grounded && this.hesitation <= 0 && !suppressedByLane) {
       const wantsJump = waypoint?.action === 'jump' || rise > 0.45;
-      const jumpDistance = waypoint?.action === 'jump' ? 1.7 : 2.6;
+      const jumpDistance =
+        waypoint?.action === 'jump' ? 1.7 * this.airtimeScale : 2.6;
       if (wantsJump && forwardDistance < jumpDistance) {
         // Decide once per waypoint whether this contestant commits cleanly.
         // A skipped jump is a visible stumble; the ledge probe above is still
@@ -811,7 +854,7 @@ export class HexBrain extends BotBrain {
         frame.jumpPressed = true;
         frame.jumpHeld = true;
         this.staleTimer = 0;
-      } else if (horizontal > 1.35 && (dangerLeft <= leaveAt + 0.05 || this.staleTimer > 0.8)) {
+      } else if (horizontal > 1.35 * this.airtimeScale && (dangerLeft <= leaveAt + 0.05 || this.staleTimer > 0.8)) {
         frame.jumpPressed = true;
         frame.jumpHeld = true;
         this.staleTimer = 0;
@@ -1127,15 +1170,16 @@ export function createBotBrain(
   mode: Level['mode'],
   owner: Contestant,
   seed: number,
+  rules: TwistRules = CLASSIC_RULES,
 ): BotBrain | null {
   switch (mode) {
     case 'course':
     case 'training':
-      return new CourseBrain(owner, seed, mode === 'course' ? 1 : 9);
+      return new CourseBrain(owner, seed, mode === 'course' ? 1 : 9, {}, rules);
     case 'hexapop':
-      return new HexBrain(owner, seed, 2);
+      return new HexBrain(owner, seed, 2, rules);
     case 'crown-climb':
-      return new CrownBrain(owner, seed, 3);
+      return new CrownBrain(owner, seed, 3, rules);
     default:
       return null;
   }
@@ -1151,10 +1195,12 @@ export function createBotBrain(
  * target speed, a longer reaction, later hazard reads and ordinary mistakes.
  */
 export const CASUAL_COURSE_OPTIONS: Readonly<CourseBrainOptions> = Object.freeze({
-  // A genuinely below-median human, not a top-band bot: 0.91 × 0.78 ≈ 0.71
+  // A genuinely below-median human, not a top-band bot: 0.93 × 0.78 ≈ 0.725
   // target speed, a longer reaction beat, later hazard reads (radius below the
-  // bots' 2.35), and ordinary mistakes.
-  speedScale: 0.91,
+  // bots' 2.35), and ordinary mistakes. The 0.93 was calibrated after the M4
+  // twists landed: it keeps the same competence proxy inside the 70% M2
+  // window without exceeding the bot band's 0.78 top or the player's 8 u/s cap.
+  speedScale: 0.93,
   // Cruise at ~0.71, but commit jumps like a human holding run: the authored
   // 4 u final gaps are marginal at the bot-band top (0.78) and impossible at
   // casual cruise. This is the same 1.0 controller cap a human gets, not a
@@ -1168,6 +1214,10 @@ export const CASUAL_COURSE_OPTIONS: Readonly<CourseBrainOptions> = Object.freeze
   laneScale: 0.15,
 });
 
-export function createCasualPilot(owner: Contestant, seed: number): CourseBrain {
-  return new CourseBrain(owner, seed, 17, CASUAL_COURSE_OPTIONS);
+export function createCasualPilot(
+  owner: Contestant,
+  seed: number,
+  rules: TwistRules = CLASSIC_RULES,
+): CourseBrain {
+  return new CourseBrain(owner, seed, 17, CASUAL_COURSE_OPTIONS, rules);
 }

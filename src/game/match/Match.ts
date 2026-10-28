@@ -105,6 +105,14 @@ export interface MatchHud {
   spectateSeconds: number;
   playerStatus: 'RACING' | 'QUALIFIED' | 'ELIMINATED' | 'WAITING';
   seedLabel: string;
+  /** The show twist on Rounds 1–2, CLASSIC on the Crown. */
+  twistLabel: string;
+  twistShort: string;
+  /** Full one-line rule, used as the accessible chip description. */
+  twistRule: string;
+  twistClassic: boolean;
+  /** True only on the fixed Crown final; Training/menu are classic but not final. */
+  twistFinal: boolean;
 }
 
 const INTRO_SECONDS = 2.1;
@@ -113,15 +121,8 @@ const RESULTS_SECONDS = 5;
 const SPECTATE_SWITCH_SECONDS = 1.5;
 /** Let a tiny Hexapop field play briefly before skipping it. */
 const HEXAPOP_GRACE = 4;
-/**
- * The Sugar Rush is the survival Round's fourth act, not an optional extra.
- * A full field is held for the 45 s ring drop and its one-second warning even
- * when it has already lost a slot, so every M3 arena plan reaches the authored
- * beat. A genuinely underfilled field (four or fewer entrants) still resolves
- * after the short grace: there is no qualifier race left to watch.
- */
-const HEXAPOP_SUGAR_RUSH_SECONDS = 45;
-const HEXAPOP_RUSH_SETTLE_SECONDS = HEXAPOP_SUGAR_RUSH_SECONDS + 1.15;
+/** The Sugar Rush warning-to-settle window is unchanged on every twist. */
+const HEXAPOP_RUSH_SETTLE = 1.15;
 
 /**
  * Show Director: owns Rounds, qualification, advancement, spectating and the
@@ -326,11 +327,15 @@ export class Match {
     }
     if (this.phase === 'playing') {
       this.roundTime += dt;
-      if (this.definition.mode === 'hexapop' && !this.sugarRushStamp && this.roundTime >= 45) {
+      if (
+        this.definition.mode === 'hexapop' &&
+        !this.sugarRushStamp &&
+        this.roundTime >= this.sugarRushSeconds()
+      ) {
         this.sugarRushStamp = true;
         this.callbacks.onStamp({ text: 'SUGAR RUSH!', tone: 'bad' });
       }
-      if (this.roundTime >= this.definition.timeLimit) this.resolveRound(true);
+      if (this.roundTime >= this.roundTimeLimit(this.definition)) this.resolveRound(true);
       return;
     }
     if (this.phase === 'results') {
@@ -476,7 +481,7 @@ export class Match {
         (contestant) => contestant.body.eliminated || contestant.status === 'eliminated',
       );
       const fullField = this.entrants.length > definition.qualifiers;
-      const sugarRushSettled = this.roundTime >= HEXAPOP_RUSH_SETTLE_SECONDS;
+      const sugarRushSettled = this.roundTime >= this.sugarRushSeconds() + HEXAPOP_RUSH_SETTLE;
       if (
         this.roundTime >= HEXAPOP_GRACE &&
         (hasElimination || underfilled) &&
@@ -515,13 +520,14 @@ export class Match {
         : this.player.finishTime !== null
           ? 'QUALIFIED'
           : 'RACING';
+    const classic = definition.mode === 'crown-climb' || definition.mode === 'training';
     return {
       phase: this.phase,
       roundNumber: this.roundIndex + 1,
       roundTitle: definition.label,
       objective: definition.objective,
       time: this.roundTime,
-      timeLimit: definition.timeLimit,
+      timeLimit: this.roundTimeLimit(definition),
       qualified,
       qualifiers: definition.qualifiers,
       remaining: alive,
@@ -536,6 +542,13 @@ export class Match {
       spectateSeconds: this.spectateElapsed,
       playerStatus,
       seedLabel: this.seedLabel,
+      twistLabel: classic ? 'CLASSIC' : this.showPlan.twist.label,
+      twistShort: classic ? 'CLASSIC' : this.showPlan.twist.short,
+      twistRule: classic
+        ? 'The fixed final. Same classic rules for everyone.'
+        : this.showPlan.twist.blurb,
+      twistClassic: classic,
+      twistFinal: definition.mode === 'crown-climb',
     };
   }
 
@@ -569,6 +582,18 @@ export class Match {
         progress: contestant.progress,
         placement: placed.get(String(contestant.id)) ?? null,
       }));
+  }
+
+  /** The twist owns the qualifier clocks; the Crown keeps its 120 s limit. */
+  private roundTimeLimit(definition: RoundDefinition): number {
+    if (definition.mode === 'course') return this.showPlan.twist.rules.courseTimeLimit;
+    if (definition.mode === 'hexapop') return this.showPlan.twist.rules.hexTimeLimit;
+    return definition.timeLimit;
+  }
+
+  /** The live Sugar Rush beat. RUSH HOUR starts it at 38 s. */
+  private sugarRushSeconds(): number {
+    return this.showPlan.twist.rules.hexSugarRush;
   }
 
   private startPlaying(): void {

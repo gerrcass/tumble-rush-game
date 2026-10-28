@@ -4393,3 +4393,113 @@ a:focus-visible,
     justify-content: center;
   }
 }
+
+/* ================================================================== */
+/* M4 — Twist Season: Show Card line and compact HUD chip             */
+/* ================================================================== */
+
+.show-card__twist {
+  padding: 3px 9px;
+  border: 2px solid var(--ink);
+  border-left-color: var(--twist-accent, var(--coral));
+  border-right-color: var(--twist-accent, var(--coral));
+  border-radius: 999px;
+  background: #fff2d8;
+  box-shadow: 2px 2px 0 rgba(36, 50, 74, 0.35);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.show-card__rule {
+  flex-basis: 100%;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: none;
+}
+
+.results__show-card .show-card__rule,
+.show-end__show-card .show-card__rule {
+  text-align: left;
+}
+
+.hud-bar {
+  grid-template-columns: 48px minmax(190px, 1fr) auto auto auto auto auto;
+}
+
+.hud-twist {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  min-width: 84px;
+  padding: 6px 10px;
+  border: var(--border);
+  border-radius: 999px;
+  background: #fff2d8;
+  box-shadow: 4px 4px 0 rgba(36, 50, 74, 0.45);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.hud-twist[data-twist='classic'],
+.hud-twist[data-twist='final'] {
+  background: linear-gradient(160deg, #dcfff3, var(--mint));
+}
+
+.hud-twist[data-twist='moon'] {
+  background: linear-gradient(160deg, #e6f6ff, #b9e6ff);
+}
+
+.hud-twist[data-twist='slip'] {
+  background: linear-gradient(160deg, #e9fff5, #bff2dc);
+}
+
+.hud-twist[data-twist='rush'] {
+  background: linear-gradient(160deg, #fff0ea, #ffd0c8);
+}
+
+@media (max-width: 900px) {
+  .hud-bar {
+    grid-template-columns: 48px minmax(140px, 1fr) auto auto auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .hud-bar {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+  }
+
+  .hud-twist {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: center;
+    justify-self: end;
+    min-width: 0;
+    padding: 4px 7px;
+    font-size: 8px;
+    box-shadow: 2px 2px 0 rgba(36, 50, 74, 0.4);
+  }
+
+  .show-card__twist {
+    padding: 3px 7px;
+    white-space: normal;
+  }
+
+  .show-card__rule {
+    font-size: 9px;
+  }
+}
+
+.hud-twist:focus-visible,
+.show-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}

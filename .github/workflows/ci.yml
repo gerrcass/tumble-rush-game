@@ -61,8 +61,8 @@ jobs:
         run: |
           set -o pipefail
           npm run verify:pacing -- --phase=b \
-            --out=docs/evidence/pacing/m2-phase-b-pacing.json \
-            2>&1 | tee docs/evidence/pacing/m2-phase-b-pacing.log
+            --out=docs/evidence/pacing/m4-pacing.json \
+            2>&1 | tee docs/evidence/pacing/m4-pacing.log
 
       - name: Upload pacing evidence
         if: always()
@@ -99,8 +99,8 @@ jobs:
         run: |
           set -o pipefail
           npm run verify:variety -- --negative \
-            --out=docs/evidence/variety/m3-variety.json \
-            2>&1 | tee docs/evidence/variety/m3-variety.log
+            --out=docs/evidence/variety/m4-variety.json \
+            2>&1 | tee docs/evidence/variety/m4-variety.log
 
       - name: Upload variety evidence
         if: always()
@@ -109,6 +109,44 @@ jobs:
           name: variety-evidence
           path: |
             docs/evidence/variety/*
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  twists:
+    name: Twist gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install from lockfile
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Twist gate (12 seeds × idle + casual, applied probe, negative control)
+        run: |
+          set -o pipefail
+          npm run verify:twists -- --negative \
+            --out=docs/evidence/twists/m4-twists.json \
+            2>&1 | tee docs/evidence/twists/m4-twists.log
+
+      - name: Upload twist evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twist-evidence
+          path: |
+            docs/evidence/twists/*
             test-results/
           if-no-files-found: ignore
           retention-days: 14

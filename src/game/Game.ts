@@ -12,7 +12,7 @@ import {
 import type { ControllerFrame } from './player/BeanController';
 import { CameraRig } from './player/CameraRig';
 import { Input } from './input/Input';
-import { PhysicsWorld, FIXED_STEP } from './physics/PhysicsWorld';
+import { PhysicsWorld, FIXED_STEP, GRAVITY } from './physics/PhysicsWorld';
 import { BeanBody } from './physics/BeanBody';
 import {
   DIFFICULTY_PRESETS,
@@ -42,6 +42,7 @@ import { createLevel } from './levels/factory';
 import type { Course } from './levels/Course';
 import { startPositionsFor } from './levels/startPositions';
 import { planShow } from './levels/coursePlan';
+import { CLASSIC_RULES, twistRulesFor, type TwistRules } from './twist';
 import { Rng, formatSeed } from './Rng';
 import { AudioEngine, type SfxName } from './audio/AudioEngine';
 import { Bursts, particleBudget } from './fx/Bursts';
@@ -166,6 +167,8 @@ export class Game {
   private menuMode = true;
   private autopilotMode: 'off' | 'casual' = 'off';
   private casualPilot: BotBrain | null = null;
+  /** The live qualifier rule set for the installed Level. Classic in menus. */
+  private currentRules: TwistRules = CLASSIC_RULES;
 
   constructor(options: GameOptions) {
     this.mount = options.mount;
@@ -207,9 +210,14 @@ export class Game {
     this.bursts.setBudget(particleBudget(this.quality, this.reducedMotion));
     this.scene.add(this.bursts.mesh);
 
-    this.level = createLevel(this.mode, this.currentSeed);
+    this.level = createLevel(this.mode, this.currentSeed, {
+      showTwistSign: false,
+      rules: CLASSIC_RULES,
+    });
     this.scene.add(this.level.group);
     for (const collider of this.level.colliders) this.world.addCollider(collider);
+    // The menu preview is classic, even after a twisted Show.
+    this.world.setGravity(GRAVITY * CLASSIC_RULES.gravityScale);
 
     const playerRng = new Rng(this.currentSeed ^ 0x5eed1234);
     this.player = this.createPlayer(playerRng.float(0, 10), high);
@@ -472,6 +480,48 @@ export class Game {
           arenaLabel: plan.arenaLabel,
           signature: plan.signature,
           label: plan.label,
+          twist: {
+            id: plan.twist.id,
+            label: plan.twist.label,
+            short: plan.twist.short,
+            rule: plan.twist.blurb,
+            accent: plan.twist.accent,
+          },
+        };
+      },
+      get twist() {
+        const plan = game.match?.showPlan ?? planShow(game.currentSeed);
+        const rules = game.currentRules;
+        const classic = rules.id === 'classic';
+        const gravity = game.world.gravity;
+        const frictionScale = game.player.controller.ruleSet.frictionScale;
+        const uniform = game.contestants.every(
+          (contestant) => contestant.controller.ruleSet === rules,
+        );
+        const applied =
+          uniform &&
+          Math.abs(gravity - GRAVITY * rules.gravityScale) < 1e-9 &&
+          Math.abs(frictionScale - rules.frictionScale) < 1e-9;
+        return {
+          id: rules.id,
+          label: classic ? 'CLASSIC' : plan.twist.label,
+          short: classic ? 'CLASSIC' : plan.twist.short,
+          rule: classic ? 'The fixed final. Same classic rules for everyone.' : plan.twist.blurb,
+          gravity,
+          frictionScale,
+          hazardSpeedScale: game.level.hazardSpeedScale ?? 1,
+          sugarRushSeconds: game.level.sugarRushSeconds ?? rules.hexSugarRush,
+          sugarRushReached: game.level.sugarRushReached ?? false,
+          timeLimit: game.level.status().timeLimit,
+          signVisible: game.level.showsTwistSign === true,
+          signLabel:
+            game.level.showsTwistSign === true
+              ? classic
+                ? 'CLASSIC'
+                : plan.twist.label
+              : '',
+          applied,
+          classic,
         };
       },
       isAtFinish: (x: number, y: number, z: number) =>
@@ -524,6 +574,30 @@ export class Game {
 
   get hud(): MatchHud | null {
     return this.match?.hud(this.level) ?? null;
+  }
+
+  /** The live twist for Practice/free-play HUD copy (same value as the show). */
+  get twistSummary(): {
+    label: string;
+    short: string;
+    rule: string;
+    classic: boolean;
+    final: boolean;
+  } {
+    const plan = this.match?.showPlan ?? planShow(this.currentSeed);
+    const classic = this.currentRules.id === 'classic';
+    const final = this.level.mode === 'crown-climb';
+    return {
+      label: classic ? 'CLASSIC' : plan.twist.label,
+      short: classic ? 'CLASSIC' : plan.twist.short,
+      rule: classic
+        ? final
+          ? 'The fixed final. Same classic rules for everyone.'
+          : 'Classic rules. The training deck.'
+        : plan.twist.blurb,
+      classic,
+      final,
+    };
   }
 
   get isPractice(): boolean {
@@ -639,7 +713,9 @@ export class Game {
   setPlayerAutopilot(mode: 'off' | 'casual'): void {
     this.autopilotMode = mode;
     this.casualPilot =
-      mode === 'casual' && this.match ? createCasualPilot(this.player, this.currentSeed) : null;
+      mode === 'casual' && this.match
+        ? createCasualPilot(this.player, this.currentSeed, this.currentRules)
+        : null;
   }
 
   /** Debug/QA: a full observed show played by the scripted casual brain. */
@@ -662,9 +738,9 @@ export class Game {
     this.match = null;
     this.practice = true;
     this.menuMode = false;
+    this.buildBots(this.currentSeed, true);
     this.installLevel(mode, this.currentSeed);
     this.audio.setMusicMode(mode === 'crown-climb' ? 'final' : 'round');
-    this.buildBots(this.currentSeed, true);
     this.practiceContestants.length = 0;
     this.practiceContestants.push(this.player, ...this.contestants.filter((c) => !c.isPlayer));
     this.resetWorldFor([...this.practiceContestants]);
@@ -774,7 +850,7 @@ export class Game {
     this.spectateBody = null;
     this.currentState = 'menu';
     this.ensureIdentity();
-    this.installLevel('course', this.currentSeed);
+    this.installLevel('course', this.currentSeed, CLASSIC_RULES, true);
     this.resetWorldFor([this.player]);
     this.player.resetForRound(this.level.startPosition, 0, 'waiting');
     this.player.bean.setVisible(true);
@@ -1078,7 +1154,12 @@ export class Game {
       const position = positions[i] ?? this.level.startPosition;
       contestant.resetForRound(position, i % 3, 'racing');
       if (!contestant.isPlayer) {
-        contestant.brain = createBotBrain(definition.mode, contestant, this.currentSeed);
+        contestant.brain = createBotBrain(
+          definition.mode,
+          contestant,
+          this.currentSeed,
+          this.currentRules,
+        );
       }
     }
     this.player.brain = null;
@@ -1097,7 +1178,12 @@ export class Game {
       const contestant = active[i]!;
       contestant.resetForRound(positions[i] ?? this.level.startPosition, i % 3, 'racing');
       if (!contestant.isPlayer) {
-        contestant.brain = createBotBrain(this.mode, contestant, this.currentSeed);
+        contestant.brain = createBotBrain(
+          this.mode,
+          contestant,
+          this.currentSeed,
+          this.currentRules,
+        );
       }
     }
   }
@@ -1111,12 +1197,25 @@ export class Game {
     }
   }
 
-  private installLevel(mode: LevelMode, seed: number): void {
+  private installLevel(
+    mode: LevelMode,
+    seed: number,
+    rulesOverride?: TwistRules,
+    menuPreview = false,
+  ): void {
     this.level.group.removeFromParent();
     this.level.dispose();
     this.world.clearColliders();
     this.mode = mode;
-    this.level = createLevel(mode, seed);
+    // One rules value for this Round: resolve it from the same plan the level
+    // built, then install it in the level, the world and every contestant
+    // before the Round starts. Menu previews pass CLASSIC_RULES explicitly.
+    const rules = rulesOverride ?? twistRulesFor(mode, planShow(seed).twist);
+    this.currentRules = rules;
+    this.level = createLevel(mode, seed, {
+      showTwistSign: !menuPreview,
+      rules,
+    });
     this.scene.add(this.level.group);
     for (const collider of this.level.colliders) this.world.addCollider(collider);
     this.level.setQuality(this.quality);
@@ -1127,6 +1226,10 @@ export class Game {
       this.level.startPosition.z,
     );
     this.world.killY = this.level.killY;
+    this.world.setGravity(GRAVITY * rules.gravityScale);
+    for (const contestant of this.contestants) contestant.controller.setRules(rules);
+    this.player.controller.setRules(rules);
+    this.casualPilot?.setRules(rules);
   }
 
   private bindLifecycle(): void {
@@ -1340,7 +1443,11 @@ export class Game {
       if (contestant.body.eliminated || contestant.finishTime !== null) continue;
       if (contestant.isPlayer) {
         if (this.autopilotMode === 'casual' && this.level.mode === 'course') {
-          const pilot = this.casualPilot ?? createCasualPilot(contestant, this.currentSeed);
+          const pilot = this.casualPilot ?? createCasualPilot(
+            contestant,
+            this.currentSeed,
+            this.currentRules,
+          );
           this.casualPilot = pilot;
           contestant.controller.update(
             dt,
@@ -1368,7 +1475,8 @@ export class Game {
         contestant.controller.update(dt, this.controllerFrame);
       } else {
         const brain =
-          contestant.brain ?? createBotBrain(this.level.mode, contestant, this.currentSeed);
+          contestant.brain ??
+          createBotBrain(this.level.mode, contestant, this.currentSeed, this.currentRules);
         if (!brain) continue;
         contestant.brain = brain;
         const frame = brain.think({
@@ -1418,7 +1526,8 @@ export class Game {
         contestant.controller.update(dt, this.controllerFrame);
       } else {
         const brain =
-          contestant.brain ?? createBotBrain(this.level.mode, contestant, this.currentSeed);
+          contestant.brain ??
+          createBotBrain(this.level.mode, contestant, this.currentSeed, this.currentRules);
         if (!brain) continue;
         contestant.brain = brain;
         const frame = brain.think({

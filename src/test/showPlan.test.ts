@@ -80,8 +80,12 @@ describe('M3 show plan', () => {
     expect(plans.filter((plan) => plan.courseSignature.split('/').some((lap) => lap.includes('F'))).length).toBeGreaterThanOrEqual(4);
     expect(plans.filter((plan) => plan.courseSignature.split('/').some((lap) => lap.includes('G'))).length).toBeGreaterThanOrEqual(4);
     for (const plan of plans) {
-      expect(plan.label).toBe(`COURSE ${plan.routeLabel} · ARENA ${plan.arenaLabel}`);
-      expect(plan.signature).toBe(`${plan.courseSignature} · ${plan.arenaLabel}`);
+      expect(plan.label).toBe(
+        `COURSE ${plan.routeLabel} · ARENA ${plan.arenaLabel} · TWIST ${plan.twist.label}`,
+      );
+      expect(plan.signature).toBe(
+        `${plan.courseSignature} · ${plan.arenaLabel} · ${plan.twist.short}`,
+      );
       expect(plan.courseSignature.split('/')).toHaveLength(2);
       expect(plan.routeLabel).toContain(' / ');
     }

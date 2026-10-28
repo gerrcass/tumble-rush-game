@@ -68,12 +68,14 @@ export async function measureShow(page, url, seed, mode) {
         arenaLabel: t.plan.arenaLabel,
         signature: t.plan.signature,
         label: t.plan.label,
+        twist: t.plan.twist,
       };
 
       const rounds = [];
       let elapsed = 0;
       let stalled = 0;
       let playerDown = null;
+      let sugarRushAt = null;
       const capture = () => {
         const show = t.show;
         if (show.phase !== 'results') return;
@@ -81,6 +83,7 @@ export async function measureShow(page, url, seed, mode) {
         const placements = t.roundPlacements;
         const player = placements.find((entry) => entry.isPlayer) ?? null;
         const winner = placements.find((entry) => entry.won) ?? null;
+        const twist = t.twist;
         // Physical fields, not code-set flags: a living winner must have a
         // finish time and an un-eliminated body; contact is derived from the
         // winner's height and horizontal crown distance below.
@@ -105,7 +108,9 @@ export async function measureShow(page, url, seed, mode) {
           winnerFinishTime: winner?.finishTime ?? null,
           winnerHeight: winner ? Number(winner.height.toFixed(3)) : null,
           winnerDistanceToCrown: winner ? Number(winner.distanceToCrown.toFixed(3)) : null,
-          sugarRushReached: show.roundMode === 'hexapop' ? show.time >= 45 : null,
+          sugarRushReached: show.roundMode === 'hexapop' ? twist.sugarRushReached : null,
+          sugarRushAt: show.roundMode === 'hexapop' ? sugarRushAt : null,
+          twist,
           winner: winner?.name ?? null,
           placements: placements.map((entry) => ({
             id: entry.id,
@@ -126,6 +131,9 @@ export async function measureShow(page, url, seed, mode) {
       while (t.state !== 'finished' && elapsed < maxSeconds) {
         const result = t.simulate(0.5);
         elapsed += result.steps * (1 / 60);
+        if (sugarRushAt === null && t.show.roundMode === 'hexapop' && t.twist.sugarRushReached) {
+          sugarRushAt = Number(t.show.time.toFixed(2));
+        }
         if (!playerDown && t.eliminated) {
           playerDown = {
             time: Number(elapsed.toFixed(2)),

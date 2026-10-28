@@ -146,3 +146,47 @@ implementation agent, not a second spec. The spec is the contract.
   fixed step; this host is SwiftShader-only.
 - **The start sign must be reachable in the screenshots.** Place it where the
   start camera sees it, not behind the player.
+
+## As built (M4) — final seams
+
+- `src/game/twist.ts` owns `TWISTS`, `CLASSIC_RULES`, `twistForSeed(seed)` and
+  `twistRulesFor(mode, plan)`. The hash salt is `0x74776973`; it never draws
+  from `routeRng`. The 12-seed deck is 6 MOON / 3 SLIPPERY / 3 RUSH HOUR.
+- Final tuning records the only move: moon **airControlScale 1.10 → 1.15**
+  (+4.5%, inside the ±15% band). This keeps seed `21098250` inside the Course
+  band. `scripts/lib/twist-gate.mjs` mirrors the numbers in `TWIST_TUNING` and
+  `src/test/twistGate.test.ts` fails if they drift from `TWISTS`.
+- `Game.installLevel(mode, seed, rulesOverride?)` resolves the rule value,
+  calls `world.setGravity(GRAVITY * rules.gravityScale)`, and calls
+  `controller.setRules(rules)` on every contestant plus the persistent casual
+  pilot. The same resolved rules object is passed into `createLevel` so the
+  Course hazard scale/clock and the Hexapop Sugar Rush clock cannot disagree
+  with the installed physics. `quitToMenu` passes `CLASSIC_RULES` and hides the
+  menu start sign; the constructor also resets the menu preview to classic
+  gravity. Practice builds its bots before `installLevel`, so the practice pack
+  receives the seeded twist too.
+- `Game.debug.twist` reads the live world: `gravity`, `frictionScale`,
+  `sugarRushSeconds`, `sugarRushReached`, `applied`, `classic`. `applied` is
+  derived from the live values and uniform controller rule identity, not from
+  the plan label.
+- `Course` stores `TwistPlan`, multiplies sweeper/pusher/conveyor/pendulum
+  speeds through `hazardSpeed()`, uses `rules.courseTimeLimit`, and builds a
+  merged start sign (`buildTwistSign`) with the full label and one-line rule.
+  `Hexapop` stores `sugarRushSeconds` / `roundLimit` from the rule set, keeps
+  `TILE_WARNING = 3.3`, and adds a second start sign beside the arena sign.
+- `Match.roundTimeLimit()` owns the qualifier clocks (Course 105 on RUSH,
+  Hexapop 42.9 on RUSH); `Match.sugarRushSeconds()` owns the 38 s beat. The
+  Crown keeps `definition.timeLimit = 120`. `MatchHud` exposes
+  `twistLabel/twistShort/twistRule/twistClassic`.
+- `BotBrain.rules` is the same object the controller receives. Derived
+  `airtimeScale = jumpScale / gravityScale` moves the jump approach/trigger;
+  `steerLead = 1 / frictionScale` moves the pusher prediction and the grounded
+  drift lead. No bot-only speed, jump, teleport or gravity exists. The debug
+  casual pilot keeps the same adaptation; its target speed was recalibrated
+  from 0.91 to 0.93 (≈0.725 of max, below the 0.78 bot-band top) so the M2
+  competence window survives the twists.
+- The M4 gate is `scripts/verify-twists.mjs` + `scripts/lib/twist-gate.mjs`.
+  It reuses `measureSweep` (no forked harness), emits JSON/table, always runs
+  the `applied:false` negative control, and asserts coverage, the live probe,
+  the classic Crown and every M2 band. `e2e/m4.spec.ts` covers the UI and the
+  live probe; `e2e/m4-evidence.spec.ts` captures the canonical set.

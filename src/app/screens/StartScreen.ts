@@ -7,7 +7,7 @@ import { formatBest, formatNumber, type Profile } from '../../game/profile';
 export interface StartScreenOptions {
   seedLabel: string;
   dailyLabel: string;
-  /** `B-D-G / C-F-G · SPIRAL` for today's Daily Show. */
+  /** `B-D-G / C-F-G · SPIRAL · MOON` for today's Daily Show. */
   dailyCard: string;
   touch: boolean;
   initialDifficulty?: DifficultyId;

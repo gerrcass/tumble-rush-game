@@ -71,17 +71,34 @@ export class PauseOverlay {
  * One Show Card, three places. The text is rendered from the same `planShow`
  * the levels consume, so the card cannot drift from the route under the player.
  */
-function fillShowCard(container: HTMLElement, plan?: ShowPlan): void {
+function fillShowCard(container: HTMLElement, plan?: ShowPlan, classic = false): void {
   container.replaceChildren();
   if (!plan) {
     container.hidden = true;
     return;
   }
   container.hidden = false;
+  container.tabIndex = 0;
   container.setAttribute('role', 'group');
-  container.setAttribute('aria-label', `Show card. ${plan.label}.`);
+  const twistLabel = classic ? 'FINAL · CLASSIC' : `TWIST ${plan.twist.label}`;
+  const twistRule = classic
+    ? 'Classic rules. The fixed championship.'
+    : plan.twist.blurb;
+  container.setAttribute(
+    'aria-label',
+    classic
+      ? `Show card. Course ${plan.routeLabel}. Arena ${plan.arenaLabel}. ${twistLabel}. ${twistRule}`
+      : `Show card. ${plan.label}. ${twistRule}`,
+  );
   container.appendChild(el('span', 'show-card__course', `COURSE ${plan.routeLabel}`));
   container.appendChild(el('span', 'show-card__arena', `ARENA ${plan.arenaLabel}`));
+  const twist = el('span', 'show-card__twist', twistLabel);
+  twist.style.setProperty(
+    '--twist-accent',
+    `#${(classic ? 0x59d9b0 : plan.twist.accent).toString(16).padStart(6, '0')}`,
+  );
+  container.appendChild(twist);
+  container.appendChild(el('span', 'show-card__rule', twistRule));
 }
 
 /**
@@ -165,7 +182,7 @@ export class RoundIntro {
     this.starters.textContent = String(definition.starters);
     this.qualifiers.textContent = `TOP ${definition.qualifiers}`;
     this.seed.textContent = `SEED ${seedLabel}`;
-    fillShowCard(this.showCard, plan);
+    fillShowCard(this.showCard, plan, definition.mode === 'crown-climb');
     this.update(phase, countdown);
   }
 
