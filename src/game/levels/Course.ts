@@ -1,4 +1,5 @@
 import {
+  BoxGeometry,
   CylinderGeometry,
   DirectionalLight,
   Euler,
@@ -60,6 +61,7 @@ import {
   type CourseSectionId,
   type CourseSectionPlan,
 } from './coursePlan';
+import type { TwistPlan } from '../twist';
 
 interface Sweeper {
   collider: Collider;
@@ -211,6 +213,8 @@ export class Course implements Level {
   readonly killY = -14;
   readonly cameraFloor = 0.8;
   readonly plan: CoursePlan;
+  /** The seeded qualifier rule; the Course multiplies hazard speeds by it. */
+  readonly twist: TwistPlan;
   readonly checkpoints: readonly Checkpoint[];
   readonly waypoints: readonly Waypoint[];
   /** World-space z of each lap's checker strip, for marker-placement tests. */
@@ -246,7 +250,9 @@ export class Course implements Level {
 
   constructor(seed: number) {
     this.seed = seed >>> 0;
-    this.plan = planShow(this.seed).course;
+    const show = planShow(this.seed);
+    this.plan = show.course;
+    this.twist = show.twist;
     this.finishPosition = new Vector3(
       0,
       COURSE_FINISH_DECK_Y + 0.1 + this.plan.lapOffsetY,
@@ -277,6 +283,7 @@ export class Course implements Level {
     for (const lap of this.plan.laps) this.buildLap(lap);
     this.buildLapConnector();
     this.buildScenery(rng);
+    this.buildTwistSign();
     // Every non-animated Course prop shares a small per-Level material pool,
     // so collapsing by material turns ~200 scenery meshes into a handful of
     // draw calls. Animated pieces (hazards, clouds, balloons, crowd) stay out.
@@ -419,7 +426,7 @@ export class Course implements Level {
       -26.2,
       3.6 * scale,
       0.55,
-      plan.sweeperSpeed * 0.58,
+      this.hazardSpeed(plan.sweeperSpeed * 0.58),
       plan.sections[0]!.hazardPhase,
     );
     this.addSign('BUNTING RUN', 'hop the hurdles · duck the sweeper', 0, 2.7, -26.2, 3.1, 1.1);
@@ -444,7 +451,7 @@ export class Course implements Level {
       -9.6,
       4.4 * scale,
       0.5,
-      plan.sweeperSpeed,
+      this.hazardSpeed(plan.sweeperSpeed),
       phase,
     );
     this.addSweeper(
@@ -453,14 +460,14 @@ export class Course implements Level {
       -15.2,
       3.8 * scale,
       0.5,
-      -plan.sweeperSpeed * 1.2,
+      this.hazardSpeed(-plan.sweeperSpeed * 1.2),
       phase + 2.1,
     );
 
     this.addPlatform(0, -23.5, 10 * scale, 10, 0xfff0d2, 0xffc145, 0xff6b6b);
     this.addBox(0, -0.5, -23.5, 5 * scale, 0.5, 5, 'solid');
-    this.addPendulum(0, 7.6, -20.6, 5.4, plan.sweeperSpeed * 1.15, phase, 0.7);
-    this.addPendulum(0, 8.4, -26.2, 5.8, plan.sweeperSpeed * 1.35, phase + 1.9, 0.6);
+    this.addPendulum(0, 7.6, -20.6, 5.4, this.hazardSpeed(plan.sweeperSpeed * 1.15), phase, 0.7);
+    this.addPendulum(0, 8.4, -26.2, 5.8, this.hazardSpeed(plan.sweeperSpeed * 1.35), phase + 1.9, 0.6);
 
     this.addPlatform(0, -33, 9 * scale, 8, 0xffffff, 0xa78bfa, 0xffc145, this.beltTexture);
     this.addBox(
@@ -471,7 +478,7 @@ export class Course implements Level {
       0.5,
       4,
       'conveyor',
-      new Vector3(plan.conveyorSpeed, 0, 0),
+      new Vector3(this.hazardSpeed(plan.conveyorSpeed), 0, 0),
     );
     this.addConveyorRails(0, -33, 9 * scale, 8);
     this.addSign('WHIRLYBIRD ALLEY', 'time the sweepers · ride the belt', 0, 2.9, -16, 3.4, 1.2);
@@ -542,9 +549,9 @@ export class Course implements Level {
     this.addBox(0, -2.1, -22.5, 3.4 * scale, 0.5, 6.5, 'solid');
 
     // Moving pusher walls: solid, with surface velocity, so they can sweep.
-    this.addPusher(0, -16.8, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.6, phase, 1.2);
-    this.addPusher(0, -21.6, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.85, phase + 1.6, 1.4);
-    this.addPusher(0, -26.4, -0.9, 1.4, 2.3, plan.pusherSpeed * 0.7, phase + 3.1, 1.1);
+    this.addPusher(0, -16.8, -0.9, 1.4, 2.3, this.hazardSpeed(plan.pusherSpeed * 0.6), phase, 1.2);
+    this.addPusher(0, -21.6, -0.9, 1.4, 2.3, this.hazardSpeed(plan.pusherSpeed * 0.85), phase + 1.6, 1.4);
+    this.addPusher(0, -26.4, -0.9, 1.4, 2.3, this.hazardSpeed(plan.pusherSpeed * 0.7), phase + 3.1, 1.1);
 
     if (plan.shortcut.enabled) {
       const x = plan.shortcut.side * (4.6 * scale);
@@ -651,15 +658,15 @@ export class Course implements Level {
 
     this.addPlatform(0, -13, 6.8 * scale, 8, 0xfff0d2, 0xa78bfa, 0xff6b6b);
     this.addBox(0, -0.5, -13, 3.4 * scale, 0.5, 4, 'solid');
-    this.addSweeper(0, 0.08, -11, 2.5 * scale, 0.5, plan.sweeperSpeed * 0.9, phase);
-    this.addSweeper(0, 0.08, -15.4, 2.7 * scale, 0.5, -plan.sweeperSpeed * 1.05, phase + 2.3);
+    this.addSweeper(0, 0.08, -11, 2.5 * scale, 0.5, this.hazardSpeed(plan.sweeperSpeed * 0.9), phase);
+    this.addSweeper(0, 0.08, -15.4, 2.7 * scale, 0.5, this.hazardSpeed(-plan.sweeperSpeed * 1.05), phase + 2.3);
 
     this.addPlatform(0, -21, 8.2 * scale, 6.4, 0xfff0d2, 0x57c7ff, 0xffc145);
     this.addBox(0, -0.5, -21, 4.1 * scale, 0.5, 3.2, 'solid');
 
     this.addPlatform(0, -29, 8.6 * scale, 7, CREAM, 0xffc145, 0x59d9b0);
     this.addBox(0, -0.5, -29, 4.3 * scale, 0.5, 3.5, 'solid');
-    this.addPusher(0, -27.5, 0, 4.8, 1.5, plan.pusherSpeed * 0.7, phase + 1.1, 1.0);
+    this.addPusher(0, -27.5, 0, 4.8, 1.5, this.hazardSpeed(plan.pusherSpeed * 0.7), phase + 1.1, 1.0);
 
     this.addPlatform(0, -35.5, 8.6 * scale, 5, CREAM, 0x59d9b0, 0xffc145);
     this.addBox(0, -0.5, -35.5, 4.3 * scale, 0.5, 2.5, 'solid');
@@ -697,6 +704,43 @@ export class Course implements Level {
   }
 
   // ------------------------------------------------------------------ Builders
+
+  get hazardSpeedScale(): number {
+    return this.twist.rules.hazardSpeedScale;
+  }
+
+  private hazardSpeed(speed: number): number {
+    return speed * this.twist.rules.hazardSpeedScale;
+  }
+
+  /** The 3D proof: full twist name, one-line rule, accent trim. */
+  private buildTwistSign(): void {
+    const group = new Group();
+    group.position.set(5, 0, this.plan.startZ - 4.8);
+    group.rotation.y = -0.3;
+    const sign = makeSign(
+      this.twist.label,
+      this.twist.blurb,
+      4.6,
+      1.5,
+      this.ownedTextures,
+      this.materials,
+    );
+    sign.position.y = 3.3;
+    group.add(sign);
+    for (const side of [-1, 1]) {
+      const post = makePole(2.55, 0xfff6e5, this.materials);
+      post.position.x = side * 1.9;
+      group.add(post);
+    }
+    const band = new Mesh(
+      new BoxGeometry(4.78, 0.16, 0.18),
+      this.materials.toon({ color: this.twist.accent }),
+    );
+    band.position.y = 4.1;
+    group.add(band);
+    this.staticVisuals.add(group);
+  }
 
   private buildFinishGate(width: number): void {
     const gold = this.materials.toon({ color: 0xffc145 });
@@ -1390,7 +1434,7 @@ export class Course implements Level {
       title: this.title,
       objective: this.objective,
       elapsed: this.elapsed,
-      timeLimit: 120,
+      timeLimit: this.twist.rules.courseTimeLimit,
       progress: this.bodyProgress,
       progressLabel: `${percent}%`,
       metricLabel: 'PROGRESS',

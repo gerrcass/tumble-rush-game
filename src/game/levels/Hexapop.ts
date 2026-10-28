@@ -45,6 +45,7 @@ import type { Axial } from './hexGrid';
 import { hexToWorld } from './hexWorld';
 import { arenaCells, axialRing, type ArenaPlanId } from './arenaPlan';
 import { planShow } from './coursePlan';
+import type { TwistPlan } from '../twist';
 
 type TileState = 'idle' | 'warning' | 'falling' | 'gone';
 
@@ -103,10 +104,9 @@ const TILE_SIZE = 1.15;
  */
 const TILE_WARNING = 3.3;
 const SUGAR_RUSH_WARNING = 1;
-const SUGAR_RUSH_AT = 45;
+const CLASSIC_SUGAR_RUSH_AT = 45;
 const WAVE_INTERVAL = 3.5;
 const SLIME_Y = -9.5;
-const ROUND_LIMIT = 49.9;
 /** The starting perch holds for this long, then drops away with the floor. */
 const PERCH_GRACE = 3.4;
 /** Radius of the clear drop under the starting perch, so it is a real trapdoor. */
@@ -141,6 +141,11 @@ export class Hexapop implements Level {
   readonly slime = new Group();
   readonly arena: ArenaPlanId;
   readonly arenaLabel: string;
+  /** The seeded qualifier rule; RUSH HOUR moves the Sugar Rush earlier. */
+  readonly twist: TwistPlan;
+  /** Live Sugar Rush start for this Round (45 classic, 38 on RUSH HOUR). */
+  readonly sugarRushSeconds: number;
+  readonly roundLimit: number;
 
   private readonly seed: number;
   private readonly ownedTextures = new Set<Texture>();
@@ -166,7 +171,7 @@ export class Hexapop implements Level {
   private tileVersion = 0;
   private elapsed = 0;
   private sugarRush = false;
-  private nextWaveAt = 45;
+  private nextWaveAt = CLASSIC_SUGAR_RUSH_AT;
   private result: LevelResult | null = null;
   private totalTiles = 0;
   private tileCountValue = 0;
@@ -176,6 +181,10 @@ export class Hexapop implements Level {
     const show = planShow(this.seed);
     this.arena = show.arena;
     this.arenaLabel = show.arenaLabel;
+    this.twist = show.twist;
+    this.sugarRushSeconds = show.twist.rules.hexSugarRush;
+    this.roundLimit = show.twist.rules.hexTimeLimit;
+    this.nextWaveAt = this.sugarRushSeconds;
     const rng = new Rng((this.seed ^ 0x4e6a9) >>> 0);
     this.group.add(makeSky());
     this.group.add(new HemisphereLight(0xffe8ee, 0x7fd4ff, 0.58));
@@ -403,6 +412,20 @@ export class Hexapop implements Level {
       pole.position.set(side * 2.2, 0.4, -3.6);
       this.group.add(pole);
     }
+    const twistSign = makeSign(
+      this.twist.label,
+      this.twist.blurb,
+      4.2,
+      1.4,
+      this.ownedTextures,
+    );
+    twistSign.position.set(4.7, 3.1, -3.6);
+    this.group.add(twistSign);
+    for (const side of [-1, 1]) {
+      const pole = makePole(3.1);
+      pole.position.set(4.7 + side * 1.7, 0.4, -3.6);
+      this.group.add(pole);
+    }
   }
 
   private buildScenery(rng: Rng): void {
@@ -502,7 +525,7 @@ export class Hexapop implements Level {
 
   step(dt: number, bodies: readonly BeanBody[]): void {
     this.elapsed += dt;
-    if (!this.sugarRush && this.elapsed >= SUGAR_RUSH_AT) this.sugarRush = true;
+    if (!this.sugarRush && this.elapsed >= this.sugarRushSeconds) this.sugarRush = true;
 
     // The safe start perch is temporary: a short grace, then the podium
     // collider disables and the centre tile is just another collapsing hex.
@@ -573,7 +596,7 @@ export class Hexapop implements Level {
     // collapse can reach four survivors before 45 s; hold those survivors on
     // the remaining floor until the wave so every show gets the beat. No tile
     // is added and no bean is moved: there is simply nothing left to drop.
-    if (!this.result && this.tileCountValue <= 4 && this.elapsed >= SUGAR_RUSH_AT) {
+    if (!this.result && this.tileCountValue <= 4 && this.elapsed >= this.sugarRushSeconds) {
       this.result = {
         kind: 'survived',
         title: 'SURVIVED!',
@@ -582,7 +605,7 @@ export class Hexapop implements Level {
         winner: null,
       };
     }
-    if (!this.result && this.elapsed >= ROUND_LIMIT) {
+    if (!this.result && this.elapsed >= this.roundLimit) {
       this.result = {
         kind: 'survived',
         title: 'ROUND OVER',
@@ -628,7 +651,7 @@ export class Hexapop implements Level {
   resetKinematics(): void {
     this.elapsed = 0;
     this.sugarRush = false;
-    this.nextWaveAt = 45;
+    this.nextWaveAt = this.sugarRushSeconds;
     this.result = null;
     this.tileCountValue = this.totalTiles;
     this.perchOpen = false;
@@ -737,6 +760,10 @@ export class Hexapop implements Level {
     return this.tileCountValue;
   }
 
+  get sugarRushReached(): boolean {
+    return this.sugarRush;
+  }
+
   get winner(): string | null {
     return this.result?.winner ?? null;
   }
@@ -744,13 +771,17 @@ export class Hexapop implements Level {
   status(): LevelStatus {
     const percent = Math.round((1 - this.tileCountValue / this.totalTiles) * 100);
     const phase =
-      this.elapsed >= 45 ? 'SUGAR RUSH' : this.elapsed >= 30 ? 'THE FLOOR IS NERVOUS' : 'STEADY';
+      this.elapsed >= this.sugarRushSeconds
+        ? 'SUGAR RUSH'
+        : this.elapsed >= this.sugarRushSeconds - 15
+          ? 'THE FLOOR IS NERVOUS'
+          : 'STEADY';
     return {
       mode: this.mode,
       title: this.title,
       objective: this.objective,
       elapsed: this.elapsed,
-      timeLimit: ROUND_LIMIT,
+      timeLimit: this.roundLimit,
       progress: 1 - this.tileCountValue / this.totalTiles,
       progressLabel: `${percent}%`,
       metricLabel: 'TILES LEFT',

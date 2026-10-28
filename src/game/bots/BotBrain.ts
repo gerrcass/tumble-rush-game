@@ -78,6 +78,10 @@ export abstract class BotBrain {
   protected readonly frame: ControllerFrame = { ...IDLE_FRAME };
   /** The same rule value the physics world and the human controller use. */
   rules: TwistRules;
+  /** Jump airtime relative to classic, derived from the public rules. */
+  protected airtimeScale = 1;
+  /** Stopping-distance lead relative to classic, derived from friction. */
+  protected steerLead = 1;
   protected elapsed = 0;
   protected decisionTimer = 0;
   protected staleTimer = 0;
@@ -95,11 +99,28 @@ export abstract class BotBrain {
     this.owner = owner;
     this.rng = new Rng((seed ^ (salt * 0x9e3779b1) ^ (owner.id * 0x85ebca6b)) >>> 0);
     this.rules = rules;
+    this.applyRuleGeometry(rules);
   }
 
   /** Re-resolve the public rules when the Show changes Round. */
   setRules(rules: TwistRules): void {
     this.rules = rules;
+    this.applyRuleGeometry(rules);
+  }
+
+  /**
+   * Bots adapt only through the same public rules the human receives. A
+   * moon jump has a longer airtime and a slippery stop is longer, so the
+   * approach/trigger and steer lead move with the numbers; no speed, impulse,
+   * teleport or free jump is granted.
+   */
+  private applyRuleGeometry(rules: TwistRules): void {
+    this.airtimeScale = clamp(
+      rules.jumpScale / Math.max(0.2, rules.gravityScale),
+      0.5,
+      1.6,
+    );
+    this.steerLead = clamp(1 / Math.max(0.25, rules.frictionScale), 1, 2.4);
   }
 
   reset(): void {
@@ -606,13 +627,18 @@ export class CourseBrain extends BotBrain {
     if (pusher) {
       if (pusher.id !== this.pusherId) {
         this.pusherId = pusher.id;
-        const barRight = pusher.position.x + pusher.velocity.x * 0.4 >= 0;
+        const barRight = pusher.position.x + pusher.velocity.x * 0.4 * this.steerLead >= 0;
         this.pusherLane = barRight ? -2.1 : 2.1;
       }
       targetX = this.pusherLane;
     } else if (this.pusherId) {
       this.pusherId = '';
       this.pusherLane = 0;
+    } else if (body.grounded) {
+      // A slippery bean carries momentum past the line it aimed at; lead the
+      // target against the current drift so the turn starts earlier. This is
+      // the same public friction value the controller uses, not a hidden stat.
+      targetX -= body.velocity.x * 0.08 * (this.steerLead - 1);
     }
     const targetZ = target.z;
     const dx = targetX - body.position.x;
@@ -645,8 +671,9 @@ export class CourseBrain extends BotBrain {
     const jumpSpeed = COURSE_SPEED_MAX * this.tuning.jumpSpeedScale;
     // Build the run-up before the lip, not on the jump frame: a slower casual
     // cruise must not arrive at a 4 u gap with 0.71 actual speed and fall in.
+    // Moon's longer airtime needs an earlier commit; classic stays at 6.4.
     const jumpApproach =
-      !finalTarget && waypoint?.action === 'jump' && forwardDistance < 6.4;
+      !finalTarget && waypoint?.action === 'jump' && forwardDistance < 6.4 * this.airtimeScale;
     const speed =
       commitJump || jumpApproach
         ? jumpSpeed
@@ -691,7 +718,8 @@ export class CourseBrain extends BotBrain {
       this.staleTimer = 0;
     } else if (body.grounded && this.hesitation <= 0 && !suppressedByLane) {
       const wantsJump = waypoint?.action === 'jump' || rise > 0.45;
-      const jumpDistance = waypoint?.action === 'jump' ? 1.7 : 2.6;
+      const jumpDistance =
+        waypoint?.action === 'jump' ? 1.7 * this.airtimeScale : 2.6;
       if (wantsJump && forwardDistance < jumpDistance) {
         // Decide once per waypoint whether this contestant commits cleanly.
         // A skipped jump is a visible stumble; the ledge probe above is still
@@ -826,7 +854,7 @@ export class HexBrain extends BotBrain {
         frame.jumpPressed = true;
         frame.jumpHeld = true;
         this.staleTimer = 0;
-      } else if (horizontal > 1.35 && (dangerLeft <= leaveAt + 0.05 || this.staleTimer > 0.8)) {
+      } else if (horizontal > 1.35 * this.airtimeScale && (dangerLeft <= leaveAt + 0.05 || this.staleTimer > 0.8)) {
         frame.jumpPressed = true;
         frame.jumpHeld = true;
         this.staleTimer = 0;
