@@ -10,6 +10,7 @@ npm run measure:show -- --runs=10            # 10-seed full-show sweep, JSON
 npm run measure:show -- --mode=idle --runs=3 # no-input only
 npm run verify:pacing                        # 10-seed Phase A gate (fails outside the bands)
 npm run verify:pacing -- --phase=b           # Phase B: Hexapop/Crown/total become hard
+npm run verify:twists                        # 12-seed twist coverage + applied probe + every M2 band
 ```
 
 Both commands start a private Vite dev server (or use `TUMBLE_URL` for an existing one) and drive the real `Match`/`Game` through **all three Rounds**. The page advances the fixed 1/60 s loop itself; no wall-clock sleep decides a pacing number.
@@ -382,35 +383,111 @@ npm run evidence                  # M3 screenshots + m3-performance.json
 npm run gate:release              # check + verify:show + pacing + variety + e2e
 ```
 
-## M4 — Twist Season (planned)
+## M4 — Twist Season — 2026-10-27, branch `feat/m4-twist-season`
 
 M4 adds one seeded **qualifier-rule twist** per Show: **MOON GRAVITY**,
-**SLIPPERY**, or **RUSH HOUR**. The Crown Climb stays classic (ADR 0007). The
-M3 variety sweep is the baseline; M4 must not lose route or arena variety, and
-the 12-seed twist sweep must add twist coverage without moving the M2 bands.
+**SLIPPERY**, or **RUSH HOUR**. The twist applies to the Course and Hexapop
+only; the Crown Climb stays classic on every Show (ADR 0007). The pure
+`planShow(seed)` selects the twist from a salted hash that is independent of
+the route/arena RNG, so every M3 route and arena signature is unchanged.
+Practice on the Course uses the seeded twist; the Training Deck and menu are
+classic.
 
-Initial tuning (the implementation may move any multiplier by ±15% to pass the
-gate; the final values are recorded here):
+Final tuning (the initial values are in the spec; the implementation may move
+any multiplier by ±15%):
 
-| Twist | Initial rules |
-| --- | --- |
-| MOON GRAVITY | gravity ×0.78, jump ×0.90, air control ×1.10, air drag ×0.90 |
-| SLIPPERY | friction ×0.55, accel ×0.90, air drag ×0.85 |
-| RUSH HOUR | hazard ×1.10, Course 105 s, Hexapop cap 42.9 s, Sugar Rush 38 s |
+| Twist | Final rules | Change from the initial tuning |
+| --- | --- | --- |
+| MOON GRAVITY | gravity ×0.78, jump ×0.90, air control ×1.15, air drag ×0.90 | air control 1.10 → **1.15** (+4.5%) |
+| SLIPPERY | friction ×0.55, accel ×0.90, air drag ×0.85 | none |
+| RUSH HOUR | hazard ×1.10, Course 105 s, Hexapop cap 42.9 s, Sugar Rush 38 s | none |
 
-Targets:
+The moon air-control change was the only tuning move: with the initial 1.10,
+seed `21098250` (idle) timed out the Course at **120.02 s with 7 finishers**.
+At 1.15 the same idle run finishes in **66.08 s with 8 finishers**, and its
+casual run finishes in **68.38 s with 8**. The multiplier stays inside the
+allowed ±15% band; the label, rule, and M2 bands did not move.
 
-| Signal | M4 target |
-| --- | --- |
-| Twist coverage | each twist ≥3 of 12 seeds |
-| Applied probe | plan rules match the live gravity/friction/Sugar Rush clock |
-| Course clock | 45–90 s, 8+ finishers on every run |
-| Hexapop clock | 30–50 s, Sugar Rush on every run |
-| Crown clock | 45–80 s, living physical touch |
-| Total show | 3–5 min, no run below 150 s or above 360 s |
-| Idle human qualified | 0 / 12 |
-| Casual human qualified | ≥8 / 12 |
-| Living crown winner | ≥23 / 24 |
-| Twist gate negative control | rejected |
+### 12-seed twist sweep (`npm run verify:twists`)
 
-The measured M4 sweep will be appended after `npm run verify:twists` passes.
+Seeds: `20260418, 20365147, 20469876, 20574605, 20679334, 20784063, 20888792,
+20993521, 21098250, 21202979, 21307708, 21412437` — 24 observed shows
+(12 idle + 12 scripted casual) through the real `Match`.
+
+| Seed | Twist | Course | Arena | Course s (finishers) | Sugar at | Hex s | Crown s | Total s | Idle | Casual |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| 20260418 | SLIP | B-C-D/C-F-G | RINGS | 74.75 (8) | 45.17 s | 48.38 | 56.35 | 210.38 | OUT | **Q** |
+| 20365147 | SLIP | C-D-G/B-C-G | SPIRAL | 69.55 (8) | 45.37 s | 46.17 | 62.28 | 208.9 | OUT | OUT |
+| 20469876 | MOON | D-F-G/B-C-G | SPIRAL | 64.77 (8) | 45.15 s | 47.98 | 53.95 | 197.6 | OUT | **Q** |
+| 20574605 | SLIP | B-D-G/B-C-F | GEARWORKS | 69.18 (8) | 45.23 s | 46.17 | 48.33 | 194.58 | OUT | **Q** |
+| 20679334 | MOON | B-C-F/B-D-F | GEARWORKS | 65.38 (8) | 45.03 s | 47.88 | 74.28 | 218.45 | OUT | **Q** |
+| 20784063 | MOON | D-F-G/B-D-F | SPIRAL | 65.02 (8) | 45.4 s | 49.92 | 57.53 | 203.37 | OUT | OUT |
+| 20888792 | RUSH | C-F-G/D-F-G | SPIRAL | 68.7 (8) | 38.22 s | 42.8 | 50.65 | 193.05 | OUT | **Q** |
+| 20993521 | MOON | B-D-F/D-F-G | SPIRAL | 62.5 (8) | 45.42 s | 47.2 | 63.77 | 204.37 | OUT | OUT |
+| 21098250 | MOON | C-F-G/C-D-G | SPIRAL | 66.08 (8) | 45.33 s | 48.57 | 57.33 | 202.88 | OUT | OUT |
+| 21202979 | MOON | B-F-G/B-D-F | GEARWORKS | 65.92 (8) | 45 s | 46.17 | 51.33 | 194.32 | OUT | **Q** |
+| 21307708 | RUSH | B-C-F/C-D-F | RINGS | 70.73 (8) | 38.18 s | 42.92 | 57.35 | 201.9 | OUT | **Q** |
+| 21412437 | RUSH | B-C-D/B-C-G | GEARWORKS | 73.05 (8) | 38.37 s | 40.95 | 56.97 | 201.87 | OUT | **Q** |
+
+`Course s`, `Hex s` and `Crown s` are the **idle** run for that seed (the
+casual clocks are in the JSON). Both modes ran every Round.
+
+| Signal | M4 result | Band | Result |
+| --- | ---: | --- | --- |
+| Twist coverage | **6 MOON / 3 SLIP / 3 RUSH** | each ≥3 / 12 | PASS |
+| Applied probe (Course + Hexapop) | **24 / 24** live matches | every run | PASS |
+| Crown reports `classic` | **24 / 24** | every run | PASS |
+| Course clock | **62.5–74.75 s** (median 68.28) | 45–90 s | PASS |
+| Course finishers | **8 every run** | 8+ | PASS |
+| Hexapop clock | **40.93–49.92 s** (median 46.69) | 30–50 s | PASS |
+| Sugar Rush reached | **24 / 24** | every run | PASS |
+| RUSH HOUR Sugar Rush stamp | **38.18–38.37 s** | 38 ± 1 s | PASS |
+| Crown clock (living runs) | **48.08–74.3 s** | 45–80 s | PASS |
+| Living, physically-touching crown winner | **24 / 24 (100%)** | ≥ 23 / 24 | PASS |
+| Show total | median **203.13 s** (190.35–218.45) | 180–300 s, 150–360 s | PASS |
+| Idle human qualified | **0 / 12** | 0 | PASS |
+| Casual human qualified | **8 / 12 (67%)** | ≥ 8 / 12 | PASS |
+| Negative control (`applied: false`) | **rejected** | must fail | PASS |
+
+Per-twist medians (12 runs per twist for MOON, 6 for SLIPPERY and RUSH):
+
+| Twist | Runs | Course median (range) | Hex median (range) | Finishers min | Sugar Rush | Casual Q |
+| --- | ---: | --- | --- | ---: | ---: | ---: |
+| MOON GRAVITY | 12 | 64.9 s (62.5–68.38) | 48.04 s (46.17–49.92) | 8 | 12 / 12 | 3 / 6 |
+| SLIPPERY | 6 | 69.77 s (68.17–74.75) | 46.17 s (46.17–48.38) | 8 | 6 / 6 | 2 / 6 |
+| RUSH HOUR | 6 | 70.93 s (68.7–73.05) | 42.86 s (40.93–42.92) | 8 | 6 / 6 | 3 / 6 |
+
+Evidence: [`docs/evidence/twists/m4-twists.json`](evidence/twists/m4-twists.json),
+[`m4-twists.log`](evidence/twists/m4-twists.log). The gate asserts every M2
+band per run, the applied probe, the classic Crown, and the negative control;
+it is a CI job and part of `npm run gate:release`.
+
+### M4 performance samples
+
+`npm run evidence` records the 1440×810 high render sample in
+[`docs/evidence/m4-performance.json`](evidence/m4-performance.json).
+
+| Sample | Draw calls | Triangles |
+| --- | ---: | ---: |
+| Course start, MOON | 155 | 157,898 |
+| Course start, SLIPPERY | 161 | 159,926 |
+| Course start, RUSH HOUR | 159 | 158,582 |
+| Hexapop start, MOON | 56 | 17,192 |
+| Hexapop start, SLIPPERY | 65 | 19,500 |
+| Hexapop start, RUSH HOUR | 56 | 17,208 |
+
+All samples are inside the 320 draw-call / 200k triangle budget. The twist
+start sign uses the existing `makeSign` path and the static merge, so it does
+not add a material family. The host is SwiftShader-only, so this is a budget
+sample, not a hardware FPS claim.
+
+### M4 commands
+
+```bash
+npm run verify:twists              # 12 seeds × idle + casual, applied probe + negative control
+npm run verify:variety             # M3 historical gate, now with twists active
+npm run verify:pacing -- --phase=b # M2 historical 10-seed gate
+npm run evidence                   # M3 + M4 screenshots and render samples
+npm run gate:release              # check + verify:show + pacing + variety + twists + e2e
+```
+

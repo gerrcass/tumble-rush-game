@@ -58,7 +58,7 @@ const MOON_RULES: TwistRules = Object.freeze({
   id: 'moon',
   gravityScale: 0.78,
   jumpScale: 0.9,
-  airControlScale: 1.1,
+  airControlScale: 1.15,
   airDragScale: 0.9,
 });
 

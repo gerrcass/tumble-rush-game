@@ -113,6 +113,44 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  twists:
+    name: Twist gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install from lockfile
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Twist gate (12 seeds × idle + casual, applied probe, negative control)
+        run: |
+          set -o pipefail
+          npm run verify:twists -- --negative \
+            --out=docs/evidence/twists/m4-twists.json \
+            2>&1 | tee docs/evidence/twists/m4-twists.log
+
+      - name: Upload twist evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twist-evidence
+          path: |
+            docs/evidence/twists/*
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
   e2e:
     name: Playwright shard ${{ matrix.shard }}/3
     runs-on: ubuntu-latest

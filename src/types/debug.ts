@@ -121,6 +121,7 @@ export interface DebugTwist {
   gravity: number;
   frictionScale: number;
   sugarRushSeconds: number;
+  sugarRushReached: boolean;
   applied: boolean;
   classic: boolean;
 }

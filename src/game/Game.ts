@@ -507,6 +507,7 @@ export class Game {
           gravity,
           frictionScale,
           sugarRushSeconds: game.level.sugarRushSeconds ?? rules.hexSugarRush,
+          sugarRushReached: game.level.sugarRushReached ?? false,
           applied,
           classic,
         };

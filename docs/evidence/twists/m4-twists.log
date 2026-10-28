@@ -1,0 +1,69 @@
+
+> tumble-rush@1.0.0 verify:twists
+> node scripts/verify-twists.mjs --out=docs/evidence/twists/m4-twists.json
+
+[1/24] idle seed=20260418 twist=SLIPPERY total=210.38s course=74.75s finishers=8 player=ELIMINATED hex=48.38s sugar=45.17s crown=56.35s class=classic living=true touch=true
+[2/24] casual seed=20260418 twist=SLIPPERY total=211.8s course=71.78s finishers=8 player=QUALIFIED hex=47.52s sugar=45.13s crown=61.6s class=classic living=true touch=true
+[3/24] idle seed=20365147 twist=SLIPPERY total=208.9s course=69.55s finishers=8 player=ELIMINATED hex=46.17s sugar=45.37s crown=62.28s class=classic living=true touch=true
+[4/24] casual seed=20365147 twist=SLIPPERY total=212.33s course=68.17s finishers=8 player=ELIMINATED hex=46.17s sugar=45.25s crown=67.1s class=classic living=true touch=true
+[5/24] idle seed=20469876 twist=MOON GRAVITY total=197.6s course=64.77s finishers=8 player=ELIMINATED hex=47.98s sugar=45.15s crown=53.95s class=classic living=true touch=true
+[6/24] casual seed=20469876 twist=MOON GRAVITY total=196.73s course=64.15s finishers=8 player=QUALIFIED hex=48.1s sugar=45.27s crown=53.58s class=classic living=true touch=true
+[7/24] idle seed=20574605 twist=SLIPPERY total=194.58s course=69.18s finishers=8 player=ELIMINATED hex=46.17s sugar=45.23s crown=48.33s class=classic living=true touch=true
+[8/24] casual seed=20574605 twist=SLIPPERY total=211.82s course=69.98s finishers=8 player=QUALIFIED hex=46.17s sugar=45.43s crown=64.77s class=classic living=true touch=true
+[9/24] idle seed=20679334 twist=MOON GRAVITY total=218.45s course=65.38s finishers=8 player=ELIMINATED hex=47.88s sugar=45.03s crown=74.28s class=classic living=true touch=true
+[10/24] casual seed=20679334 twist=MOON GRAVITY total=218.08s course=63.55s finishers=8 player=QUALIFIED hex=49.33s sugar=45.37s crown=74.3s class=classic living=true touch=true
+[11/24] idle seed=20784063 twist=MOON GRAVITY total=203.37s course=65.02s finishers=8 player=ELIMINATED hex=49.92s sugar=45.4s crown=57.53s class=classic living=true touch=true
+[12/24] casual seed=20784063 twist=MOON GRAVITY total=208.33s course=65.32s finishers=8 player=ELIMINATED hex=49.87s sugar=45.1s crown=62.25s class=classic living=true touch=true
+[13/24] idle seed=20888792 twist=RUSH HOUR total=193.05s course=68.7s finishers=8 player=ELIMINATED hex=42.8s sugar=38.22s crown=50.65s class=classic living=true touch=true
+[14/24] casual seed=20888792 twist=RUSH HOUR total=190.35s course=70.43s finishers=8 player=QUALIFIED hex=40.93s sugar=38.48s crown=48.08s class=classic living=true touch=true
+[15/24] idle seed=20993521 twist=MOON GRAVITY total=204.37s course=62.5s finishers=8 player=ELIMINATED hex=47.2s sugar=45.42s crown=63.77s class=classic living=true touch=true
+[16/24] casual seed=20993521 twist=MOON GRAVITY total=205.13s course=64.32s finishers=8 player=ELIMINATED hex=46.17s sugar=45.1s crown=63.75s class=classic living=true touch=true
+[17/24] idle seed=21098250 twist=MOON GRAVITY total=202.88s course=66.08s finishers=8 player=ELIMINATED hex=48.57s sugar=45.33s crown=57.33s class=classic living=true touch=true
+[18/24] casual seed=21098250 twist=MOON GRAVITY total=204.9s course=68.38s finishers=8 player=ELIMINATED hex=48.78s sugar=45.03s crown=56.83s class=classic living=true touch=true
+[19/24] idle seed=21202979 twist=MOON GRAVITY total=194.32s course=65.92s finishers=8 player=ELIMINATED hex=46.17s sugar=45s crown=51.33s class=classic living=true touch=true
+[20/24] casual seed=21202979 twist=MOON GRAVITY total=192.55s course=62.77s finishers=8 player=QUALIFIED hex=47.68s sugar=45.15s crown=51.2s class=classic living=true touch=true
+[21/24] idle seed=21307708 twist=RUSH HOUR total=201.9s course=70.73s finishers=8 player=ELIMINATED hex=42.92s sugar=38.18s crown=57.35s class=classic living=true touch=true
+[22/24] casual seed=21307708 twist=RUSH HOUR total=193.93s course=71.13s finishers=8 player=QUALIFIED hex=42.92s sugar=38.28s crown=48.98s class=classic living=true touch=true
+[23/24] idle seed=21412437 twist=RUSH HOUR total=201.87s course=73.05s finishers=8 player=ELIMINATED hex=40.95s sugar=38.37s crown=56.97s class=classic living=true touch=true
+[24/24] casual seed=21412437 twist=RUSH HOUR total=202.48s course=71.42s finishers=8 player=QUALIFIED hex=42.92s sugar=38s crown=57.25s class=classic living=true touch=true
+Tumble Rush M4 — Twist Season gate
+12 seeds × idle + casual = 24 observed shows
+
+| Seed | Twist | Course | Arena | Course s (finishers) | Sugar at | Hex s | Crown s | Total s | Idle Q | Casual Q |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| 20260418 | SLIP | B-C-D/C-F-G | RINGS | 74.75 (8) | 45.17 s | 48.38 | 56.35 | 210.38 | OUT | Q |
+| 20365147 | SLIP | C-D-G/B-C-G | SPIRAL | 69.55 (8) | 45.37 s | 46.17 | 62.28 | 208.9 | OUT | OUT |
+| 20469876 | MOON | D-F-G/B-C-G | SPIRAL | 64.77 (8) | 45.15 s | 47.98 | 53.95 | 197.6 | OUT | Q |
+| 20574605 | SLIP | B-D-G/B-C-F | GEARWORKS | 69.18 (8) | 45.23 s | 46.17 | 48.33 | 194.58 | OUT | Q |
+| 20679334 | MOON | B-C-F/B-D-F | GEARWORKS | 65.38 (8) | 45.03 s | 47.88 | 74.28 | 218.45 | OUT | Q |
+| 20784063 | MOON | D-F-G/B-D-F | SPIRAL | 65.02 (8) | 45.4 s | 49.92 | 57.53 | 203.37 | OUT | OUT |
+| 20888792 | RUSH | C-F-G/D-F-G | SPIRAL | 68.7 (8) | 38.22 s | 42.8 | 50.65 | 193.05 | OUT | Q |
+| 20993521 | MOON | B-D-F/D-F-G | SPIRAL | 62.5 (8) | 45.42 s | 47.2 | 63.77 | 204.37 | OUT | OUT |
+| 21098250 | MOON | C-F-G/C-D-G | SPIRAL | 66.08 (8) | 45.33 s | 48.57 | 57.33 | 202.88 | OUT | OUT |
+| 21202979 | MOON | B-F-G/B-D-F | GEARWORKS | 65.92 (8) | 45 s | 46.17 | 51.33 | 194.32 | OUT | Q |
+| 21307708 | RUSH | B-C-F/C-D-F | RINGS | 70.73 (8) | 38.18 s | 42.92 | 57.35 | 201.9 | OUT | Q |
+| 21412437 | RUSH | B-C-D/B-C-G | GEARWORKS | 73.05 (8) | 38.37 s | 40.95 | 56.97 | 201.87 | OUT | Q |
+
+Per twist:
+  moon     seeds 6/12  course 62.5–68.38 s (median 64.9)  hex 46.17–49.92 s (median 48.04)  finishers ≥8  Sugar 12  casual Q 3
+  slippery seeds 3/12  course 68.17–74.75 s (median 69.77)  hex 46.17–48.38 s (median 46.17)  finishers ≥8  Sugar 6  casual Q 2
+  rush     seeds 3/12  course 68.7–73.05 s (median 70.93)  hex 40.93–42.92 s (median 42.86)  finishers ≥8  Sugar 6  casual Q 3
+
+Checks:
+  [PASS] Every show plan carries one valid twist: 12 / 12 (target moon | slippery | rush)
+  [PASS] Each twist appears in ≥3 of 12 seeds: moon 6, slippery 3, rush 3 (target ≥3 each)
+  [PASS] Plan rules match live gravity/friction/Sugar Rush; Crown is classic: 24 runs (target every run)
+  [PASS] Every run: Course 45–90 s and 8+ finishers: 24 / 24 (target 45–90 s, 8+)
+  [PASS] Every run: Hexapop 30–50 s with the Sugar Rush reached: 24 / 24 (target 30–50 s, 100%)
+  [PASS] RUSH HOUR Sugar Rush starts at 38 s (±1): 38.22 s, 38.18 s, 38.37 s (target 38 ± 1 s)
+  [PASS] Crown 45–80 s with a living physical touch: 24 living / 24 touched of 24 (target every run, physical)
+  [PASS] Every show 150–360 s and median 180–300 s: 190.35–218.45 s, median 203.13 s (target 150–360 s / 180–300 s)
+  [PASS] Idle human never qualifies: 0 / 12 (target 0 / 12)
+  [PASS] Scripted casual human qualifies at least 8/12: 8 / 12 (target ≥ 8 / 12)
+  [PASS] Living crown winner at least 23/24: 24 / 24 (target ≥ 23 / 24)
+
+RESULT: PASS
+
+Negative control: PASS — relabelled applied:false deck rejected by applied-probe
+
+JSON evidence: docs/evidence/twists/m4-twists.json
