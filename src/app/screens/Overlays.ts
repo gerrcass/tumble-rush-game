@@ -86,7 +86,9 @@ function fillShowCard(container: HTMLElement, plan?: ShowPlan, classic = false):
     : plan.twist.blurb;
   container.setAttribute(
     'aria-label',
-    `Show card. Course ${plan.routeLabel}. Arena ${plan.arenaLabel}. ${twistLabel}. ${twistRule}`,
+    classic
+      ? `Show card. Course ${plan.routeLabel}. Arena ${plan.arenaLabel}. ${twistLabel}. ${twistRule}`
+      : `Show card. ${plan.label}. ${twistRule}`,
   );
   container.appendChild(el('span', 'show-card__course', `COURSE ${plan.routeLabel}`));
   container.appendChild(el('span', 'show-card__arena', `ARENA ${plan.arenaLabel}`));

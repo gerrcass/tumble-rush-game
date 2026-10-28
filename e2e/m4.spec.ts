@@ -197,7 +197,7 @@ test.describe('M4 Twist Season UI', () => {
     }));
     expect(overflow.width).toBeLessThanOrEqual(overflow.viewport + 1);
 
-    await page.screenshot({ path: 'docs/evidence/m4-mobile-twist.png' });
+    await page.screenshot({ path: 'docs/evidence/m4-mobile-hud.png' });
     expect(errors, errors.join('\n')).toEqual([]);
     await context.close();
   });
