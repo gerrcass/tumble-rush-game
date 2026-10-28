@@ -25,10 +25,10 @@ is the M4 product record and the environment retro for the next run.
   hazards while the world was classic, and the missing-round hole in the gate.
   The Spec review caught the M3 performance-table/JSON drift, the per-twist
   casual denominator error, and the mobile touch-controls gap.
-- **Parallel CI stayed honest.** On the M4 PR run `40617372306` (11m46s wall):
-  `check` 46s, `pacing` 2m17s, `twist` 2m43s, `variety` 2m47s, and the
-  Playwright shards 11m46s / 6m0s / 5m47s ran independently. A failure in one
-  no longer hides the rest.
+- **Parallel CI stayed honest.** On the final M4 PR run `40619323070`
+  (10m32s wall): `check` 30s, `pacing` 2m18s, `twist` 2m44s, `variety` 2m38s,
+  and the Playwright shards 10m32s / 6m50s / 6m2s ran independently. A failure
+  in one no longer hides the rest.
 
 ## What hurt
 
@@ -113,6 +113,8 @@ evidence specs on the gate run.
    touch assertions, M3 evidence archive, ADR/RELEASE corrections.
 6. M4 evidence, performance samples, README/GLOSSARY/METRICS/notes, Pages
    deploy verification, live hero refresh, milestone close, and release audit.
+   Deploy run `40620525660` succeeded in 27 s; the live Show Card named
+   `TWIST MOON GRAVITY` with no console or request errors.
 
 ## What the next run should do
 

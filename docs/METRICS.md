@@ -521,3 +521,13 @@ npm run evidence                   # M3 + M4 screenshots and render samples
 npm run gate:release              # check + verify:show + pacing + variety + twists + e2e
 ```
 
+### M4 deployment verification — 2026-10-28
+
+- PR #45 merged into `main` as `899e535`; the Pages deploy workflow
+  `40620525660` completed successfully in **27 s**.
+- Live URL <https://gerrcass.github.io/tumble-rush-game/> returns **200**.
+- Live smoke: the menu loads, the Show Card names the seeded routes, arena and
+  twist (`COURSE B-C-F / D-F-G · ARENA RINGS · TWIST MOON GRAVITY`), and there
+  are **no console errors or failed requests**.
+- `docs/readme-hero.png` was recaptured from the live deployment.
+

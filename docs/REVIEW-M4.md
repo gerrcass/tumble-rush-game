@@ -184,6 +184,9 @@ JSON exactly. The M4 samples live only in `m4-performance.json`.
 `TUMBLE_E2E_PORT=5190 npm run gate:release` passed: check (161 unit tests,
 typecheck, invariants, docs, production build), `verify:show` 3/3, pacing PASS,
 variety PASS, twists PASS, and Playwright **59 passed with the archived M3
-evidence test skipped**. The Pages deploy, live smoke, README hero refresh,
-milestone close, and `release:audit -- --strict` remain as release work; they
-are not optional polish.
+evidence test skipped**. PR CI run `40619323070` was green (check 30 s, pacing
+2m18s, twist 2m44s, variety 2m38s, Playwright shards 10m32s / 6m50s / 6m2s;
+10m32s wall). The PR merged as `899e535`; Pages deploy `40620525660` completed
+in 27 s; the live URL returned 200 and the Show Card named `TWIST MOON GRAVITY`
+with no console or request errors; the README hero was recaptured from the live
+build. Milestone cleanup and `release:audit -- --strict` remain.
