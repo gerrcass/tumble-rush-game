@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-26T17:19:15.180Z",
+  "capturedAt": "2026-10-28T00:23:15.065Z",
   "viewport": "1440x810",
   "quality": "high",
   "host": "SwiftShader (software rasteriser; not a hardware FPS claim)",
@@ -13,57 +13,57 @@
       "seed": 20260418,
       "signature": "B-C-D/C-F-G",
       "arena": "rings",
-      "calls": 159,
-      "triangles": 159170,
-      "geometries": 101,
-      "textures": 26
+      "calls": 161,
+      "triangles": 159926,
+      "geometries": 102,
+      "textures": 27
     },
     {
       "mode": "course",
       "seed": 20365147,
       "signature": "C-D-G/B-C-G",
       "arena": "spiral",
-      "calls": 160,
-      "triangles": 160234,
-      "geometries": 101,
-      "textures": 25
+      "calls": 162,
+      "triangles": 160990,
+      "geometries": 102,
+      "textures": 26
     },
     {
       "mode": "course",
       "seed": 20574605,
       "signature": "B-D-G/B-C-F",
       "arena": "gearworks",
-      "calls": 157,
-      "triangles": 157190,
-      "geometries": 100,
-      "textures": 25
+      "calls": 159,
+      "triangles": 157946,
+      "geometries": 101,
+      "textures": 26
     },
     {
       "mode": "hexapop",
       "seed": 20260418,
       "arena": "rings",
-      "calls": 58,
-      "triangles": 19068,
-      "geometries": 42,
-      "textures": 27
+      "calls": 65,
+      "triangles": 19500,
+      "geometries": 46,
+      "textures": 28
     },
     {
       "mode": "hexapop",
       "seed": 20365147,
       "arena": "spiral",
-      "calls": 55,
-      "triangles": 17732,
-      "geometries": 39,
-      "textures": 26
+      "calls": 62,
+      "triangles": 18164,
+      "geometries": 43,
+      "textures": 27
     },
     {
       "mode": "hexapop",
       "seed": 20574605,
       "arena": "gearworks",
-      "calls": 53,
-      "triangles": 17608,
-      "geometries": 39,
-      "textures": 26
+      "calls": 60,
+      "triangles": 18040,
+      "geometries": 43,
+      "textures": 27
     }
   ]
 }
