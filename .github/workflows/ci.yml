@@ -61,8 +61,8 @@ jobs:
         run: |
           set -o pipefail
           npm run verify:pacing -- --phase=b \
-            --out=docs/evidence/pacing/m2-phase-b-pacing.json \
-            2>&1 | tee docs/evidence/pacing/m2-phase-b-pacing.log
+            --out=docs/evidence/pacing/m4-pacing.json \
+            2>&1 | tee docs/evidence/pacing/m4-pacing.log
 
       - name: Upload pacing evidence
         if: always()
@@ -99,8 +99,8 @@ jobs:
         run: |
           set -o pipefail
           npm run verify:variety -- --negative \
-            --out=docs/evidence/variety/m3-variety.json \
-            2>&1 | tee docs/evidence/variety/m3-variety.log
+            --out=docs/evidence/variety/m4-variety.json \
+            2>&1 | tee docs/evidence/variety/m4-variety.log
 
       - name: Upload variety evidence
         if: always()

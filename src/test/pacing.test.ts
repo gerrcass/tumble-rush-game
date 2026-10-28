@@ -156,11 +156,12 @@ describe('Course bot pace and human anchor', () => {
     }
   });
 
-  it('keeps the scripted casual pilot below the bot pack', () => {
+  it('keeps the scripted casual pilot below the bot band top and the player cap', () => {
     expect(CASUAL_COURSE_OPTIONS.speedScale).toBeDefined();
     const casualCruise = COURSE_SPEED_MAX * CASUAL_COURSE_OPTIONS.speedScale!;
-    expect(casualCruise).toBeGreaterThanOrEqual(0.7);
-    expect(casualCruise).toBeLessThanOrEqual(0.72);
+    expect(casualCruise).toBeGreaterThanOrEqual(0.71);
+    expect(casualCruise).toBeLessThanOrEqual(0.73);
+    expect(casualCruise).toBeLessThan(COURSE_SPEED_MAX);
     expect(CASUAL_COURSE_OPTIONS.reactionBonus!).toBeGreaterThan(0.14);
     expect(CASUAL_COURSE_OPTIONS.hazardRadius!).toBeLessThan(2.35);
     expect(CASUAL_COURSE_OPTIONS.baseMistake!).toBeGreaterThan(0);

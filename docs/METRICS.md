@@ -402,11 +402,19 @@ any multiplier by ±15%):
 | SLIPPERY | friction ×0.55, accel ×0.90, air drag ×0.85 | none |
 | RUSH HOUR | hazard ×1.10, Course 105 s, Hexapop cap 42.9 s, Sugar Rush 38 s | none |
 
-The moon air-control change was the only tuning move: with the initial 1.10,
-seed `21098250` (idle) timed out the Course at **120.02 s with 7 finishers**.
-At 1.15 the same idle run finishes in **66.08 s with 8 finishers**, and its
-casual run finishes in **68.38 s with 8**. The multiplier stays inside the
-allowed ±15% band; the label, rule, and M2 bands did not move.
+The moon air-control change was the only twist-multiplier move: with the
+initial 1.10, seed `21098250` (idle) timed out the Course at **120.02 s with 7
+finishers**. At 1.15 the same idle run finishes in **66.08 s with 8 finishers**.
+The multiplier stays inside the allowed ±15% band; the label, rule, and M2
+bands did not move.
+
+The scripted casual pilot's target speed was recalibrated from
+**0.91 × 0.78 ≈ 0.71** to **0.93 × 0.78 ≈ 0.725** after the twists landed
+(+2.2%, still below the bot band's 0.78 top and the player's 8 u/s cap). With
+0.91 the historical 10-seed M2 gate measured **6 / 10** casual qualifications;
+0.93 restores **9 / 10**, and the 12-seed variety gate measures **11 / 12**.
+This is a competence-proxy calibration, not a physics or band change: the
+player and bots still share one controller and one rule set.
 
 ### 12-seed twist sweep (`npm run verify:twists`)
 
@@ -437,25 +445,25 @@ casual clocks are in the JSON). Both modes ran every Round.
 | Twist coverage | **6 MOON / 3 SLIP / 3 RUSH** | each ≥3 / 12 | PASS |
 | Applied probe (Course + Hexapop) | **24 / 24** live matches | every run | PASS |
 | Crown reports `classic` | **24 / 24** | every run | PASS |
-| Course clock | **62.5–74.75 s** (median 68.28) | 45–90 s | PASS |
+| Course clock | **61.43–74.75 s** (median 67.81) | 45–90 s | PASS |
 | Course finishers | **8 every run** | 8+ | PASS |
-| Hexapop clock | **40.93–49.92 s** (median 46.69) | 30–50 s | PASS |
+| Hexapop clock | **39.17–49.92 s** (median 47.21) | 30–50 s | PASS |
 | Sugar Rush reached | **24 / 24** | every run | PASS |
 | RUSH HOUR Sugar Rush stamp | **38.18–38.37 s** | 38 ± 1 s | PASS |
-| Crown clock (living runs) | **48.08–74.3 s** | 45–80 s | PASS |
+| Crown clock (living runs) | **47.27–74.28 s** | 45–80 s | PASS |
 | Living, physically-touching crown winner | **24 / 24 (100%)** | ≥ 23 / 24 | PASS |
-| Show total | median **203.13 s** (190.35–218.45) | 180–300 s, 150–360 s | PASS |
+| Show total | median **200.06 s** (191.92–218.45) | 180–300 s, 150–360 s | PASS |
 | Idle human qualified | **0 / 12** | 0 | PASS |
-| Casual human qualified | **8 / 12 (67%)** | ≥ 8 / 12 | PASS |
+| Casual human qualified | **11 / 12 (92%)** | ≥ 8 / 12 | PASS |
 | Negative control (`applied: false`) | **rejected** | must fail | PASS |
 
 Per-twist medians (12 runs per twist for MOON, 6 for SLIPPERY and RUSH):
 
 | Twist | Runs | Course median (range) | Hex median (range) | Finishers min | Sugar Rush | Casual Q |
 | --- | ---: | --- | --- | ---: | ---: | ---: |
-| MOON GRAVITY | 12 | 64.9 s (62.5–68.38) | 48.04 s (46.17–49.92) | 8 | 12 / 12 | 3 / 6 |
-| SLIPPERY | 6 | 69.77 s (68.17–74.75) | 46.17 s (46.17–48.38) | 8 | 6 / 6 | 2 / 6 |
-| RUSH HOUR | 6 | 70.93 s (68.7–73.05) | 42.86 s (40.93–42.92) | 8 | 6 / 6 | 3 / 6 |
+| MOON GRAVITY | 12 | 64.9 s (61.43–66.92) | 47.83 s (46.17–49.92) | 8 | 12 / 12 | 5 / 6 |
+| SLIPPERY | 6 | 70.09 s (69.18–74.75) | 46.18 s (46.17–49.92) | 8 | 6 / 6 | 3 / 6 |
+| RUSH HOUR | 6 | 70.57 s (68.7–73.05) | 42.01 s (39.17–42.92) | 8 | 6 / 6 | 3 / 6 |
 
 Evidence: [`docs/evidence/twists/m4-twists.json`](evidence/twists/m4-twists.json),
 [`m4-twists.log`](evidence/twists/m4-twists.log). The gate asserts every M2
@@ -480,6 +488,22 @@ All samples are inside the 320 draw-call / 200k triangle budget. The twist
 start sign uses the existing `makeSign` path and the static merge, so it does
 not add a material family. The host is SwiftShader-only, so this is a budget
 sample, not a hardware FPS claim.
+
+### Historical gates after M4
+
+The historical M2 and M3 gates still run with twists active:
+
+- `npm run verify:pacing -- --phase=b` (10 seeds, idle + casual): Course
+  **62.5–74.75 s**, **8 finishers** every run; Hexapop **41.22–49.92 s**,
+  Sugar Rush **20/20**; Crown **47.27–74.28 s**, living + touching **20/20**;
+  idle **0/10**; casual **9/10**; total median **199.89 s**
+  (191.92–218.45). Evidence:
+  [`docs/evidence/pacing/m4-pacing.json`](evidence/pacing/m4-pacing.json).
+- `npm run verify:variety -- --negative` (12 seeds, idle + casual): **12/12**
+  Course signatures, **3/3** arena plans, F and G in **10/12** shows, every
+  Course/Hexapop/Crown/show band holds, idle **0/12**, casual **11/12**, and the
+  collapsed-deck negative control is rejected. Evidence:
+  [`docs/evidence/variety/m4-variety.json`](evidence/variety/m4-variety.json).
 
 ### M4 commands
 

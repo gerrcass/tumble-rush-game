@@ -178,7 +178,10 @@ implementation agent, not a second spec. The spec is the contract.
 - `BotBrain.rules` is the same object the controller receives. Derived
   `airtimeScale = jumpScale / gravityScale` moves the jump approach/trigger;
   `steerLead = 1 / frictionScale` moves the pusher prediction and the grounded
-  drift lead. No bot-only speed, jump, teleport or gravity exists.
+  drift lead. No bot-only speed, jump, teleport or gravity exists. The debug
+  casual pilot keeps the same adaptation; its target speed was recalibrated
+  from 0.91 to 0.93 (≈0.725 of max, below the 0.78 bot-band top) so the M2
+  competence window survives the twists.
 - The M4 gate is `scripts/verify-twists.mjs` + `scripts/lib/twist-gate.mjs`.
   It reuses `measureSweep` (no forked harness), emits JSON/table, always runs
   the `applied:false` negative control, and asserts coverage, the live probe,

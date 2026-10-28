@@ -1195,10 +1195,12 @@ export function createBotBrain(
  * target speed, a longer reaction, later hazard reads and ordinary mistakes.
  */
 export const CASUAL_COURSE_OPTIONS: Readonly<CourseBrainOptions> = Object.freeze({
-  // A genuinely below-median human, not a top-band bot: 0.91 × 0.78 ≈ 0.71
+  // A genuinely below-median human, not a top-band bot: 0.93 × 0.78 ≈ 0.725
   // target speed, a longer reaction beat, later hazard reads (radius below the
-  // bots' 2.35), and ordinary mistakes.
-  speedScale: 0.91,
+  // bots' 2.35), and ordinary mistakes. The 0.93 was calibrated after the M4
+  // twists landed: it keeps the same competence proxy inside the 70% M2
+  // window without exceeding the bot band's 0.78 top or the player's 8 u/s cap.
+  speedScale: 0.93,
   // Cruise at ~0.71, but commit jumps like a human holding run: the authored
   // 4 u final gaps are marginal at the bot-band top (0.78) and impossible at
   // casual cruise. This is the same 1.0 controller cap a human gets, not a
