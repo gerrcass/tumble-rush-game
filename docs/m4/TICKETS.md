@@ -255,23 +255,23 @@ Pages deployment, and clean up the milestone.
 
 **Acceptance**
 
-- [ ] `npm run gate:release` is green (check, `verify:show`, pacing, variety,
+- [x] `npm run gate:release` is green (check, `verify:show`, pacing, variety,
       twists, Playwright).
-- [ ] The independent review is in `docs/REVIEW-M4.md` with a verdict and a
+- [x] The independent review is in `docs/REVIEW-M4.md` with a verdict and a
       consequence/verification for each blocker; every blocker is fixed or
       explicitly accepted.
-- [ ] The PR uses the `pr` skill template, links every ticket with `Closes #N`,
+- [x] The PR uses the `pr` skill template, links every ticket with `Closes #N`,
       and attaches the canonical evidence with `gh --attach`.
-- [ ] CI is green on the PR; the PR is merged; the branch is deleted.
-- [ ] The Pages deploy workflow is green; the live URL returns 200; the menu,
+- [x] CI is green on the PR; the PR is merged; the branch is deleted.
+- [x] The Pages deploy workflow is green; the live URL returns 200; the menu,
       Show Card, twist sign, and a real show load with no console or request
       errors.
-- [ ] The README hero/screenshot is refreshed from the live deployment if the UI
+- [x] The README hero/screenshot is refreshed from the live deployment if the UI
       changed.
-- [ ] The milestone is closed; `npm run release:audit -- --strict` is clean; no
+- [x] The milestone is closed; `npm run release:audit -- --strict` is clean; no
       open issues, PRs, branches, or worktrees remain without a documented
       reason.
-- [ ] `docs/RETRO-M4.md` is updated with what the next run should change.
+- [x] `docs/RETRO-M4.md` is updated with what the next run should change.
 
 **Evidence:** full gate log, review file, PR URL, deploy run, live screenshot,
 release-audit output.
