@@ -120,8 +120,12 @@ export interface DebugTwist {
   rule: string;
   gravity: number;
   frictionScale: number;
+  hazardSpeedScale: number;
   sugarRushSeconds: number;
   sugarRushReached: boolean;
+  timeLimit: number;
+  signVisible: boolean;
+  signLabel: string;
   applied: boolean;
   classic: boolean;
 }

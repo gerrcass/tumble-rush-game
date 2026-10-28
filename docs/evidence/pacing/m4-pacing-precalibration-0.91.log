@@ -1,0 +1,53 @@
+
+> tumble-rush@1.0.0 verify:pacing
+> node scripts/verify-pacing.mjs --phase=b --out=docs/evidence/pacing/m2-phase-b-pacing.json
+
+[1/20] idle seed=20260418 total=210.38s course=74.75s finishers=8 player=ELIMINATED hex=48.38s crown=56.35s living=true touch=true y=48.4 d=2.821
+[2/20] casual seed=20260418 total=211.8s course=71.78s finishers=8 player=QUALIFIED hex=47.52s crown=61.6s living=true touch=true y=48.4 d=2.765
+[3/20] idle seed=20365147 total=208.9s course=69.55s finishers=8 player=ELIMINATED hex=46.17s crown=62.28s living=true touch=true y=48.4 d=2.869
+[4/20] casual seed=20365147 total=212.33s course=68.17s finishers=8 player=ELIMINATED hex=46.17s crown=67.1s living=true touch=true y=48.4 d=2.802
+[5/20] idle seed=20469876 total=197.6s course=64.77s finishers=8 player=ELIMINATED hex=47.98s crown=53.95s living=true touch=true y=48.4 d=2.798
+[6/20] casual seed=20469876 total=196.73s course=64.15s finishers=8 player=QUALIFIED hex=48.1s crown=53.58s living=true touch=true y=48.4 d=2.833
+[7/20] idle seed=20574605 total=194.58s course=69.18s finishers=8 player=ELIMINATED hex=46.17s crown=48.33s living=true touch=true y=48.4 d=2.771
+[8/20] casual seed=20574605 total=211.82s course=69.98s finishers=8 player=QUALIFIED hex=46.17s crown=64.77s living=true touch=true y=48.4 d=2.794
+[9/20] idle seed=20679334 total=218.45s course=65.38s finishers=8 player=ELIMINATED hex=47.88s crown=74.28s living=true touch=true y=48.4 d=2.8
+[10/20] casual seed=20679334 total=218.08s course=63.55s finishers=8 player=QUALIFIED hex=49.33s crown=74.3s living=true touch=true y=48.4 d=2.794
+[11/20] idle seed=20784063 total=203.37s course=65.02s finishers=8 player=ELIMINATED hex=49.92s crown=57.53s living=true touch=true y=48.4 d=2.786
+[12/20] casual seed=20784063 total=208.33s course=65.32s finishers=8 player=ELIMINATED hex=49.87s crown=62.25s living=true touch=true y=48.4 d=2.859
+[13/20] idle seed=20888792 total=193.05s course=68.7s finishers=8 player=ELIMINATED hex=42.8s crown=50.65s living=true touch=true y=48.4 d=2.789
+[14/20] casual seed=20888792 total=190.35s course=70.43s finishers=8 player=QUALIFIED hex=40.93s crown=48.08s living=true touch=true y=48.4 d=2.805
+[15/20] idle seed=20993521 total=204.37s course=62.5s finishers=8 player=ELIMINATED hex=47.2s crown=63.77s living=true touch=true y=48.4 d=2.807
+[16/20] casual seed=20993521 total=205.13s course=64.32s finishers=8 player=ELIMINATED hex=46.17s crown=63.75s living=true touch=true y=48.746 d=2.814
+[17/20] idle seed=21098250 total=202.88s course=66.08s finishers=8 player=ELIMINATED hex=48.57s crown=57.33s living=true touch=true y=48.4 d=2.808
+[18/20] casual seed=21098250 total=204.9s course=68.38s finishers=8 player=ELIMINATED hex=48.78s crown=56.83s living=true touch=true y=48.4 d=2.852
+[19/20] idle seed=21202979 total=194.32s course=65.92s finishers=8 player=ELIMINATED hex=46.17s crown=51.33s living=true touch=true y=48.4 d=2.804
+[20/20] casual seed=21202979 total=192.55s course=62.77s finishers=8 player=QUALIFIED hex=47.68s crown=51.2s living=true touch=true y=48.4 d=2.804
+Tumble Rush M2 pacing sweep
+seeds: 20260418, 20365147, 20469876, 20574605, 20679334, 20784063, 20888792, 20993521, 21098250, 21202979  |  idle runs: 10  |  casual runs: 10
+
+Per-round clocks (idle + casual, observed full show):
+  Course       66 s  finishers 8  qualifiers 8
+  Hexapop    47.6 s  idle 47.54 s / casual 47.6 s  Sugar Rush 100%
+  Crown     57.43 s  idle 56.84 s / casual 61.93 s  living 20/20  touched 20/20
+  Total    204.64 s  idle 203.13 s / casual 206.73 s (incl. intros/results)
+
+Crown clock, per living-winner run:
+  20 runs  48.08–74.3 s  median 57.43 s
+
+Checks:
+  [PASS   ] Course clock 45–90 s (median + every seed): 62.5–74.75 s (median 66 s) (target 45–90 s)
+  [PASS   ] Course 8+ real finishers: 8–8 (median 8) (target 8+ finishers every seed)
+  [PASS   ] Idle human never qualifies: 0 / 10 runs qualified (target 0)
+  [FAIL   ] Scripted casual path meets the 70% qualification target: 6 / 10 (60%) (target ≥ 70%)
+  [PASS   ] Hexapop clock 30–50 s (idle + casual, every seed): 40.93–49.92 s (median 47.6 s) (target 30–50 s)
+  [PASS   ] Sugar Rush reached at 45 s: 20 / 20 (100%) (target ≥ 70% of seeds)
+  [PASS   ] Crown clock 45–80 s (living-winner runs, every seed): 48.08–74.3 s (median 57.43 s, 20 runs) (target 45–80 s)
+  [PASS   ] Living crown winner ≥95% (idle + casual, 20 runs): 20 / 20 (100%) (target ≥ 19 / 20)
+  [PASS   ] At most one no-winner Crown run, and it is reported: 0 no-winner run(s) (target ≤ 1, listed in docs/METRICS.md)
+  [PASS   ] Crown winner physically touched the crown (y + horizontal radius): 20 / 20 (100%) (target ≥ 95% (physical contact, not finish flag))
+  [PASS   ] Median show 3–5 min (idle + casual): 204.64 s (median) (target 180–300 s)
+  [PASS   ] No show <2.5 or >6 min (idle + casual, every seed): 190.35–218.45 s (target 150–360 s)
+
+RESULT: FAIL (casual-qualifies)
+
+JSON evidence: docs/evidence/pacing/m2-phase-b-pacing.json

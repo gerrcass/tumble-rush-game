@@ -18,8 +18,13 @@ function probe(seed: number, twist: TwistId, mode: string, sugarAt: number | nul
     classic: mode === 'crown-climb',
     gravity: mode === 'crown-climb' ? -26 : -26 * rules.gravityScale,
     frictionScale: mode === 'crown-climb' ? 1 : rules.frictionScale,
+    hazardSpeedScale: mode === 'crown-climb' ? 1 : rules.hazardSpeedScale,
     sugarRushSeconds: mode === 'crown-climb' ? 45 : rules.hexSugarRush,
     sugarRushReached: mode === 'hexapop' ? sugarAt !== null : false,
+    timeLimit:
+      mode === 'crown-climb' ? 120 : mode === 'course' ? rules.courseTimeLimit : rules.hexTimeLimit,
+    signVisible: mode !== 'crown-climb',
+    signLabel: mode === 'crown-climb' ? '' : plan.label,
   };
 }
 
@@ -129,6 +134,43 @@ describe('M4 twist gate', () => {
     const broken = evaluateTwists(slow, casual);
     expect(broken.pass).toBe(false);
     expect(broken.failed).toContain('course-bands');
+  });
+
+  it('rejects a deck with a missing Round instead of passing an empty band', () => {
+    const { idle, casual } = validSweep();
+    const missingCrown = idle.map((entry, index) =>
+      index === 0
+        ? {
+            ...entry,
+            rounds: entry.rounds.filter((round) => round.mode !== 'crown-climb'),
+          }
+        : entry,
+    );
+    const evaluation = evaluateTwists(missingCrown, casual);
+    expect(evaluation.pass).toBe(false);
+    expect(evaluation.failed).toContain('round-coverage');
+    expect(evaluation.failed).toContain('crown-bands');
+    expect(evaluation.missingRounds).toContain('idle seed=20260418 crown-climb');
+  });
+
+  it('rejects a RUSH plan that left the Course hazards at classic speed', () => {
+    const { idle, casual } = validSweep();
+    const lying = idle.map((entry) =>
+      entry.plan.twist.id === 'rush'
+        ? {
+            ...entry,
+            rounds: entry.rounds.map((value) =>
+              value.mode === 'course'
+                ? { ...value, twist: { ...value.twist, hazardSpeedScale: 1 } }
+                : value,
+            ),
+          }
+        : entry,
+    );
+    const evaluation = evaluateTwists(lying, casual);
+    expect(evaluation.pass).toBe(false);
+    expect(evaluation.failed).toContain('applied-probe');
+    expect(evaluation.issues.some((issue: string) => issue.includes('hazard scale'))).toBe(true);
   });
 
   it('keeps the gate tuning record equal to the playable rules', () => {

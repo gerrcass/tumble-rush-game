@@ -6,6 +6,7 @@ import type { Hexapop } from '../game/levels/Hexapop';
 import type { Level } from '../game/levels/Level';
 import { FIXED_STEP } from '../game/physics/PhysicsWorld';
 import { planShow } from '../game/levels/coursePlan';
+import { CLASSIC_RULES } from '../game/twist';
 import { Match } from '../game/match/Match';
 import type { Contestant } from '../game/match/Contestant';
 
@@ -103,9 +104,21 @@ describe('M4 Course twist integration', () => {
       expect(a.checkpoints).toEqual(b.checkpoints);
       expect(a.colliders.length).toBe(b.colliders.length);
       expect(a.plan.laps.map((lap) => lap.route)).toEqual(show.course.laps.map((lap) => lap.route));
+      expect(a.showsTwistSign).toBe(true);
       a.dispose();
       b.dispose();
     }
+    const menuPreview = createLevel('course', SLIPPERY_SEED, { showTwistSign: false }) as Course;
+    expect(menuPreview.showsTwistSign).toBe(false);
+    menuPreview.dispose();
+    const classicMenu = createLevel('course', RUSH_SEED, {
+      showTwistSign: false,
+      rules: CLASSIC_RULES,
+    }) as Course;
+    expect(classicMenu.showsTwistSign).toBe(false);
+    expect(classicMenu.hazardSpeedScale).toBe(1);
+    expect(classicMenu.status().timeLimit).toBe(120);
+    classicMenu.dispose();
   });
 });
 
@@ -170,6 +183,7 @@ describe('M4 Match and HUD twist integration', () => {
     expect(courseHud.twistLabel).toBe('RUSH HOUR');
     expect(courseHud.twistShort).toBe('RUSH');
     expect(courseHud.twistClassic).toBe(false);
+    expect(courseHud.twistFinal).toBe(false);
     const hex = createLevel('hexapop', RUSH_SEED);
     match.jumpToRound(1);
     const hexHud = match.hud(hex);
@@ -180,6 +194,7 @@ describe('M4 Match and HUD twist integration', () => {
     const crownHud = match.hud(crown);
     expect(crownHud.timeLimit).toBe(120);
     expect(crownHud.twistClassic).toBe(true);
+    expect(crownHud.twistFinal).toBe(true);
     expect(crownHud.twistLabel).toBe('CLASSIC');
     course.dispose();
     hex.dispose();

@@ -146,6 +146,10 @@ export interface Level {
   readonly sugarRushSeconds?: number;
   /** True once the Sugar Rush wave has begun in the live Round. */
   readonly sugarRushReached?: boolean;
+  /** Course hazard multiplier for the installed rules. */
+  readonly hazardSpeedScale?: number;
+  /** Whether this Level authored a visible start-deck twist sign. */
+  readonly showsTwistSign?: boolean;
 
   /** Hexapop's public tile query. Bots and tests read the same snapshot. */
   queryTiles?(): readonly LevelTile[];

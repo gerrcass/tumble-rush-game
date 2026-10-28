@@ -111,6 +111,8 @@ export interface MatchHud {
   /** Full one-line rule, used as the accessible chip description. */
   twistRule: string;
   twistClassic: boolean;
+  /** True only on the fixed Crown final; Training/menu are classic but not final. */
+  twistFinal: boolean;
 }
 
 const INTRO_SECONDS = 2.1;
@@ -546,6 +548,7 @@ export class Match {
         ? 'The fixed final. Same classic rules for everyone.'
         : this.showPlan.twist.blurb,
       twistClassic: classic,
+      twistFinal: definition.mode === 'crown-climb',
     };
   }
 
@@ -593,7 +596,8 @@ export class Match {
     return this.showPlan.twist.rules.hexSugarRush;
   }
 
-  private startPlaying(): void {    this.phase = 'playing';
+  private startPlaying(): void {
+    this.phase = 'playing';
     this.roundTime = 0;
     this.winnerId = null;
     this.spectateTimer = 0;

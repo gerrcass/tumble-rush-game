@@ -363,9 +363,9 @@ counts.
 
 | Sample | Draw calls | Triangles |
 | --- | ---: | ---: |
-| Course `B-C-D/C-F-G` (RINGS seed) | 157 | 157,982 |
-| Course `C-D-G/B-C-G` (SPIRAL seed) | 159 | 159,934 |
-| Course `B-D-G/B-C-F` (GEARWORKS seed) | 154 | 155,114 |
+| Course `B-C-D/C-F-G` (RINGS seed) | 159 | 159,170 |
+| Course `C-D-G/B-C-G` (SPIRAL seed) | 160 | 160,234 |
+| Course `B-D-G/B-C-F` (GEARWORKS seed) | 157 | 157,190 |
 | Hexapop RINGS | 58 | 19,068 |
 | Hexapop SPIRAL | 55 | 17,732 |
 | Hexapop GEARWORKS | 53 | 17,608 |
@@ -379,8 +379,9 @@ SwiftShader-only, so this is a budget sample, not a hardware FPS claim.
 npm run verify:variety            # 12 seeds × idle + casual, all M2 bands
 npm run verify:variety -- --negative
 npm run verify:pacing -- --phase=b
-npm run evidence                  # M3 screenshots + m3-performance.json
-npm run gate:release              # check + verify:show + pacing + variety + e2e
+npm run evidence                  # M4 screenshots + m4-performance.json
+M3_EVIDENCE=1 npx playwright test e2e/m3-evidence.spec.ts  # archived M3 recapture
+npm run gate:release              # check + verify:show + pacing + variety + twists + e2e
 ```
 
 ## M4 — Twist Season — 2026-10-27, branch `feat/m4-twist-season`
@@ -411,10 +412,14 @@ bands did not move.
 The scripted casual pilot's target speed was recalibrated from
 **0.91 × 0.78 ≈ 0.71** to **0.93 × 0.78 ≈ 0.725** after the twists landed
 (+2.2%, still below the bot band's 0.78 top and the player's 8 u/s cap). With
-0.91 the historical 10-seed M2 gate measured **6 / 10** casual qualifications;
+0.91 the historical 10-seed M2 gate measured **6 / 10** casual qualifications
+(the pre-calibration run is preserved in
+[`m4-pacing-precalibration-0.91.log`](evidence/pacing/m4-pacing-precalibration-0.91.log));
 0.93 restores **9 / 10**, and the 12-seed variety gate measures **11 / 12**.
 This is a competence-proxy calibration, not a physics or band change: the
-player and bots still share one controller and one rule set.
+player and bots still share one controller and one rule set. The 0.93 value is
+pinned for M5 — do not retune the proxy to pass a future gate; if the rate
+drops, fix the twist or the bounded human-pace anchor instead.
 
 ### 12-seed twist sweep (`npm run verify:twists`)
 
@@ -462,8 +467,8 @@ Per-twist medians (12 runs per twist for MOON, 6 for SLIPPERY and RUSH):
 | Twist | Runs | Course median (range) | Hex median (range) | Finishers min | Sugar Rush | Casual Q |
 | --- | ---: | --- | --- | ---: | ---: | ---: |
 | MOON GRAVITY | 12 | 64.9 s (61.43–66.92) | 47.83 s (46.17–49.92) | 8 | 12 / 12 | 5 / 6 |
-| SLIPPERY | 6 | 70.09 s (69.18–74.75) | 46.18 s (46.17–49.92) | 8 | 6 / 6 | 3 / 6 |
-| RUSH HOUR | 6 | 70.57 s (68.7–73.05) | 42.01 s (39.17–42.92) | 8 | 6 / 6 | 3 / 6 |
+| SLIPPERY | 6 | 70.09 s (69.18–74.75) | 46.18 s (46.17–49.92) | 8 | 6 / 6 | 3 / 3 |
+| RUSH HOUR | 6 | 70.57 s (68.7–73.05) | 42.01 s (39.17–42.92) | 8 | 6 / 6 | 3 / 3 |
 
 Evidence: [`docs/evidence/twists/m4-twists.json`](evidence/twists/m4-twists.json),
 [`m4-twists.log`](evidence/twists/m4-twists.log). The gate asserts every M2
@@ -484,10 +489,11 @@ it is a CI job and part of `npm run gate:release`.
 | Hexapop start, SLIPPERY | 65 | 19,500 |
 | Hexapop start, RUSH HOUR | 56 | 17,208 |
 
-All samples are inside the 320 draw-call / 200k triangle budget. The twist
-start sign uses the existing `makeSign` path and the static merge, so it does
-not add a material family. The host is SwiftShader-only, so this is a budget
-sample, not a hardware FPS claim.
+All samples are inside the 320 draw-call / 200k triangle budget. The Course
+start sign goes through the existing `makeSign` path and the static merge; the
+Hexapop sign reuses the same sign/material path next to the arena sign. The
+twist screens add no new texture family. The host is SwiftShader-only, so this
+is a budget sample, not a hardware FPS claim.
 
 ### Historical gates after M4
 

@@ -130,6 +130,28 @@ function probeIssues(runs) {
         issues.push(`${where}: probe id ${probe.id} ≠ plan ${plan.id}`);
       }
       if (probe.classic) issues.push(`${where}: qualifier reported classic`);
+      const expectedHazard = plan.id === 'rush' ? 1.1 : 1;
+      const expectedTimeLimit =
+        mode === 'course'
+          ? plan.id === 'rush'
+            ? 105
+            : 120
+          : plan.id === 'rush'
+            ? 42.9
+            : 49.9;
+      if (
+        mode === 'course' &&
+        Math.abs(probe.hazardSpeedScale - expectedHazard) > 1e-9
+      ) {
+        issues.push(`${where}: hazard scale ${probe.hazardSpeedScale} ≠ ${expectedHazard}`);
+      }
+      if (Math.abs(probe.timeLimit - expectedTimeLimit) > 1e-9) {
+        issues.push(`${where}: time limit ${probe.timeLimit} ≠ ${expectedTimeLimit}`);
+      }
+      if (!probe.signVisible) issues.push(`${where}: twist start sign missing`);
+      if (probe.signLabel !== plan.label) {
+        issues.push(`${where}: sign ${probe.signLabel} ≠ ${plan.label}`);
+      }
       if (plan.id === 'moon') {
         const expected = CLASSIC_GRAVITY * 0.78;
         if (Math.abs(probe.gravity - expected) > TWIST_TARGETS.gravityTolerance) {
@@ -180,6 +202,12 @@ function probeIssues(runs) {
         if (Math.abs(probe.frictionScale - 1) > TWIST_TARGETS.frictionTolerance) {
           issues.push(`${where}: friction ${probe.frictionScale} ≠ 1`);
         }
+        if (Math.abs(probe.hazardSpeedScale - 1) > 1e-9) {
+          issues.push(`${where}: Crown hazard scale ${probe.hazardSpeedScale} ≠ 1`);
+        }
+        if (Math.abs(probe.timeLimit - 120) > 1e-9) {
+          issues.push(`${where}: Crown time limit ${probe.timeLimit} ≠ 120`);
+        }
       }
     }
   }
@@ -215,6 +243,12 @@ export function evaluateTwists(idleRuns, casualRuns) {
   const courseRuns = allRuns.map((run) => roundFor(run, 'course')).filter(Boolean);
   const hexRuns = allRuns.map((run) => roundFor(run, 'hexapop')).filter(Boolean);
   const crownRuns = allRuns.map((run) => roundFor(run, 'crown-climb')).filter(Boolean);
+  const missingRounds = [];
+  for (const run of allRuns) {
+    for (const mode of ['course', 'hexapop', 'crown-climb']) {
+      if (!roundFor(run, mode)) missingRounds.push(`${run.mode} seed=${run.seed} ${mode}`);
+    }
+  }
   const livingCrowns = crownRuns.filter((round) => round.livingWinner);
   const touchedCrowns = crownRuns.filter((round) => round.winnerTouchedCrown);
   const totals = allRuns.map((run) => run.totalSeconds);
@@ -225,9 +259,8 @@ export function evaluateTwists(idleRuns, casualRuns) {
   const casualQualified = casualRuns
     .map((run) => roundFor(run, 'course'))
     .filter((round) => round?.playerQualified).length;
-  const casualTarget = Math.min(
-    TWIST_TARGETS.casualMinQualified,
-    Math.ceil(casualRuns.length * (TWIST_TARGETS.casualMinQualified / TWIST_TARGETS.seeds)),
+  const casualTarget = Math.ceil(
+    casualRuns.length * (TWIST_TARGETS.casualMinQualified / TWIST_TARGETS.seeds),
   );
   const livingTarget = Math.ceil(
     (TWIST_TARGETS.livingWinnerMin / TWIST_TARGETS.totalRuns) * crownRuns.length,
@@ -270,6 +303,13 @@ export function evaluateTwists(idleRuns, casualRuns) {
       TWIST_IDS.map((id) => `${id} ${counts[id]}`).join(', '),
       coverageOk,
       `≥${minPerTwist} each`,
+    ),
+    check(
+      'round-coverage',
+      'Every show reports all three Rounds',
+      `${courseRuns.length}/${allRuns.length} Course, ${hexRuns.length}/${allRuns.length} Hexapop, ${crownRuns.length}/${allRuns.length} Crown`,
+      missingRounds.length === 0,
+      'all three Rounds on every run',
     ),
     check(
       'applied-probe',
@@ -323,7 +363,10 @@ export function evaluateTwists(idleRuns, casualRuns) {
       'Crown 45–80 s with a living physical touch',
       `${livingCrowns.length} living / ${touchedCrowns.length} touched of ${crownRuns.length}` +
         (badCrownClock.length ? `, ${badCrownClock.length} outside 45–80 s` : ''),
-      badCrownClock.length === 0 && livingCrowns.length === crownRuns.length && touchedCrowns.length === crownRuns.length,
+      badCrownClock.length === 0 &&
+        crownRuns.length === allRuns.length &&
+        livingCrowns.length === crownRuns.length &&
+        touchedCrowns.length === crownRuns.length,
       'every run, physical',
     ),
     check(
@@ -388,6 +431,7 @@ export function evaluateTwists(idleRuns, casualRuns) {
     pass: failed.length === 0,
     failed,
     issues,
+    missingRounds,
     summary: {
       seeds: idleRuns.map((run) => run.seed),
       twistCounts: counts,
@@ -474,7 +518,7 @@ export function formatTwistReport(evaluation) {
   for (const id of TWIST_IDS) {
     const entry = evaluation.summary.byTwist[id];
     lines.push(
-      `  ${id.padEnd(8)} seeds ${entry.seeds.length}/12  course ${entry.courseMin}–${entry.courseMax} s (median ${entry.courseMedian})  hex ${entry.hexMin}–${entry.hexMax} s (median ${entry.hexMedian})  finishers ≥${entry.finishersMin}  Sugar ${entry.sugarRushReached}  casual Q ${entry.casualQualified}`,
+      `  ${id.padEnd(8)} seeds ${entry.seeds.length}/${evaluation.rows.length}  course ${entry.courseMin}–${entry.courseMax} s (median ${entry.courseMedian})  hex ${entry.hexMin}–${entry.hexMax} s (median ${entry.hexMedian})  finishers ≥${entry.finishersMin}  Sugar ${entry.sugarRushReached}  casual Q ${entry.casualQualified}`,
     );
   }
   lines.push('');
@@ -488,6 +532,11 @@ export function formatTwistReport(evaluation) {
     lines.push('');
     lines.push('Applied-probe issues:');
     for (const issue of evaluation.issues.slice(0, 40)) lines.push(`  ${issue}`);
+  }
+  if (evaluation.missingRounds?.length > 0) {
+    lines.push('');
+    lines.push('Missing Rounds:');
+    for (const missing of evaluation.missingRounds.slice(0, 40)) lines.push(`  ${missing}`);
   }
   lines.push('');
   lines.push(

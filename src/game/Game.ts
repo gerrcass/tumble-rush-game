@@ -210,7 +210,10 @@ export class Game {
     this.bursts.setBudget(particleBudget(this.quality, this.reducedMotion));
     this.scene.add(this.bursts.mesh);
 
-    this.level = createLevel(this.mode, this.currentSeed);
+    this.level = createLevel(this.mode, this.currentSeed, {
+      showTwistSign: false,
+      rules: CLASSIC_RULES,
+    });
     this.scene.add(this.level.group);
     for (const collider of this.level.colliders) this.world.addCollider(collider);
     // The menu preview is classic, even after a twisted Show.
@@ -506,8 +509,17 @@ export class Game {
           rule: classic ? 'The fixed final. Same classic rules for everyone.' : plan.twist.blurb,
           gravity,
           frictionScale,
+          hazardSpeedScale: game.level.hazardSpeedScale ?? 1,
           sugarRushSeconds: game.level.sugarRushSeconds ?? rules.hexSugarRush,
           sugarRushReached: game.level.sugarRushReached ?? false,
+          timeLimit: game.level.status().timeLimit,
+          signVisible: game.level.showsTwistSign === true,
+          signLabel:
+            game.level.showsTwistSign === true
+              ? classic
+                ? 'CLASSIC'
+                : plan.twist.label
+              : '',
           applied,
           classic,
         };
@@ -565,14 +577,26 @@ export class Game {
   }
 
   /** The live twist for Practice/free-play HUD copy (same value as the show). */
-  get twistSummary(): { label: string; short: string; rule: string; classic: boolean } {
+  get twistSummary(): {
+    label: string;
+    short: string;
+    rule: string;
+    classic: boolean;
+    final: boolean;
+  } {
     const plan = this.match?.showPlan ?? planShow(this.currentSeed);
     const classic = this.currentRules.id === 'classic';
+    const final = this.level.mode === 'crown-climb';
     return {
       label: classic ? 'CLASSIC' : plan.twist.label,
       short: classic ? 'CLASSIC' : plan.twist.short,
-      rule: classic ? 'The fixed final. Same classic rules for everyone.' : plan.twist.blurb,
+      rule: classic
+        ? final
+          ? 'The fixed final. Same classic rules for everyone.'
+          : 'Classic rules. The training deck.'
+        : plan.twist.blurb,
       classic,
+      final,
     };
   }
 
@@ -826,7 +850,7 @@ export class Game {
     this.spectateBody = null;
     this.currentState = 'menu';
     this.ensureIdentity();
-    this.installLevel('course', this.currentSeed, CLASSIC_RULES);
+    this.installLevel('course', this.currentSeed, CLASSIC_RULES, true);
     this.resetWorldFor([this.player]);
     this.player.resetForRound(this.level.startPosition, 0, 'waiting');
     this.player.bean.setVisible(true);
@@ -1173,12 +1197,25 @@ export class Game {
     }
   }
 
-  private installLevel(mode: LevelMode, seed: number, rulesOverride?: TwistRules): void {
+  private installLevel(
+    mode: LevelMode,
+    seed: number,
+    rulesOverride?: TwistRules,
+    menuPreview = false,
+  ): void {
     this.level.group.removeFromParent();
     this.level.dispose();
     this.world.clearColliders();
     this.mode = mode;
-    this.level = createLevel(mode, seed);
+    // One rules value for this Round: resolve it from the same plan the level
+    // built, then install it in the level, the world and every contestant
+    // before the Round starts. Menu previews pass CLASSIC_RULES explicitly.
+    const rules = rulesOverride ?? twistRulesFor(mode, planShow(seed).twist);
+    this.currentRules = rules;
+    this.level = createLevel(mode, seed, {
+      showTwistSign: !menuPreview,
+      rules,
+    });
     this.scene.add(this.level.group);
     for (const collider of this.level.colliders) this.world.addCollider(collider);
     this.level.setQuality(this.quality);
@@ -1189,12 +1226,6 @@ export class Game {
       this.level.startPosition.z,
     );
     this.world.killY = this.level.killY;
-    // One rules value for this Round: resolve it from the same plan the level
-    // built, then install it in the world and on every contestant before the
-    // Round starts. Menu previews pass CLASSIC_RULES explicitly.
-    const rules =
-      rulesOverride ?? twistRulesFor(mode, planShow(seed).twist);
-    this.currentRules = rules;
     this.world.setGravity(GRAVITY * rules.gravityScale);
     for (const contestant of this.contestants) contestant.controller.setRules(rules);
     this.player.controller.setRules(rules);

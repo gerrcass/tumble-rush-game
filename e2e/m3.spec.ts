@@ -111,7 +111,7 @@ test.describe('M3 Show Card', () => {
       viewport: window.innerWidth,
     }));
     expect(overflow.width).toBeLessThanOrEqual(overflow.viewport + 1);
-    await page.screenshot({ path: 'docs/evidence/m3-show-card-mobile.png' });
+    await page.screenshot({ path: 'docs/evidence/m4-mobile-intro.png' });
     expect(errors, errors.join('\n')).toEqual([]);
     await context.close();
   });

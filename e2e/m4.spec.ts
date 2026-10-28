@@ -12,10 +12,14 @@ test.describe('M4 Twist Season UI', () => {
   test('names the twist in the intro, HUD and results for all three twists', async ({ page }) => {
     test.setTimeout(120_000);
     const errors: string[] = [];
+    const failed: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') errors.push(message.text());
     });
     page.on('pageerror', (error) => errors.push(error.message));
+    page.on('requestfailed', (request) => {
+      failed.push(`${request.url()} ${request.failure()?.errorText ?? ''}`);
+    });
 
     for (const { id, seed } of TWIST_SEEDS) {
       const plan = planShow(seed);
@@ -44,6 +48,7 @@ test.describe('M4 Twist Season UI', () => {
     }
 
     expect(errors, errors.join('\n')).toEqual([]);
+    expect(failed, failed.join('\n')).toEqual([]);
   });
 
   test('says FINAL · CLASSIC on the Crown intro, HUD and results', async ({ page }) => {
@@ -67,11 +72,29 @@ test.describe('M4 Twist Season UI', () => {
     await expect(page.locator('.results__show-card .show-card__twist')).toContainText(
       'TWIST RUSH HOUR',
     );
+    await page.evaluate(() => window.__tumble?.nextRound());
+    await expect(page.locator('.show-end')).toBeVisible();
+    await expect(page.locator('.show-end__show-card .show-card__twist')).toContainText(
+      'TWIST RUSH HOUR',
+    );
   });
 
   test('probes the live rules for every round and keeps practice/training honest', async ({ page }) => {
     test.setTimeout(120_000);
     const probes: Record<string, unknown> = {};
+
+    // The menu diorama is a classic preview with no twist sign.
+    await page.goto('/?seed=20888792');
+    await expect(page.locator('#play-show')).toBeVisible();
+    expect(await page.evaluate(() => window.__tumble?.twist)).toMatchObject({
+      id: 'classic',
+      classic: true,
+      applied: true,
+      hazardSpeedScale: 1,
+      timeLimit: 120,
+      signVisible: false,
+    });
+
     for (const { id, seed } of TWIST_SEEDS) {
       await page.goto(`/?seed=${seed}`);
       await expect(page.locator('#play-show')).toBeVisible();
@@ -85,6 +108,10 @@ test.describe('M4 Twist Season UI', () => {
       classic: false,
       gravity: -20.28,
       frictionScale: 1,
+      hazardSpeedScale: 1,
+      timeLimit: 120,
+      signVisible: true,
+      signLabel: 'MOON GRAVITY',
     });
     expect(probes['slippery']).toMatchObject({
       id: 'slippery',
@@ -92,13 +119,21 @@ test.describe('M4 Twist Season UI', () => {
       classic: false,
       gravity: -26,
       frictionScale: 0.55,
+      hazardSpeedScale: 1,
+      timeLimit: 120,
+      signVisible: true,
+      signLabel: 'SLIPPERY',
     });
     expect(probes['rush']).toMatchObject({
       id: 'rush',
       applied: true,
       classic: false,
       gravity: -26,
+      hazardSpeedScale: 1.1,
+      timeLimit: 105,
       sugarRushSeconds: 38,
+      signVisible: true,
+      signLabel: 'RUSH HOUR',
     });
 
     // The Crown resets gravity and rules to classic on the same seed.
@@ -115,7 +150,24 @@ test.describe('M4 Twist Season UI', () => {
       classic: true,
       gravity: -26,
       frictionScale: 1,
+      hazardSpeedScale: 1,
+      timeLimit: 120,
       sugarRushSeconds: 45,
+      signVisible: false,
+    });
+
+    // Hexapop keeps its own start sign and HUD chip on RUSH HOUR.
+    await page.goto('/?seed=20888792');
+    await expect(page.locator('#play-show')).toBeVisible();
+    await page.evaluate(() => window.__tumble?.startMode('hexapop'));
+    await expect(page.locator('.hud-twist')).toHaveText('TWIST RUSH');
+    expect(await page.evaluate(() => window.__tumble?.twist)).toMatchObject({
+      id: 'rush',
+      applied: true,
+      timeLimit: 42.9,
+      sugarRushSeconds: 38,
+      signVisible: true,
+      signLabel: 'RUSH HOUR',
     });
 
     // Practice on the Course uses the seeded twist; the Training Deck is classic.
@@ -135,7 +187,10 @@ test.describe('M4 Twist Season UI', () => {
       classic: true,
       gravity: -26,
       frictionScale: 1,
+      signVisible: false,
     });
+    await expect(page.locator('.hud-twist')).toHaveText('CLASSIC');
+    await expect(page.locator('.hud-twist')).not.toHaveAttribute('aria-label', /final/i);
   });
 
   test('names today\'s twist in the Daily chip', async ({ page }) => {
@@ -157,10 +212,14 @@ test.describe('M4 Twist Season UI', () => {
     });
     const page = await context.newPage();
     const errors: string[] = [];
+    const failed: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'error') errors.push(message.text());
     });
     page.on('pageerror', (error) => errors.push(error.message));
+    page.on('requestfailed', (request) => {
+      failed.push(`${request.url()} ${request.failure()?.errorText ?? ''}`);
+    });
     await page.goto('/?seed=20888792');
     await page.getByRole('button', { name: 'PLAY SHOW' }).click();
 
@@ -168,11 +227,25 @@ test.describe('M4 Twist Season UI', () => {
     await expect(intro).toBeVisible();
     const cardBox = await intro.boundingBox();
     const countdownBox = await page.locator('.round-intro__countdown').boundingBox();
+    const touchBoxes = await Promise.all([
+      page.locator('#touch-joystick').boundingBox(),
+      page.locator('#touch-jump').boundingBox(),
+    ]);
     expect(cardBox).toBeTruthy();
     expect(countdownBox).toBeTruthy();
+    expect(touchBoxes.every(Boolean)).toBe(true);
     expect(cardBox!.y + cardBox!.height).toBeLessThanOrEqual(countdownBox!.y + 1);
     expect(cardBox!.x).toBeGreaterThanOrEqual(0);
     expect(cardBox!.x + cardBox!.width).toBeLessThanOrEqual(391);
+    const overlapsTouch = (box: { x: number; y: number; width: number; height: number }) =>
+      touchBoxes.some(
+        (touchBox) =>
+          box.x < touchBox!.x + touchBox!.width &&
+          box.x + box.width > touchBox!.x &&
+          box.y < touchBox!.y + touchBox!.height &&
+          box.y + box.height > touchBox!.y,
+      );
+    expect(overlapsTouch(cardBox!)).toBe(false);
 
     await page.evaluate(() => window.__tumble?.beginRound());
     const chipBox = await page.locator('.hud-twist').boundingBox();
@@ -181,6 +254,7 @@ test.describe('M4 Twist Season UI', () => {
     expect(chipBox).toBeTruthy();
     expect(clockBox).toBeTruthy();
     expect(qualifiedBox).toBeTruthy();
+    expect(overlapsTouch(chipBox!)).toBe(false);
     for (const other of [clockBox!, qualifiedBox!]) {
       const overlaps =
         chipBox!.x < other.x + other.width &&
@@ -199,6 +273,7 @@ test.describe('M4 Twist Season UI', () => {
 
     await page.screenshot({ path: 'docs/evidence/m4-mobile-hud.png' });
     expect(errors, errors.join('\n')).toEqual([]);
+    expect(failed, failed.join('\n')).toEqual([]);
     await context.close();
   });
 });

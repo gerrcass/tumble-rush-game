@@ -4413,7 +4413,7 @@ a:focus-visible,
 .show-card__rule {
   flex-basis: 100%;
   color: var(--ink-soft);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-align: center;
@@ -4449,7 +4449,8 @@ a:focus-visible,
   white-space: nowrap;
 }
 
-.hud-twist[data-twist='classic'] {
+.hud-twist[data-twist='classic'],
+.hud-twist[data-twist='final'] {
   background: linear-gradient(160deg, #dcfff3, var(--mint));
 }
 
@@ -4493,7 +4494,7 @@ a:focus-visible,
   }
 
   .show-card__rule {
-    font-size: 8px;
+    font-size: 9px;
   }
 }
 

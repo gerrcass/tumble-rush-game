@@ -45,7 +45,7 @@ import type { Axial } from './hexGrid';
 import { hexToWorld } from './hexWorld';
 import { arenaCells, axialRing, type ArenaPlanId } from './arenaPlan';
 import { planShow } from './coursePlan';
-import type { TwistPlan } from '../twist';
+import type { TwistPlan, TwistRules } from '../twist';
 
 type TileState = 'idle' | 'warning' | 'falling' | 'gone';
 
@@ -99,7 +99,7 @@ const TILE_SIZE = 1.15;
 /**
  * M2-003: the floor is patient before the Sugar Rush. Bots can stand on a
  * cracking tile for a readable beat, hop to a neighbour, and the pack survives
- * long enough for the 45 s beat to matter. The warning shortens in the Sugar
+ * long enough for the authored Sugar Rush beat to matter. The warning shortens in the Sugar
  * Rush so the end is a panic, not a slow leak.
  */
 const TILE_WARNING = 3.3;
@@ -122,6 +122,11 @@ const PERCH_CHUTE = 1.45;
  * ends. Tile state, collapse waves and the slime plane are all seeded/authored
  * here; Game owns elimination and the HUD.
  */
+export interface HexapopOptions {
+  /** The resolved Round rules. Defaults to the seeded twist. */
+  rules?: TwistRules;
+}
+
 export class Hexapop implements Level {
   readonly mode: LevelMode = 'hexapop';
   readonly title = 'HEXAPOP';
@@ -141,8 +146,11 @@ export class Hexapop implements Level {
   readonly slime = new Group();
   readonly arena: ArenaPlanId;
   readonly arenaLabel: string;
+  readonly showsTwistSign = true;
   /** The seeded qualifier rule; RUSH HOUR moves the Sugar Rush earlier. */
   readonly twist: TwistPlan;
+  /** The exact rules installed in the world/controllers for this level. */
+  readonly rules: TwistRules;
   /** Live Sugar Rush start for this Round (45 classic, 38 on RUSH HOUR). */
   readonly sugarRushSeconds: number;
   readonly roundLimit: number;
@@ -176,14 +184,15 @@ export class Hexapop implements Level {
   private totalTiles = 0;
   private tileCountValue = 0;
 
-  constructor(seed: number) {
+  constructor(seed: number, options: HexapopOptions = {}) {
     this.seed = seed >>> 0;
     const show = planShow(this.seed);
     this.arena = show.arena;
     this.arenaLabel = show.arenaLabel;
     this.twist = show.twist;
-    this.sugarRushSeconds = show.twist.rules.hexSugarRush;
-    this.roundLimit = show.twist.rules.hexTimeLimit;
+    this.rules = options.rules ?? show.twist.rules;
+    this.sugarRushSeconds = this.rules.hexSugarRush;
+    this.roundLimit = this.rules.hexTimeLimit;
     this.nextWaveAt = this.sugarRushSeconds;
     const rng = new Rng((this.seed ^ 0x4e6a9) >>> 0);
     this.group.add(makeSky());
@@ -584,7 +593,7 @@ export class Hexapop implements Level {
 
     if (this.elapsed >= this.nextWaveAt && this.tileCountValue > 4) {
       // Sugar Rush: the untouched outer ring drops away. Four survivors must
-      // still see the ring collapse — the HUD says SUGAR RUSH at 45 s, so the
+      // still see the ring collapse — the HUD names the Sugar Rush beat, so the
       // floor cannot quietly stop moving at exactly four. The four tiles the
       // survivors are standing on are held: the wave never undercuts a living
       // bean, so it cannot turn the final four into a total wipe.
@@ -592,8 +601,8 @@ export class Hexapop implements Level {
       this.nextWaveAt = Math.max(this.nextWaveAt + WAVE_INTERVAL, this.elapsed + 1);
     }
 
-    // The 45 s Sugar Rush is an authored beat, not an optional one. A fast
-    // collapse can reach four survivors before 45 s; hold those survivors on
+    // The Sugar Rush is an authored beat, not an optional one. A fast
+    // collapse can reach four survivors before the beat; hold those survivors on
     // the remaining floor until the wave so every show gets the beat. No tile
     // is added and no bean is moved: there is simply nothing left to drop.
     if (!this.result && this.tileCountValue <= 4 && this.elapsed >= this.sugarRushSeconds) {

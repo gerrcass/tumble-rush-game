@@ -11,6 +11,8 @@ Use this before merging any feature branch into `main`. It is deliberately short
 - [ ] `npm run docs:check` passes; every documented command and relative link resolves.
 - [ ] `npm run measure:show` recorded and compared with [`docs/METRICS.md`](METRICS.md); the change has a stated pacing effect.
 - [ ] `npm run verify:pacing -- --phase=b` passes all hard bands on the 10-seed sweep (Course, Hexapop, Crown living winner, show total).
+- [ ] `npm run verify:variety` passes route/arena variety and every M2 band with twists active.
+- [ ] `npm run verify:twists` passes coverage, the applied probe, the classic Crown, and the negative control.
 - [ ] `npm run evidence` refreshed the canonical screenshots.
 - [ ] Alternatively, `npm run gate:release` ran the whole sequence above except the separate `measure:show`/`evidence` steps.
 - [ ] No console errors, no failed network requests, no dead controls.
@@ -20,10 +22,14 @@ Use this before merging any feature branch into `main`. It is deliberately short
 
 ```bash
 # Create the PR and upload the canonical evidence in one command.
-gh pr create --base main --title "M4 — <milestone>" --body-file /tmp/pr-body.md \
-  --attach docs/evidence/m3-show-card.png \
-  --attach docs/evidence/m3-tumbler-tangle.png \
-  --attach docs/evidence/m2-hexapop.png
+gh pr create --base main --title "M4 — Twist Season" --body-file /tmp/pr-body.md \
+  --attach docs/evidence/m4-twist-moon-intro.png \
+  --attach docs/evidence/m4-twist-slippery-intro.png \
+  --attach docs/evidence/m4-twist-rush-intro.png \
+  --attach docs/evidence/m4-final-classic.png \
+  --attach docs/evidence/m4-twist-moon-sign.png \
+  --attach docs/evidence/m4-twist-moon-hex-sign.png \
+  --attach docs/evidence/m4-mobile-twist.png
 
 # Add or replace evidence on an existing PR.
 gh pr comment <number> --attach docs/evidence/phase3-victory.png

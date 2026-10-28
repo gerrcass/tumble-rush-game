@@ -61,7 +61,7 @@ import {
   type CourseSectionId,
   type CourseSectionPlan,
 } from './coursePlan';
-import type { TwistPlan } from '../twist';
+import type { TwistPlan, TwistRules } from '../twist';
 
 interface Sweeper {
   collider: Collider;
@@ -201,6 +201,12 @@ const MODULE_WAYPOINTS: Readonly<
  * crowd arrangement and the optional Slime Slide shortcut; the grammar itself
  * is authored so a bot (and a player) can learn it.
  */
+export interface CourseOptions {
+  showTwistSign?: boolean;
+  /** The resolved Round rules. Defaults to the seeded twist. */
+  rules?: TwistRules;
+}
+
 export class Course implements Level {
   readonly mode: LevelMode = 'course';
   readonly title = 'SUNRISE SCRAMBLE';
@@ -215,6 +221,10 @@ export class Course implements Level {
   readonly plan: CoursePlan;
   /** The seeded qualifier rule; the Course multiplies hazard speeds by it. */
   readonly twist: TwistPlan;
+  /** The exact rules installed in the world/controllers for this level. */
+  readonly rules: TwistRules;
+  /** False only for the classic menu diorama. */
+  readonly showsTwistSign: boolean;
   readonly checkpoints: readonly Checkpoint[];
   readonly waypoints: readonly Waypoint[];
   /** World-space z of each lap's checker strip, for marker-placement tests. */
@@ -248,11 +258,13 @@ export class Course implements Level {
   private bodyProgress = 0;
   private result: LevelResult | null = null;
 
-  constructor(seed: number) {
+  constructor(seed: number, options: CourseOptions = {}) {
     this.seed = seed >>> 0;
     const show = planShow(this.seed);
     this.plan = show.course;
     this.twist = show.twist;
+    this.rules = options.rules ?? show.twist.rules;
+    this.showsTwistSign = options.showTwistSign !== false;
     this.finishPosition = new Vector3(
       0,
       COURSE_FINISH_DECK_Y + 0.1 + this.plan.lapOffsetY,
@@ -283,7 +295,7 @@ export class Course implements Level {
     for (const lap of this.plan.laps) this.buildLap(lap);
     this.buildLapConnector();
     this.buildScenery(rng);
-    this.buildTwistSign();
+    if (this.showsTwistSign) this.buildTwistSign();
     // Every non-animated Course prop shares a small per-Level material pool,
     // so collapsing by material turns ~200 scenery meshes into a handful of
     // draw calls. Animated pieces (hazards, clouds, balloons, crowd) stay out.
@@ -706,11 +718,11 @@ export class Course implements Level {
   // ------------------------------------------------------------------ Builders
 
   get hazardSpeedScale(): number {
-    return this.twist.rules.hazardSpeedScale;
+    return this.rules.hazardSpeedScale;
   }
 
   private hazardSpeed(speed: number): number {
-    return speed * this.twist.rules.hazardSpeedScale;
+    return speed * this.rules.hazardSpeedScale;
   }
 
   /** The 3D proof: full twist name, one-line rule, accent trim. */
@@ -1434,7 +1446,7 @@ export class Course implements Level {
       title: this.title,
       objective: this.objective,
       elapsed: this.elapsed,
-      timeLimit: this.twist.rules.courseTimeLimit,
+      timeLimit: this.rules.courseTimeLimit,
       progress: this.bodyProgress,
       progressLabel: `${percent}%`,
       metricLabel: 'PROGRESS',

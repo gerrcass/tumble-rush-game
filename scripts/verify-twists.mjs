@@ -9,7 +9,9 @@
  *   npm run verify:twists
  *   npm run verify:twists -- --json
  *   npm run verify:twists -- --out=docs/evidence/twists/m4-twists.json
- *   npm run verify:twists -- --negative   # print the rejected negative control
+ *
+ * The `applied:false` negative control always runs. `--negative` is accepted
+ * for parity with `verify:variety`; it does not change the result.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';

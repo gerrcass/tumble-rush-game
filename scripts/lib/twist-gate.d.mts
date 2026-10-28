@@ -49,6 +49,7 @@ export interface TwistEvaluation {
   pass: boolean;
   failed: string[];
   issues: string[];
+  missingRounds: string[];
   summary: TwistRunTotals;
   rows: Array<Record<string, unknown>>;
 }

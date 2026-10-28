@@ -95,7 +95,7 @@ function fillShowCard(container: HTMLElement, plan?: ShowPlan, classic = false):
   const twist = el('span', 'show-card__twist', twistLabel);
   twist.style.setProperty(
     '--twist-accent',
-    `#${plan.twist.accent.toString(16).padStart(6, '0')}`,
+    `#${(classic ? 0x59d9b0 : plan.twist.accent).toString(16).padStart(6, '0')}`,
   );
   container.appendChild(twist);
   container.appendChild(el('span', 'show-card__rule', twistRule));

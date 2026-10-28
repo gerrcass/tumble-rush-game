@@ -247,16 +247,26 @@ export class Hud {
       this.playerState.dataset.status = hud.playerStatus;
     }
 
-    const twistText = hud.twistClassic ? 'FINAL · CLASSIC' : `TWIST ${hud.twistShort}`;
+    const twistText = hud.twistFinal
+      ? 'FINAL · CLASSIC'
+      : hud.twistClassic
+        ? 'CLASSIC'
+        : `TWIST ${hud.twistShort}`;
     if (twistText !== this.lastTwist) {
       this.lastTwist = twistText;
       this.twistChip.textContent = twistText;
-      this.twistChip.dataset.twist = hud.twistClassic ? 'classic' : hud.twistShort.toLowerCase();
+      this.twistChip.dataset.twist = hud.twistFinal
+        ? 'final'
+        : hud.twistClassic
+          ? 'classic'
+          : hud.twistShort.toLowerCase();
       this.twistChip.setAttribute(
         'aria-label',
-        hud.twistClassic
+        hud.twistFinal
           ? 'Final round. Classic rules. The fixed championship.'
-          : `Twist: ${hud.twistLabel}. ${hud.twistRule}`,
+          : hud.twistClassic
+            ? `Classic rules. ${hud.twistRule}`
+            : `Twist: ${hud.twistLabel}. ${hud.twistRule}`,
       );
       this.twistChip.setAttribute('title', hud.twistRule);
     }
@@ -299,11 +309,18 @@ export class Hud {
   /** Practice/free-play fallback: no Show record, just the Level numbers. */
   setPractice(
     status: LevelStatus,
-    twist: { label: string; short: string; rule: string; classic: boolean } = {
+    twist: {
+      label: string;
+      short: string;
+      rule: string;
+      classic: boolean;
+      final?: boolean;
+    } = {
       label: 'CLASSIC',
       short: 'CLASSIC',
-      rule: 'The fixed final. Same classic rules for everyone.',
+      rule: 'Classic rules.',
       classic: true,
+      final: false,
     },
   ): void {
     this.setShow({
@@ -331,6 +348,7 @@ export class Hud {
       twistShort: twist.short,
       twistRule: twist.rule,
       twistClassic: twist.classic,
+      twistFinal: twist.final ?? false,
     });
     this.qualifiedSlots.textContent = '';
   }

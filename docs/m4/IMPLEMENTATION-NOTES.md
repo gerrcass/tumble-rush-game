@@ -159,9 +159,12 @@ implementation agent, not a second spec. The spec is the contract.
 - `Game.installLevel(mode, seed, rulesOverride?)` resolves the rule value,
   calls `world.setGravity(GRAVITY * rules.gravityScale)`, and calls
   `controller.setRules(rules)` on every contestant plus the persistent casual
-  pilot. `quitToMenu` passes `CLASSIC_RULES`; the constructor also resets the
-  menu preview to classic gravity. Practice builds its bots before
-  `installLevel`, so the practice pack receives the seeded twist too.
+  pilot. The same resolved rules object is passed into `createLevel` so the
+  Course hazard scale/clock and the Hexapop Sugar Rush clock cannot disagree
+  with the installed physics. `quitToMenu` passes `CLASSIC_RULES` and hides the
+  menu start sign; the constructor also resets the menu preview to classic
+  gravity. Practice builds its bots before `installLevel`, so the practice pack
+  receives the seeded twist too.
 - `Game.debug.twist` reads the live world: `gravity`, `frictionScale`,
   `sugarRushSeconds`, `sugarRushReached`, `applied`, `classic`. `applied` is
   derived from the live values and uniform controller rule identity, not from

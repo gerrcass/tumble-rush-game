@@ -3,16 +3,16 @@
   "showSeed": "20260418",
   "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
   "high": {
-    "avgFps": 8.5,
-    "frames": 170,
-    "avgMs": 117.1,
-    "p95Ms": 150
+    "avgFps": 5.2,
+    "frames": 103,
+    "avgMs": 192.5,
+    "p95Ms": 250
   },
   "low": {
-    "avgFps": 11.8,
-    "frames": 94,
-    "avgMs": 84.7,
-    "p95Ms": 116.7
+    "avgFps": 7.4,
+    "frames": 59,
+    "avgMs": 134.7,
+    "p95Ms": 200
   },
   "note": "Software WebGL (no /dev/dri in this container). Hardware target is 55 fps; this environment cannot represent it."
 }
