@@ -129,6 +129,8 @@ export class Hud {
 
     this.twistChip = el('div', 'hud-twist', 'TWIST MOON');
     this.twistChip.dataset.twist = 'moon';
+    this.twistChip.tabIndex = 0;
+    this.twistChip.setAttribute('role', 'status');
     bar.appendChild(this.twistChip);
 
     this.element.appendChild(bar);

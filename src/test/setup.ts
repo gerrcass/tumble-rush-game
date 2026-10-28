@@ -41,6 +41,11 @@ class FakeContext {
   fillText(): void {}
   strokeText(): void {}
   drawImage(): void {}
+  measureText(text: string): { width: number } {
+    // Rough monospace fallback for the headless canvas shim: enough to prove
+    // the auto-fit loop terminates and never indexes a missing glyph box.
+    return { width: String(text).length * 30 };
+  }
 
   createLinearGradient(): FakeGradient {
     return new FakeGradient();

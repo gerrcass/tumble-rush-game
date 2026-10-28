@@ -78,6 +78,7 @@ function fillShowCard(container: HTMLElement, plan?: ShowPlan, classic = false):
     return;
   }
   container.hidden = false;
+  container.tabIndex = 0;
   container.setAttribute('role', 'group');
   const twistLabel = classic ? 'FINAL · CLASSIC' : `TWIST ${plan.twist.label}`;
   const twistRule = classic

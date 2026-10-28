@@ -4496,3 +4496,9 @@ a:focus-visible,
     font-size: 8px;
   }
 }
+
+.hud-twist:focus-visible,
+.show-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}

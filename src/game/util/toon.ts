@@ -131,12 +131,28 @@ export function makeSignTexture(title: string, subtitle: string): CanvasTexture 
     ctx.fill();
 
     ctx.fillStyle = '#ff6b6b';
-    ctx.font = '700 66px "Fredoka Variable", Fredoka, sans-serif';
+    const titleSize = fitFontSize(
+      ctx,
+      title,
+      '700',
+      66,
+      34,
+      w - 96,
+    );
+    ctx.font = `700 ${titleSize}px "Fredoka Variable", Fredoka, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(title, -4, -24);
     ctx.fillStyle = '#24324a';
-    ctx.font = '600 30px "Fredoka Variable", Fredoka, sans-serif';
+    const subtitleSize = fitFontSize(
+      ctx,
+      subtitle,
+      '600',
+      30,
+      15,
+      w - 96,
+    );
+    ctx.font = `600 ${subtitleSize}px "Fredoka Variable", Fredoka, sans-serif`;
     ctx.fillText(subtitle, -4, 44);
     ctx.restore();
 
@@ -159,6 +175,28 @@ export function makeSignTexture(title: string, subtitle: string): CanvasTexture 
   return texture;
 }
 
+/**
+ * Shrink a sign label until it fits the authored texture. Long twist names
+ * (MOON GRAVITY, RUSH HOUR) and the existing arena titles must not clip at the
+ * canvas edge; the text stays the full label, only the type size moves.
+ */
+function fitFontSize(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  weight: string,
+  start: number,
+  min: number,
+  maxWidth: number,
+): number {
+  let size = start;
+  ctx.font = `${weight} ${size}px "Fredoka Variable", Fredoka, sans-serif`;
+  while (size > min && ctx.measureText(text).width > maxWidth) {
+    size -= 2;
+    ctx.font = `${weight} ${size}px "Fredoka Variable", Fredoka, sans-serif`;
+  }
+  return size;
+}
+
 function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -166,8 +204,7 @@ function roundRect(
   width: number,
   height: number,
   radius: number,
-): void {
-  const r = Math.min(radius, width / 2, height / 2);
+): void {  const r = Math.min(radius, width / 2, height / 2);
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + width, y, x + width, y + height, r);
