@@ -52,6 +52,7 @@ Per twist:
 Checks:
   [PASS] Every show plan carries one valid twist: 12 / 12 (target moon | slippery | rush)
   [PASS] Each twist appears in ≥3 of 12 seeds: moon 6, slippery 3, rush 3 (target ≥3 each)
+  [PASS] Every show reports all three Rounds: 24/24 Course, 24/24 Hexapop, 24/24 Crown (target all three Rounds on every run)
   [PASS] Plan rules match live gravity/friction/Sugar Rush; Crown is classic: 24 runs (target every run)
   [PASS] Every run: Course 45–90 s and 8+ finishers: 24 / 24 (target 45–90 s, 8+)
   [PASS] Every run: Hexapop 30–50 s with the Sugar Rush reached: 24 / 24 (target 30–50 s, 100%)
